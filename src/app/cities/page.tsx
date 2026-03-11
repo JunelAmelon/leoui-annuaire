@@ -33,7 +33,7 @@ export default function CitiesPage() {
       cities: [
         { name: 'Aix-en-Provence', count: 198, imageUrl: 'https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=800' },
         { name: 'Nice', count: 165, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Marseille', count: 142, imageUrl: 'https://images.pexels.com/photos/2245436/pexels-photo-2245436.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Marseille', count: 142, imageUrl: 'https://images.pexels.com/photos/1642125/pexels-photo-1642125.jpeg?auto=compress&cs=tinysrgb&w=800' },
         { name: 'Cannes', count: 134, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
@@ -50,7 +50,7 @@ export default function CitiesPage() {
       cities: [
         { name: 'Toulouse', count: 156, imageUrl: 'https://images.pexels.com/photos/1755683/pexels-photo-1755683.jpeg?auto=compress&cs=tinysrgb&w=800' },
         { name: 'Montpellier', count: 134, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Carcassonne', count: 67, imageUrl: 'https://images.pexels.com/photos/2245436/pexels-photo-2245436.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Carcassonne', count: 67, imageUrl: 'https://images.pexels.com/photos/2362009/pexels-photo-2362009.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
     {

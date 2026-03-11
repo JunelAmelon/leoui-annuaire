@@ -40,7 +40,7 @@ export default function LoginPage() {
       {/* LEFT — editorial photo panel */}
       <div className="hidden lg:block lg:w-[48%] relative overflow-hidden flex-shrink-0">
         <img
-          src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=1200"
+          src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1600"
           alt="Mariage"
           className="w-full h-full object-cover"
         />
@@ -70,7 +70,7 @@ export default function LoginPage() {
             </blockquote>
             <div className="flex items-center gap-3">
               <img
-                src="https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=100"
+                src="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=120"
                 alt="Sophie"
                 className="w-10 h-10 object-cover border border-white/20"
                 style={{ borderRadius: 0 }}

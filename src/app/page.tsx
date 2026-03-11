@@ -42,7 +42,7 @@ export default function HomePage() {
 
         {/* Content — left-aligned on a grid */}
         <div
-          className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 flex flex-col justify-end pb-20 sm:pb-28"
+          className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 flex flex-col justify-end pb-20 sm:pb-28 pt-20 sm:pt-24"
           style={{ minHeight: '100svh' }}
         >
           {/* Label */}

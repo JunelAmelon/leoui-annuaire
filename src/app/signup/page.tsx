@@ -52,7 +52,7 @@ export default function SignupPage() {
       {/* LEFT — photo + benefits panel */}
       <div className="hidden lg:flex lg:w-[48%] relative overflow-hidden flex-col">
         <img
-          src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=1920"
+          src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1920"
           alt="Mariage de rêve"
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -95,9 +95,9 @@ export default function SignupPage() {
             <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-4">
               <div className="flex -space-x-2">
                 {[
-                  'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=60',
-                  'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=60',
-                  'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=60',
+                  'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=60',
+                  'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=60',
+                  'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=60',
                 ].map((src, i) => (
                   <img key={i} src={src} className="w-8 h-8 rounded-full border-2 border-white/20 object-cover" alt="" />
                 ))}
