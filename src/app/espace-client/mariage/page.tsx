@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, updateDocument } from '@/lib/db';
 import { getClientVendors, getClientPayments, getClientGallery } from '@/lib/client-helpers';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Pencil, Users, Euro, ChevronRight, X } from 'lucide-react';
+import { Calendar, MapPin, Pencil, Users, Euro, ChevronRight, X, Camera } from 'lucide-react';
 
 /* Circular SVG progress ring */
 function RingProgress({ value, max, label, sub, color = '#A34E30' }: { value: number; max: number; label: string; sub: string; color?: string }) {
@@ -45,6 +45,9 @@ export default function MariagePage() {
   const [saving, setSaving] = useState(false);
   const [infoForm, setInfoForm] = useState({ event_date: '', ceremony_time: '', venue: '', reception_venue: '', guest_count: '', budget: '' });
   const [themeForm, setThemeForm] = useState({ theme_style: '', theme_colors: '' });
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (dataLoading || (!event?.id && !client?.id)) return;
@@ -91,6 +94,36 @@ export default function MariagePage() {
     ? `${client.name || ''}${client.name && client.partner ? ' & ' : ''}${client.partner || ''}`.trim() || 'Votre mariage'
     : 'Votre mariage';
 
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 400;
+          const ratio = Math.min(maxDim / img.width, maxDim / img.height, 1);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = reject;
+        img.src = e.target!.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handlePhotoSelect = async (file: File) => {
+    setUploadingPhoto(true);
+    try {
+      const dataUrl = await compressImage(file);
+      setPhotoPreview(dataUrl);
+    } catch { toast.error('Erreur de traitement de l\'image'); }
+    finally { setUploadingPhoto(false); }
+  };
+
   const openInfoEdit = () => {
     setInfoForm({
       event_date: eventDate,
@@ -100,6 +133,7 @@ export default function MariagePage() {
       guest_count: guestCount > 0 ? String(guestCount) : '',
       budget: budget > 0 ? String(budget) : '',
     });
+    setPhotoPreview(client?.photo || null);
     setShowInfoEdit(true);
   };
 
@@ -118,6 +152,9 @@ export default function MariagePage() {
         await updateDocument('events', event.id, data);
       } else if (client?.id) {
         await updateDocument('clients', client.id, data);
+      }
+      if (photoPreview && client?.id && photoPreview !== client?.photo) {
+        await updateDocument('clients', client.id, { photo: photoPreview });
       }
       await refresh();
       toast.success('Informations enregistrées');
@@ -442,6 +479,28 @@ export default function MariagePage() {
               <button onClick={() => setShowInfoEdit(false)} className="p-1 hover:bg-charcoal-50 rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
             </div>
             <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+              {/* Photo du couple */}
+              <div>
+                <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Photo du couple</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-champagne-200 to-rose-200 flex items-center justify-center">
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Couple" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-serif text-charcoal-500 text-lg">{coupleName.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div>
+                    <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void handlePhotoSelect(f); }} />
+                    <button onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-charcoal-200 text-charcoal-700 rounded-xl text-xs font-medium hover:bg-charcoal-50 disabled:opacity-50 transition-colors">
+                      <Camera className="w-3.5 h-3.5" />{uploadingPhoto ? 'Traitement...' : 'Changer la photo'}
+                    </button>
+                    <p className="text-[0.65rem] text-charcoal-400 mt-1">Sera sauvegardée avec les informations</p>
+                  </div>
+                </div>
+              </div>
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Date du mariage</label>
                 <input type="date" value={infoForm.event_date} onChange={e => setInfoForm(f => ({ ...f, event_date: e.target.value }))} className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />

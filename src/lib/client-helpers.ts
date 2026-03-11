@@ -137,7 +137,9 @@ export interface VendorData {
 export interface GalleryData {
   id: string;
   event_id: string;
+  client_id?: string;
   url: string;
+  album?: string;
   caption?: string;
   uploaded_at?: string;
 }

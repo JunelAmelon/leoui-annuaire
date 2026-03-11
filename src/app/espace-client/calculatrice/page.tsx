@@ -116,7 +116,7 @@ export default function CalculatricePage() {
   const btnBase = 'flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-100 active:scale-95 select-none cursor-pointer h-14';
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
 
       {/* Page header */}
       <div>
@@ -125,10 +125,10 @@ export default function CalculatricePage() {
         <p className="text-sm text-charcoal-500 mt-0.5">Calculatrice instantanée + estimateur de budget mariage</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
         {/* ── LEFT: Real Calculator ── */}
-        <div className="bg-charcoal-900 rounded-3xl shadow-xl overflow-hidden">
+        <div className="bg-charcoal-900 rounded-3xl shadow-xl overflow-hidden lg:sticky lg:top-6">
           {/* Display */}
           <div className="px-6 pt-8 pb-4">
             {/* Expression */}

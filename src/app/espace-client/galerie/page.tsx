@@ -2,119 +2,65 @@
 
 import { useEffect, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getClientGallery } from '@/lib/client-helpers';
-import { addDocument } from '@/lib/db';
+import { getDocuments, addDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
 import { Upload, X, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface GalleryItem { id: string; url: string; caption?: string; uploaded_at?: string; }
-
+/* Album definitions — staticCover is shown only when no Firestore images exist */
 const ALBUMS = [
-  {
-    id: 'inspiration',
-    label: 'Sources d\u2019inspiration',
-    desc: 'Vos références et coups de cœur',
-    cover: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=600',
-    images: [
-      'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=800',
-    ],
-    uploadable: false,
-  },
-  {
-    id: 'deco',
-    label: 'Idées décoration',
-    desc: 'Tables, arches, luminaires, ambiance',
-    cover: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=600',
-    images: [
-      'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=800',
-    ],
-    uploadable: false,
-  },
-  {
-    id: 'mariage',
-    label: 'Photos du mariage',
-    desc: 'Votre journée immortalisée',
-    cover: 'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=600',
-    images: [
-      'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800',
-    ],
-    uploadable: false,
-  },
-  {
-    id: 'maries',
-    label: 'Photos des mariés',
-    desc: 'Portraits et moments complices',
-    cover: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600',
-    images: [
-      'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800',
-    ],
-    uploadable: false,
-  },
-  {
-    id: 'ceremonie',
-    label: 'Photos de cérémonie',
-    desc: 'Échange des vœux et moments officiels',
-    cover: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=600',
-    images: [
-      'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1730877/pexels-photo-1730877.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=800',
-    ],
-    uploadable: false,
-  },
-  {
-    id: 'ma-galerie',
-    label: 'Ma galerie',
-    desc: 'Vos photos personnelles',
-    cover: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=600',
-    images: [] as string[],
-    uploadable: true,
-  },
-] as const;
+  { id: 'inspiration', label: 'Sources d\u2019inspiration', desc: 'Vos références et coups de cœur',          staticCover: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'deco',        label: 'Idées décoration',           desc: 'Tables, arches, luminaires, ambiance',     staticCover: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'mariage',     label: 'Photos du mariage',          desc: 'Votre journée immortalisée',               staticCover: 'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'maries',      label: 'Photos des mariés',          desc: 'Portraits et moments complices',           staticCover: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'ceremonie',   label: 'Photos de cérémonie',        desc: 'Échange des vœux et moments officiels',   staticCover: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'ma-galerie',  label: 'Ma galerie',                 desc: 'Vos photos personnelles',                 staticCover: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=600' },
+];
 
 type AlbumId = typeof ALBUMS[number]['id'];
 
 export default function GaleriePage() {
   const { client, event, loading: dataLoading } = useClientData();
-  const [myGallery, setMyGallery] = useState<GalleryItem[]>([]);
+  /* allGallery: images grouped by album id */
+  const [allGallery, setAllGallery] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [activeAlbum, setActiveAlbum] = useState<AlbumId | null>(null);
   const [preview, setPreview] = useState<{ urls: string[]; idx: number } | null>(null);
 
   const fetchGallery = async () => {
-    if (!event?.id) { setLoading(false); return; }
-    const items = await getClientGallery(event.id).catch(() => []);
-    setMyGallery(items as GalleryItem[]);
+    if (!event?.id && !client?.id) { setLoading(false); return; }
+    try {
+      const filters = event?.id
+        ? [{ field: 'event_id', operator: '==', value: event.id }]
+        : [{ field: 'client_id', operator: '==', value: client!.id }];
+      const items = await getDocuments('galleries', filters as any).catch(() => []);
+      const grouped: Record<string, string[]> = {};
+      for (const item of items as any[]) {
+        const album: string = item.album || 'ma-galerie';
+        if (!grouped[album]) grouped[album] = [];
+        grouped[album].push(item.url);
+      }
+      setAllGallery(grouped);
+    } catch { /* ignore */ }
     setLoading(false);
   };
 
-  useEffect(() => { if (!dataLoading) fetchGallery(); }, [event?.id, dataLoading]);
+  useEffect(() => { if (!dataLoading) fetchGallery(); }, [event?.id, client?.id, dataLoading]);
 
   const handleUpload = async (files: FileList | null) => {
-    if (!files || !event?.id) return;
+    if (!files || (!event?.id && !client?.id) || !activeAlbum) return;
     setUploading(true);
     try {
       for (const file of Array.from(files)) {
         const url = await uploadFile(file, 'gallery');
         await addDocument('galleries', {
-          event_id: event.id, client_id: client?.id || null,
-          url, uploaded_at: new Date().toISOString(), uploaded_by: 'client',
+          event_id: event?.id || null,
+          client_id: client?.id || null,
+          album: activeAlbum,
+          url,
+          uploaded_at: new Date().toISOString(),
+          uploaded_by: 'client',
         });
       }
       toast.success('Photos ajoutées');
@@ -123,10 +69,7 @@ export default function GaleriePage() {
     finally { setUploading(false); }
   };
 
-  const getAlbumImages = (id: AlbumId): string[] => {
-    if (id === 'ma-galerie') return myGallery.map(g => g.url);
-    return ALBUMS.find(a => a.id === id)?.images as string[] || [];
-  };
+  const getAlbumImages = (id: AlbumId): string[] => allGallery[id] || [];
 
   const openImage = (urls: string[], idx: number) => setPreview({ urls, idx });
 
@@ -157,13 +100,11 @@ export default function GaleriePage() {
               <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.2rem, 2vw, 1.5rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>{album.label}</h1>
             </div>
           </div>
-          {album.uploadable && (
-            <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 bg-charcoal-900 text-white text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-charcoal-700'} transition-colors`}>
-              {uploading ? <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-              {uploading ? 'Upload…' : 'Ajouter des photos'}
-              <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
-            </label>
-          )}
+          <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 bg-charcoal-900 text-white text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-charcoal-700'} transition-colors`}>
+            {uploading ? <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {uploading ? 'Upload…' : 'Ajouter des photos'}
+            <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
+          </label>
         </div>
 
         <p className="text-sm text-charcoal-500">{album.desc}</p>
@@ -173,7 +114,7 @@ export default function GaleriePage() {
             <div className="border border-dashed border-charcoal-200 py-20 text-center">
               <Upload className="w-8 h-8 mx-auto mb-3 text-charcoal-200" />
               <p className="font-serif text-charcoal-400 text-base font-light">Aucune photo dans cet album</p>
-              {album.uploadable && <p className="text-charcoal-400 text-xs mt-1 font-light">Ajoutez vos premières photos ci-dessus</p>}
+              <p className="text-charcoal-400 text-xs mt-1 font-light">Ajoutez vos premières photos ci-dessus</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px bg-charcoal-100">
@@ -216,19 +157,22 @@ export default function GaleriePage() {
   }
 
   /* ── ALBUMS GRID ── */
+  const totalPhotos = Object.values(allGallery).reduce((s, a) => s + a.length, 0);
   return (
     <div className="space-y-5">
       {/* Page header */}
       <div>
         <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace client</p>
         <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Ma galerie</h1>
-        <p className="text-sm text-charcoal-500 mt-0.5">{ALBUMS.length} albums</p>
+        <p className="text-sm text-charcoal-500 mt-0.5">{ALBUMS.length} albums — {totalPhotos} photo{totalPhotos !== 1 ? 's' : ''} ajoutée{totalPhotos !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Albums grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {ALBUMS.map((album) => {
-          const count = album.id === 'ma-galerie' ? myGallery.length : album.images.length;
+          const imgs = allGallery[album.id] || [];
+          const count = imgs.length;
+          const coverSrc = imgs[0] || album.staticCover;
           return (
             <div
               key={album.id}
@@ -236,17 +180,19 @@ export default function GaleriePage() {
               style={{ aspectRatio: '4/3' }}
               onClick={() => setActiveAlbum(album.id as AlbumId)}
             >
-              <img src={album.cover} alt={album.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <img src={coverSrc} alt={album.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/75 via-charcoal-900/10 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-end px-5 pb-5">
                 <h3 className="font-serif text-white text-lg font-light leading-tight" style={{ letterSpacing: '-0.01em' }}>
                   {album.label}
                 </h3>
-                <p className="text-xs text-white/60 mt-1">{count} photo{count !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-white/60 mt-1">
+                  {count > 0 ? `${count} photo${count !== 1 ? 's' : ''}` : 'Aucune photo — cliquez pour ajouter'}
+                </p>
               </div>
-              {album.uploadable && (
+              {count > 0 && (
                 <div className="absolute top-3 right-3">
-                  <span className="text-[0.65rem] font-semibold bg-champagne-500 text-white px-2 py-0.5 rounded-full">Mes photos</span>
+                  <span className="text-[0.65rem] font-semibold bg-charcoal-800/70 text-white px-2 py-0.5 rounded-full">{count}</span>
                 </div>
               )}
             </div>
