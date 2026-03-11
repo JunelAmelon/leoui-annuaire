@@ -1,0 +1,254 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
+import { MessageSquare, Send, Paperclip, Clock, Search, Heart } from 'lucide-react';
+import { getDocuments, addDocument, updateDocument } from '@/lib/db';
+import { toast } from 'sonner';
+
+interface Conversation {
+  id: string;
+  client_name: string;
+  client_email?: string;
+  last_message?: string;
+  last_message_at?: string;
+  unread_count_vendor?: number;
+}
+
+interface Message {
+  id: string;
+  sender_role: 'client' | 'vendor';
+  sender_name?: string;
+  content: string;
+  created_at?: string;
+}
+
+export default function ContactsPage() {
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selected, setSelected] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMsg, setNewMsg] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [search, setSearch] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      try {
+        const convs = await getDocuments('conversations', [
+          { field: 'vendor_id', operator: '==', value: user.uid },
+        ]);
+        setConversations(convs as Conversation[]);
+        if (convs.length > 0 && !selected) {
+          setSelected(convs[0] as Conversation);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const load = async () => {
+      try {
+        const msgs = await getDocuments('messages', [
+          { field: 'conversation_id', operator: '==', value: selected.id },
+        ]);
+        setMessages(msgs as Message[]);
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      } catch {
+        setMessages([]);
+      }
+    };
+    load();
+  }, [selected]);
+
+  const sendMessage = async () => {
+    if (!newMsg.trim() || !selected || !user) return;
+    setSending(true);
+    try {
+      const msg = {
+        conversation_id: selected.id,
+        sender_id: user.uid,
+        sender_role: 'vendor',
+        sender_name: user.displayName || user.email,
+        content: newMsg.trim(),
+        created_at: new Date().toISOString(),
+      };
+      await addDocument('messages', msg);
+      await updateDocument('conversations', selected.id, {
+        last_message: newMsg.trim(),
+        last_message_at: new Date().toISOString(),
+      });
+      setMessages(prev => [...prev, { id: Date.now().toString(), ...msg } as Message]);
+      setNewMsg('');
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch {
+      toast.error('Erreur lors de l\'envoi');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const filtered = conversations.filter(c =>
+    c.client_name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const formatTime = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <PrestataireDashboardLayout>
+      <div className="mb-5">
+        <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
+        <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Contacts &amp; Messages</h1>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: 480 }}>
+        <div className="flex h-full">
+          {/* Conversation list */}
+          <div className="w-72 border-r border-charcoal-100 flex flex-col flex-shrink-0">
+            <div className="p-3 border-b border-charcoal-100">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-ivory-50 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all"
+                  placeholder="Rechercher…"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="p-4 space-y-3">
+                  {[1,2,3].map(i => <div key={i} className="h-14 bg-charcoal-50 rounded-xl animate-pulse" />)}
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="p-8 text-center">
+                  <MessageSquare className="w-8 h-8 text-charcoal-300 mx-auto mb-2" />
+                  <p className="text-sm text-charcoal-500">Aucun contact</p>
+                  <p className="text-xs text-charcoal-400 mt-1">Les couples vous contacteront via votre annonce</p>
+                </div>
+              ) : (
+                filtered.map(conv => (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelected(conv)}
+                    className={`w-full text-left px-4 py-3.5 border-b border-charcoal-50 transition-colors hover:bg-charcoal-50 ${selected?.id === conv.id ? 'bg-rose-50 border-l-2 border-l-rose-400' : ''}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700 flex-shrink-0">
+                        {conv.client_name?.charAt(0) || 'C'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-charcoal-900 truncate">{conv.client_name || 'Client'}</p>
+                          {(conv.unread_count_vendor ?? 0) > 0 && (
+                            <span className="ml-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center flex-shrink-0">
+                              {conv.unread_count_vendor}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-charcoal-500 truncate mt-0.5">{conv.last_message || 'Nouvelle conversation'}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {!selected ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <Heart className="w-10 h-10 text-rose-200 mb-3" />
+                <p className="text-charcoal-600 font-medium">Sélectionnez une conversation</p>
+                <p className="text-sm text-charcoal-400 mt-1">Répondez aux couples qui s'intéressent à vos services</p>
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="px-5 py-3.5 border-b border-charcoal-100 flex items-center gap-3 flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700">
+                    {selected.client_name?.charAt(0) || 'C'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-charcoal-900">{selected.client_name}</p>
+                    {selected.client_email && <p className="text-xs text-charcoal-500">{selected.client_email}</p>}
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                  {messages.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-charcoal-400">Démarrez la conversation</p>
+                    </div>
+                  ) : (
+                    messages.map((msg) => {
+                      const isVendor = msg.sender_role === 'vendor';
+                      return (
+                        <div key={msg.id} className={`flex ${isVendor ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
+                            isVendor
+                              ? 'bg-rose-600 text-white rounded-br-md'
+                              : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
+                          }`}>
+                            <p>{msg.content}</p>
+                            {msg.created_at && (
+                              <p className={`text-xs mt-1 ${isVendor ? 'text-rose-200' : 'text-charcoal-400'}`}>
+                                {formatTime(msg.created_at)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+
+                {/* Input */}
+                <div className="px-4 py-3 border-t border-charcoal-100 flex items-center gap-2 flex-shrink-0">
+                  <button className="p-2 text-charcoal-400 hover:text-charcoal-600 hover:bg-charcoal-50 rounded-lg transition-colors">
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="text"
+                    value={newMsg}
+                    onChange={e => setNewMsg(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    className="flex-1 px-4 py-2 bg-ivory-50 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all"
+                    placeholder="Votre réponse…"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMsg.trim() || sending}
+                    className="p-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-40 transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </PrestataireDashboardLayout>
+  );
+}

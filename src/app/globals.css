@@ -1,0 +1,250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Warm palette HSL variables for shadcn compatibility */
+    --background: 35 28% 97%;
+    --foreground: 22 16% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 22 16% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 22 16% 11%;
+    --primary: 18 54% 40%;
+    --primary-foreground: 35 30% 97%;
+    --secondary: 30 18% 92%;
+    --secondary-foreground: 22 16% 20%;
+    --muted: 30 12% 94%;
+    --muted-foreground: 22 10% 46%;
+    --accent: 38 46% 44%;
+    --accent-foreground: 35 30% 97%;
+    --destructive: 0 68% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 28 16% 86%;
+    --input: 28 16% 86%;
+    --ring: 18 54% 40%;
+    --radius: 0.375rem;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply text-charcoal-900 bg-ivory-50;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  }
+
+  /* Headings use Cormorant automatically */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+    font-feature-settings: 'liga' 1, 'kern' 1, 'dlig' 1;
+  }
+
+  /* Custom selection color */
+  ::selection {
+    background-color: rgba(166, 133, 64, 0.18);
+    color: #1C1814;
+  }
+
+  /* Refined focus ring */
+  *:focus-visible {
+    outline: 1.5px solid #A34E30;
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Refined glass — warmer, less frosted */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Photo overlays */
+  .overlay-warm {
+    background: linear-gradient(180deg, rgba(20,14,10,0) 0%, rgba(20,14,10,0.58) 100%);
+  }
+
+  .overlay-full {
+    background: linear-gradient(to bottom,
+      rgba(20,14,10,0.38) 0%,
+      rgba(20,14,10,0.16) 45%,
+      rgba(20,14,10,0.62) 100%);
+  }
+
+  .overlay-left {
+    background: linear-gradient(to right,
+      rgba(20,14,10,0.72) 0%,
+      rgba(20,14,10,0.32) 55%,
+      rgba(20,14,10,0) 100%);
+  }
+
+  /* Gradient backgrounds — flat, not gradient */
+  .gradient-champagne   { background-color: #F4EEE6; }
+  .bg-gradient-champagne{ background-color: #F4EEE6; }
+  .gradient-rose        { background-color: #FAF2EE; }
+  .bg-gradient-rose     { background-color: #FAF2EE; }
+
+  /* Still needed in some places */
+  .gradient-overlay {
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.46) 100%);
+  }
+
+  /* Editorial 12-column grid */
+  .editorial-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .editorial-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  /* Animated underline for inline links */
+  .link-underline {
+    position: relative;
+    text-decoration: none;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transition: right 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .link-underline:hover::after { right: 0; }
+
+  /* Caption / label uppercase */
+  .label-xs {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .label-sm {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+@layer components {
+
+  /* ──────────────────────────────
+     BUTTONS — architectural, minimal
+  ────────────────────────────── */
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           px-7 py-3
+           bg-rose-600 text-white
+           text-xs font-medium tracking-[0.08em] uppercase
+           transition-colors duration-300
+           hover:bg-rose-700
+           focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           px-7 py-3
+           bg-transparent text-charcoal-900
+           text-xs font-medium tracking-[0.08em] uppercase
+           border border-charcoal-300
+           transition-colors duration-300
+           hover:bg-charcoal-50 hover:border-charcoal-500
+           focus:outline-none focus:ring-2 focus:ring-charcoal-300 focus:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           px-5 py-2.5
+           text-charcoal-600
+           text-xs font-medium tracking-[0.06em]
+           transition-colors duration-200
+           hover:text-charcoal-900;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2
+           px-7 py-3
+           bg-champagne-500 text-white
+           text-xs font-medium tracking-[0.08em] uppercase
+           transition-colors duration-300
+           hover:bg-champagne-600
+           focus:outline-none;
+  }
+
+  /* ──────────────────────────────
+     INPUTS — refined, minimal
+  ────────────────────────────── */
+
+  .input-field {
+    @apply w-full px-4 py-3
+           bg-white border border-charcoal-200
+           text-charcoal-900 text-sm font-light
+           transition-colors duration-200
+           placeholder:text-charcoal-400
+           focus:outline-none focus:border-charcoal-500;
+    border-radius: 0;
+  }
+
+  /* Underline-only input — most editorial */
+  .input-underline {
+    @apply w-full px-0 py-3
+           bg-transparent border-0 border-b border-charcoal-200
+           text-charcoal-900 text-sm font-light
+           transition-colors duration-200
+           placeholder:text-charcoal-400
+           focus:outline-none focus:border-charcoal-800;
+    border-radius: 0;
+  }
+
+  /* ──────────────────────────────
+     CARDS
+  ────────────────────────────── */
+
+  .card-elevated {
+    @apply bg-white border border-charcoal-100
+           shadow-soft
+           hover:shadow-soft-lg
+           transition-shadow duration-300
+           overflow-hidden;
+  }
+
+  .card-simple {
+    @apply bg-white border border-charcoal-100 overflow-hidden;
+  }
+
+  /* ──────────────────────────────
+     PHOTO OVERLAY
+  ────────────────────────────── */
+
+  .overlay-gradient {
+    position: relative;
+  }
+  .overlay-gradient::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.52) 100%);
+    pointer-events: none;
+  }
+}
