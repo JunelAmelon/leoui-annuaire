@@ -146,16 +146,16 @@ export interface GalleryData {
 
 export async function getClientFullData(userId: string): Promise<ClientData | null> {
   try {
-    const profileDoc = await getDocument('profiles', userId);
-    if (profileDoc) {
-      return profileDoc as ClientData;
-    }
-
     const clients = await getDocuments('clients', [
       { field: 'uid', operator: '==', value: userId },
     ]);
     if (clients.length > 0) {
       return clients[0] as ClientData;
+    }
+
+    const profileDoc = await getDocument('profiles', userId);
+    if (profileDoc) {
+      return profileDoc as ClientData;
     }
     return null;
   } catch {

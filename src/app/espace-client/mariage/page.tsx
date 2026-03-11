@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, updateDocument } from '@/lib/db';
 import { getClientVendors, getClientPayments, getClientGallery } from '@/lib/client-helpers';
+import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Calendar, MapPin, Pencil, Users, Euro, ChevronRight, X, Camera } from 'lucide-react';
+
+const DEFAULT_PHOTO = 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=400';
 
 /* Circular SVG progress ring */
 function RingProgress({ value, max, label, sub, color = '#A34E30' }: { value: number; max: number; label: string; sub: string; color?: string }) {
@@ -46,6 +49,7 @@ export default function MariagePage() {
   const [infoForm, setInfoForm] = useState({ event_date: '', ceremony_time: '', venue: '', reception_venue: '', guest_count: '', budget: '' });
   const [themeForm, setThemeForm] = useState({ theme_style: '', theme_colors: '' });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoDirty, setPhotoDirty] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,34 +98,17 @@ export default function MariagePage() {
     ? `${client.name || ''}${client.name && client.partner ? ' & ' : ''}${client.partner || ''}`.trim() || 'Votre mariage'
     : 'Votre mariage';
 
-  const compressImage = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 400;
-          const ratio = Math.min(maxDim / img.width, maxDim / img.height, 1);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.width * ratio);
-          canvas.height = Math.round(img.height * ratio);
-          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
-        };
-        img.onerror = reject;
-        img.src = e.target!.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
   const handlePhotoSelect = async (file: File) => {
     setUploadingPhoto(true);
     try {
-      const dataUrl = await compressImage(file);
-      setPhotoPreview(dataUrl);
-    } catch { toast.error('Erreur de traitement de l\'image'); }
-    finally { setUploadingPhoto(false); }
+      const url = await uploadFile(file, 'profiles');
+      setPhotoPreview(url);
+      setPhotoDirty(true);
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de l\'upload de la photo');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const openInfoEdit = () => {
@@ -133,7 +120,8 @@ export default function MariagePage() {
       guest_count: guestCount > 0 ? String(guestCount) : '',
       budget: budget > 0 ? String(budget) : '',
     });
-    setPhotoPreview(client?.photo || null);
+    setPhotoPreview(client?.photo || DEFAULT_PHOTO);
+    setPhotoDirty(false);
     setShowInfoEdit(true);
   };
 
@@ -153,13 +141,26 @@ export default function MariagePage() {
       } else if (client?.id) {
         await updateDocument('clients', client.id, data);
       }
-      if (photoPreview && client?.id && photoPreview !== client?.photo) {
+      if (photoDirty && photoPreview && client?.id) {
         await updateDocument('clients', client.id, { photo: photoPreview });
       }
       await refresh();
       toast.success('Informations enregistrées');
       setShowInfoEdit(false);
-    } catch { toast.error('Erreur lors de l\'enregistrement'); }
+    } catch (err: any) {
+      console.error('[MariagePage handleSaveInfo] save error:', {
+        code: err?.code,
+        message: err?.message,
+        eventId: event?.id,
+        clientId: client?.id,
+        data: {
+          ...infoForm,
+          guest_count: Number(infoForm.guest_count) || 0,
+          budget: Number(infoForm.budget) || 0,
+        },
+      });
+      toast.error(err?.message || err?.code || 'Erreur lors de l\'enregistrement');
+    }
     finally { setSaving(false); }
   };
 
@@ -201,15 +202,7 @@ export default function MariagePage() {
         <div className="flex flex-col sm:flex-row gap-0">
           {/* Left: cover photo */}
           <div className="relative sm:w-40 h-36 sm:h-auto flex-shrink-0 overflow-hidden">
-            {client?.photo ? (
-              <img src={client.photo} alt={coupleName} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-champagne-200 via-rose-100 to-champagne-300 flex items-center justify-center">
-                <span className="font-serif text-4xl text-charcoal-400 font-light opacity-60">
-                  {coupleName.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
+            <img src={client?.photo || DEFAULT_PHOTO} alt={coupleName} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/60 to-transparent" />
             {/* Countdown badge */}
             {daysLeft !== null && (

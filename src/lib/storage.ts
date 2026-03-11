@@ -9,12 +9,18 @@ export const uploadFile = async (file: File, folder: string = 'uploads'): Promis
   formData.append('folder', folder);
   formData.append('resource_type', 'auto');
 
-  const res = await axios.post(
-    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
-    formData,
-    { timeout: CLOUDINARY_TIMEOUT_MS }
-  );
-  return res.data.secure_url;
+  try {
+    const res = await axios.post(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+      formData,
+      { timeout: CLOUDINARY_TIMEOUT_MS }
+    );
+    return res.data.secure_url;
+  } catch (e: any) {
+    const message = e?.response?.data?.error?.message || e?.message || 'Cloudinary upload failed';
+    console.error('[Cloudinary uploadFile]', message, e?.response?.data);
+    throw new Error(message);
+  }
 };
 
 export const uploadPdf = async (pdfBlob: Blob, filename: string): Promise<string> => {

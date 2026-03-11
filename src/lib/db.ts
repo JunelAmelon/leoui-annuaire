@@ -74,7 +74,15 @@ export async function updateDocument(
   data: Partial<DocumentData>
 ): Promise<void> {
   const docRef = doc(db, collectionName, id);
-  await updateDoc(docRef, data);
+  try {
+    await updateDoc(docRef, data);
+  } catch (err: any) {
+    if (err?.code === 'not-found') {
+      await setDoc(docRef, data as DocumentData, { merge: true });
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function deleteDocument(collectionName: string, id: string): Promise<void> {

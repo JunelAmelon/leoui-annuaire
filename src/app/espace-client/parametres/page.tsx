@@ -1,13 +1,16 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { updateDocument } from '@/lib/db';
 import { User, Lock, LogOut, Save, Camera } from 'lucide-react';
+import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+
+const DEFAULT_PHOTO = 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=400';
 
 export default function ParametresPage() {
   const { user, signOut } = useAuth();
@@ -21,42 +24,28 @@ export default function ParametresPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPwd, setChangingPwd] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(client?.photo || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(client?.photo || DEFAULT_PHOTO);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const compressImage = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 400;
-          const ratio = Math.min(maxDim / img.width, maxDim / img.height, 1);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.width * ratio);
-          canvas.height = Math.round(img.height * ratio);
-          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
-        };
-        img.onerror = reject;
-        img.src = e.target!.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  useEffect(() => {
+    if (client?.photo) setPhotoPreview(client.photo);
+    if (client?.name && !name) setName(client.name);
+    if (client?.partner && !partner) setPartner(client.partner);
+    if (client?.phone && !phone) setPhone(client.phone || '');
+  }, [client?.photo, client?.name, client?.partner, client?.phone]);
 
   const handlePhotoUpload = async (file: File) => {
     if (!client?.id) return;
     setUploadingPhoto(true);
     try {
-      const dataUrl = await compressImage(file);
-      await updateDocument('clients', client.id, { photo: dataUrl });
-      setPhotoPreview(dataUrl);
+      const url = await uploadFile(file, 'profiles');
+      await updateDocument('clients', client.id, { photo: url });
+      setPhotoPreview(url);
       await refresh();
       toast.success('Photo de profil mise à jour');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Photo upload error:', err);
-      toast.error('Erreur lors de la mise à jour de la photo');
+      toast.error(err?.message || 'Erreur lors de l\'upload de la photo');
     } finally {
       setUploadingPhoto(false);
     }
