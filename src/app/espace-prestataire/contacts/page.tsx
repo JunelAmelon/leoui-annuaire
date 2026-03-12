@@ -33,6 +33,7 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState('');
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,7 +119,7 @@ export default function ContactsPage() {
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: 480 }}>
         <div className="flex h-full">
           {/* Conversation list */}
-          <div className="w-72 border-r border-charcoal-100 flex flex-col flex-shrink-0">
+          <div className={`border-r border-charcoal-100 flex flex-col flex-shrink-0 ${showMobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-72`}>
             <div className="p-3 border-b border-charcoal-100">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
@@ -147,7 +148,7 @@ export default function ContactsPage() {
                 filtered.map(conv => (
                   <button
                     key={conv.id}
-                    onClick={() => setSelected(conv)}
+                    onClick={() => { setSelected(conv); setShowMobileChat(true); }}
                     className={`w-full text-left px-4 py-3.5 border-b border-charcoal-50 transition-colors hover:bg-charcoal-50 ${selected?.id === conv.id ? 'bg-rose-50 border-l-2 border-l-rose-400' : ''}`}
                   >
                     <div className="flex items-center gap-3">
@@ -173,7 +174,7 @@ export default function ContactsPage() {
           </div>
 
           {/* Chat area */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className={`flex-1 flex flex-col min-w-0 ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
             {!selected ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                 <Heart className="w-10 h-10 text-rose-200 mb-3" />
@@ -183,7 +184,10 @@ export default function ContactsPage() {
             ) : (
               <>
                 {/* Header */}
-                <div className="px-5 py-3.5 border-b border-charcoal-100 flex items-center gap-3 flex-shrink-0">
+                <div className="px-4 py-3.5 border-b border-charcoal-100 flex items-center gap-3 flex-shrink-0">
+                  <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-charcoal-50 transition-colors flex-shrink-0">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  </button>
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700">
                     {selected.client_name?.charAt(0) || 'C'}
                   </div>

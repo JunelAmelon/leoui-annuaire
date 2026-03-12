@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Delete, RefreshCw } from 'lucide-react';
+import { useClientData } from '@/contexts/ClientDataContext';
 
 /* ── Types ── */
 type CalcOp = '+' | '−' | '×' | '÷' | null;
@@ -18,6 +19,8 @@ const BUDGET_ITEMS = [
 ];
 
 export default function CalculatricePage() {
+  const { client, event } = useClientData();
+
   /* ── Calculator state ── */
   const [display, setDisplay] = useState('0');
   const [prevValue, setPrevValue] = useState<number | null>(null);
@@ -28,6 +31,14 @@ export default function CalculatricePage() {
   /* ── Budget estimator state ── */
   const [budget, setBudget] = useState('20000');
   const [guests, setGuests] = useState('100');
+
+  /* ── Pre-fill from DB when data loads ── */
+  useEffect(() => {
+    const dbBudget = event?.budget || (client as any)?.budget;
+    const dbGuests = event?.guest_count || (client as any)?.guest_count;
+    if (dbBudget && Number(dbBudget) > 0) setBudget(String(dbBudget));
+    if (dbGuests && Number(dbGuests) > 0) setGuests(String(dbGuests));
+  }, [event?.budget, event?.guest_count, (client as any)?.budget, (client as any)?.guest_count]);
   const [customPct, setCustomPct] = useState<Record<string, number>>({});
 
   /* ── Calculator logic ── */

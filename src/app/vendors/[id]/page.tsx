@@ -140,13 +140,13 @@ export default function VendorProfilePage() {
           <div className="flex-1 min-w-0">
 
             {/* Photo Gallery Grid */}
-            <div className="flex gap-2 h-[460px] rounded-2xl overflow-hidden">
+            <div className="flex gap-2 h-56 sm:h-80 lg:h-[460px] rounded-2xl overflow-hidden">
               {/* Main large photo */}
               <div className="flex-[1.7] relative overflow-hidden">
                 <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-700" />
               </div>
-              {/* 2×2 grid */}
-              <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-2 relative">
+              {/* 2×2 grid - hidden on mobile */}
+              <div className="hidden sm:grid flex-1 grid-cols-2 grid-rows-2 gap-2 relative">
                 <div className="overflow-hidden">
                   <img src={photos[1]} alt="Photo 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                 </div>
@@ -184,7 +184,7 @@ export default function VendorProfilePage() {
             </div>
 
             {/* Tabs */}
-            <div className="mt-6 border-b border-charcoal-200 overflow-x-auto">
+            <div className="mt-4 lg:mt-6 border-b border-charcoal-200 overflow-x-auto">
               <div className="flex gap-1 min-w-max">
                 {tabs.map(tab => (
                   <button
@@ -421,7 +421,7 @@ export default function VendorProfilePage() {
           </div>
 
           {/* RIGHT STICKY SIDEBAR */}
-          <div className="w-full lg:w-[310px] flex-shrink-0">
+          <div className="w-full lg:w-[310px] flex-shrink-0 order-first lg:order-last">
             <div className="sticky top-24">
               {/* Vendor name + rating */}
               <h1 className="font-display text-[1.6rem] leading-tight text-charcoal-900 mb-2">{vendor.name}</h1>
@@ -503,6 +503,19 @@ export default function VendorProfilePage() {
                 <Share2 className="w-4 h-4" />
                 Partager ce prestataire
               </button>
+
+              {/* Mobile CTA strip — visible only on small screens */}
+              <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-charcoal-100 px-4 py-3 flex gap-3 shadow-lg">
+                <button
+                  onClick={() => setShowContactModal(true)}
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                >
+                  Nous contacter
+                </button>
+                <button className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0">
+                  <Phone className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 

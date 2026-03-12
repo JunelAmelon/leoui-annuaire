@@ -168,7 +168,7 @@ export default function HomePage() {
       <section className="py-24 bg-ivory-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
-          <div className="flex items-end justify-between mb-14">
+          <div className="flex items-end justify-between mb-10">
             <div>
               <p className="label-xs text-champagne-600 mb-3 tracking-[0.12em]">— Sélection</p>
               <h2
@@ -190,7 +190,7 @@ export default function HomePage() {
           {/* Magazine list */}
           <div className="space-y-0 divide-y divide-charcoal-100">
             {VENDORS.map((v, i) => (
-              <Link key={v.id} href={`/vendors/${v.id}`} className="group flex items-center gap-6 lg:gap-10 py-7 hover:bg-white/60 transition-colors duration-200 px-2">
+              <Link key={v.id} href={`/vendors/${v.id}`} className="group flex items-center gap-4 lg:gap-10 py-6 lg:py-7 hover:bg-white/60 transition-colors duration-200 px-2">
                 {/* Index */}
                 <span
                   className="hidden sm:block font-serif text-charcoal-200 text-3xl flex-shrink-0 w-8 text-right"
@@ -220,7 +220,7 @@ export default function HomePage() {
                   </p>
                 </div>
                 {/* Rating + price */}
-                <div className="hidden lg:flex flex-col items-end gap-1 flex-shrink-0">
+                <div className="hidden md:flex flex-col items-end gap-1 flex-shrink-0">
                   <div className="flex items-center gap-1.5">
                     <Star className="w-3 h-3 text-champagne-500 fill-champagne-500" />
                     <span className="text-sm font-medium text-charcoal-900">{v.rating}</span>
@@ -257,7 +257,7 @@ export default function HomePage() {
 
           {/* Asymmetric: 1 tall left + 2 stacked right */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 lg:gap-4" style={{ height: 'auto' }}>
-            <Link href="/inspiration" className="group lg:col-span-3 relative overflow-hidden block" style={{ height: '540px' }}>
+            <Link href="/inspiration" className="group lg:col-span-3 relative overflow-hidden block" style={{ height: 'clamp(280px, 50vw, 540px)' }}>
               <img
                 src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=900"
                 alt="Mariage Champêtre en Provence"
@@ -273,7 +273,7 @@ export default function HomePage() {
             </Link>
 
             <div className="lg:col-span-2 flex flex-col gap-3 lg:gap-4">
-              <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: '260px' }}>
+              <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: 'clamp(200px, 25vw, 260px)' }}>
                 <img
                   src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=700"
                   alt="Élégance Parisienne"
@@ -285,7 +285,7 @@ export default function HomePage() {
                   <h3 className="font-serif text-white text-lg font-light">Élégance au château</h3>
                 </div>
               </Link>
-              <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: '260px' }}>
+              <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: 'clamp(200px, 25vw, 260px)' }}>
                 <img
                   src="https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=700"
                   alt="Romantisme bord de mer"
@@ -330,7 +330,7 @@ export default function HomePage() {
               { name: 'Provence',  count: 198, img: 'https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=500' },
               { name: 'Bordeaux',  count: 165, img: 'https://images.pexels.com/photos/1974596/pexels-photo-1974596.jpeg?auto=compress&cs=tinysrgb&w=500' },
             ].map((city) => (
-              <Link key={city.name} href={`/cities/${city.name.toLowerCase()}`} className="group block relative overflow-hidden" style={{ height: '280px' }}>
+              <Link key={city.name} href={`/cities/${city.name.toLowerCase()}`} className="group block relative overflow-hidden" style={{ height: 'clamp(180px, 25vw, 280px)' }}>
                 <img
                   src={city.img}
                   alt={city.name}

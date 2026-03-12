@@ -269,7 +269,7 @@ export default function FacturesPage() {
                   <input type="email" value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" placeholder="email@exemple.com" />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Type</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as 'invoice' | 'deposit' }))} className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400">
@@ -293,11 +293,11 @@ export default function FacturesPage() {
                   <button onClick={() => setForm(p => ({ ...p, items: [...p.items, { ...EMPTY_LINE }] }))} className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Ligne</button>
                 </div>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_60px_90px_36px] gap-2 text-xs text-charcoal-400 px-1">
+                  <div className="hidden sm:grid grid-cols-[1fr_60px_90px_36px] gap-2 text-xs text-charcoal-400 px-1">
                     <span>Description</span><span className="text-center">Qté</span><span className="text-right">P.U. (€)</span><span />
                   </div>
                   {form.items.map((item, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_60px_90px_36px] gap-2">
+                    <div key={i} className="grid grid-cols-[1fr_60px_90px_36px] sm:grid-cols-[1fr_60px_90px_36px] gap-2 max-sm:grid-cols-[1fr_36px]">
                       <input value={item.description} onChange={e => updateLine(i, 'description', e.target.value)} className="px-3 py-2 border border-charcoal-200 rounded-lg text-sm bg-stone-50 focus:outline-none focus:border-rose-400" placeholder="Description" />
                       <input type="number" value={item.qty} onChange={e => updateLine(i, 'qty', e.target.value)} min="1" className="px-2 py-2 border border-charcoal-200 rounded-lg text-sm bg-stone-50 focus:outline-none focus:border-rose-400 text-center" />
                       <input type="number" value={item.unit_price} onChange={e => updateLine(i, 'unit_price', e.target.value)} min="0" step="0.01" className="px-2 py-2 border border-charcoal-200 rounded-lg text-sm bg-stone-50 focus:outline-none focus:border-rose-400 text-right" />
@@ -309,7 +309,7 @@ export default function FacturesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-charcoal-700 mb-1.5">TVA (%)</label>
                   <select value={form.tva} onChange={e => setForm(p => ({ ...p, tva: Number(e.target.value) }))} className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400">

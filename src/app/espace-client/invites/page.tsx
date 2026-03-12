@@ -150,7 +150,7 @@ export default function InvitesPage() {
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-4 gap-px bg-charcoal-100 border border-charcoal-100">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-charcoal-100 border border-charcoal-100">
         {[
           { label: 'Total', value: stats.total, sub: 'invités' },
           { label: 'Confirmés', value: stats.confirmed, sub: `${stats.total > 0 ? Math.round(stats.confirmed / stats.total * 100) : 0}%` },
@@ -323,7 +323,7 @@ export default function InvitesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">RSVP</label>
                   <select value={form.rsvp} onChange={e => setForm(f => ({ ...f, rsvp: e.target.value as Guest['rsvp'] }))}

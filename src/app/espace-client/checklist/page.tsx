@@ -155,8 +155,8 @@ export default function ChecklistPage() {
       </div>
 
       {/* Add button */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 flex-wrap">
         {(['all', 'pending', 'done'] as const).map((f) => (
           <button
             key={f}

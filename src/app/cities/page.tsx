@@ -77,9 +77,17 @@ export default function CitiesPage() {
       <Header />
 
       {/* HERO — cinematic full-bleed with diagonal overlay + search */}
-      <section className="relative overflow-hidden" style={{ height: '88vh', minHeight: '560px' }}>
-        {/* Background mosaic: multiple images */}
-        <div className="absolute inset-0 grid grid-cols-3 grid-rows-1">
+      <section className="relative overflow-hidden" style={{ minHeight: '560px', height: 'clamp(560px, 88vh, 900px)' }}>
+        {/* Background: full image on mobile */}
+        <div className="absolute inset-0 sm:hidden">
+          <img
+            src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1200"
+            alt="Paris"
+            className="w-full h-full object-cover scale-105"
+          />
+        </div>
+        {/* Background mosaic: multiple images — sm+ only */}
+        <div className="absolute inset-0 hidden sm:grid grid-cols-3 grid-rows-1">
           <div className="col-span-2 relative overflow-hidden">
             <img
               src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1920"

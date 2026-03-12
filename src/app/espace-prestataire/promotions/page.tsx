@@ -109,7 +109,7 @@ export default function PromotionsPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: 'Total promos', val: promos.length },
             { label: 'Actives', val: activeCount },

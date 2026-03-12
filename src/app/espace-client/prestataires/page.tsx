@@ -183,7 +183,7 @@ export default function PrestatairesPage() {
   if (dataLoading || loading) return (
     <div className="space-y-5 animate-pulse">
       <div className="h-10 w-56 bg-white/60 rounded-xl" />
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[1,2,3,4].map(i => <div key={i} className="h-20 bg-white/60 rounded-2xl" />)}
       </div>
       <div className="flex gap-5">
@@ -297,7 +297,7 @@ export default function PrestatairesPage() {
         {/* RESULTS */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Toolbar */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-charcoal-500">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</p>
             <div className="flex items-center gap-2">
               <div className="flex bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm">

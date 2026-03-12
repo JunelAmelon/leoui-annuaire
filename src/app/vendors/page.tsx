@@ -115,7 +115,7 @@ export default function VendorsPage() {
             Choisir le bon prestataire est essentiel pour capturer l'essence de votre union. Explorez notre sélection et trouvez celui qui saura mettre en lumière votre amour unique.
           </p>
           {/* Search bar */}
-          <div className="flex gap-2 bg-white/10 backdrop-blur-sm rounded-2xl p-2 max-w-lg border border-white/10">
+          <div className="flex flex-col sm:flex-row gap-2 bg-white/10 backdrop-blur-sm rounded-2xl p-2 max-w-lg border border-white/10">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <input
@@ -134,7 +134,7 @@ export default function VendorsPage() {
                 className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all"
               />
             </div>
-            <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap">
+            <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
               Rechercher
             </button>
           </div>
@@ -259,7 +259,7 @@ export default function VendorsPage() {
           {/* MAIN RESULTS */}
           <main className="flex-1 min-w-0">
             {/* Results bar */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
               <p className="text-sm font-semibold text-charcoal-700 uppercase tracking-wide">
                 {vendorsLoading ? 'Chargement…' : `${filteredVendors.length.toLocaleString()} résultats`}
               </p>

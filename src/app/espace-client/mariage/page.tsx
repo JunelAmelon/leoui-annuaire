@@ -189,7 +189,7 @@ export default function MariagePage() {
   if (dataLoading) return (
     <div className="space-y-4 animate-pulse max-w-4xl mx-auto">
       <div className="h-40 bg-charcoal-100 rounded-2xl" />
-      <div className="grid grid-cols-4 gap-4">{[1,2,3,4].map(i => <div key={i} className="h-28 bg-charcoal-100 rounded-2xl" />)}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{[1,2,3,4].map(i => <div key={i} className="h-28 bg-charcoal-100 rounded-2xl" />)}</div>
       <div className="h-64 bg-charcoal-100 rounded-2xl" />
     </div>
   );
