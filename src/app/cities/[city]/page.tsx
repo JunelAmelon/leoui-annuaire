@@ -137,7 +137,7 @@ export default function CityPage({ params }: CityPageProps) {
 
           <div className="inline-flex items-center px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full text-white font-medium">
             <MapPin className="w-5 h-5 mr-2 text-rose-400" />
-            {loading ? '…' : vendors.length > 0 ? vendors.length : city.vendorCount} prestataires disponibles
+            {loading ? '…' : allVendors.length > 0 ? allVendors.length : city.vendorCount} prestataires disponibles
           </div>
         </div>
       </section>

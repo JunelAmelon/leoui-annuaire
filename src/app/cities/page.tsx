@@ -1,17 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ChatAssistant from '@/components/ChatAssistant';
 import { MapPin, ArrowRight, Search, X } from 'lucide-react';
+import { getDocuments } from '@/lib/db';
 
-export default function CitiesPage() {
-  const [citySearch, setCitySearch] = useState('');
-  const [activeRegion, setActiveRegion] = useState('Toutes');
-  const regionNames = ['Toutes', 'Île-de-France', 'Auvergne-Rhône-Alpes', 'Provence-Alpes-Côte d\'Azur', 'Nouvelle-Aquitaine', 'Occitanie', 'Bretagne'];
-  const regions = [
+const REGION_NAMES = ['Toutes', 'Île-de-France', 'Auvergne-Rhône-Alpes', 'Provence-Alpes-Côte d\'Azur', 'Nouvelle-Aquitaine', 'Occitanie', 'Bretagne'];
+const REGIONS = [
     {
       name: 'Île-de-France',
       cities: [
@@ -61,10 +59,30 @@ export default function CitiesPage() {
         { name: 'Vannes', count: 54, imageUrl: 'https://images.pexels.com/photos/2422264/pexels-photo-2422264.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
-  ];
+];
 
-  const allCities = regions.flatMap(r => r.cities.map(c => ({ ...c, region: r.name })));
-  const filteredRegions = regions
+export default function CitiesPage() {
+  const [citySearch, setCitySearch] = useState('');
+  const [activeRegion, setActiveRegion] = useState('Toutes');
+  const [vendorCounts, setVendorCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    getDocuments('vendors', []).then(docs => {
+      const counts: Record<string, number> = {};
+      (docs as any[]).forEach(d => {
+        const loc = (d.location || '').toLowerCase();
+        REGIONS.forEach(r => r.cities.forEach(c => {
+          if (loc.includes(c.name.toLowerCase())) {
+            counts[c.name] = (counts[c.name] || 0) + 1;
+          }
+        }));
+      });
+      setVendorCounts(counts);
+    }).catch(() => {});
+  }, []);
+
+  const allCities = REGIONS.flatMap(r => r.cities.map(c => ({ ...c, region: r.name })));
+  const filteredRegions = REGIONS
     .filter(r => activeRegion === 'Toutes' || r.name === activeRegion)
     .map(r => ({
       ...r,
@@ -181,7 +199,7 @@ export default function CitiesPage() {
       {/* Region filter pills */}
       <div className="bg-white border-b border-charcoal-100 shadow-sm sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2 overflow-x-auto">
-          {regionNames.map(r => (
+          {REGION_NAMES.map(r => (
             <button
               key={r}
               onClick={() => setActiveRegion(r)}
@@ -242,7 +260,7 @@ export default function CitiesPage() {
                           <div className="flex items-center justify-between">
                             <p className="text-white/80 text-sm flex items-center gap-1.5">
                               <MapPin className="w-4 h-4 text-rose-400" />
-                              {city.count} prestataires
+                              {vendorCounts[city.name] ?? 0} prestataires
                             </p>
                             <div className="w-9 h-9 bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-rose-600 transition-colors">
                               <ArrowRight className="w-4 h-4 text-white" />

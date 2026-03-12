@@ -31,7 +31,7 @@ export default function VendorsPage() {
   const [hasAward, setHasAward] = useState(false);
   const [sortBy, setSortBy] = useState('recommandés');
   const [searchQuery, setSearchQuery] = useState('');
-  const [allVendors, setAllVendors] = useState(STATIC_VENDORS);
+  const [allVendors, setAllVendors] = useState<any[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
@@ -49,28 +49,17 @@ export default function VendorsPage() {
     setServiceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
   useEffect(() => {
-    Promise.all([
-      getDocuments('vendors', []),
-      getDocuments('cities', [{ field: 'active', operator: '==', value: true }]),
-    ]).then(([docs, cityDocs]) => {
-      const mapped = (docs as any[]).map((d: any) => ({
-        id: d.id,
-        name: d.name || '',
-        category: d.category || 'Autres',
-        location: d.location || '',
-        rating: d.rating || 0,
-        reviewCount: d.reviewCount || 0,
-        imageUrl: d.images?.[0] || d.imageUrl || d.photo || '',
-        startingPrice: d.startingPrice || '',
-        featured: d.featured || false,
-        hasPromo: d.hasPromo || false,
-        description: d.description || '',
-        responseTime: d.responseTime || '48h',
-      }));
-      if (mapped.length > 0) setAllVendors(mapped);
-      const dbCities = (cityDocs as any[]).map(c => c.name).sort();
-      if (dbCities.length > 0) setCities(dbCities);
-    }).catch(() => {}).finally(() => setVendorsLoading(false));
+    fetch('/api/public/vendors')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        const vendors = Array.isArray(json.vendors) ? json.vendors : [];
+        const cities = Array.isArray(json.cities) ? json.cities : [];
+        setAllVendors(vendors.length > 0 ? vendors : STATIC_VENDORS);
+        if (cities.length > 0) setCities(cities);
+      })
+      .catch(() => setAllVendors(STATIC_VENDORS))
+      .finally(() => setVendorsLoading(false));
   }, []);
 
   const categories = ['Tous', 'Photographes', 'Vidéastes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception'];

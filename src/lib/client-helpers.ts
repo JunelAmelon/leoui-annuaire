@@ -260,19 +260,30 @@ export async function getClientVendors(clientId: string, eventId?: string): Prom
       : [{ field: 'client_id', operator: '==', value: clientId }];
 
     const assignments = await getDocuments('client_vendors', filters);
-    const vendorIds = assignments.map((a: any) => a.vendor_id).filter(Boolean);
-
-    const vendors = await Promise.all(
-      vendorIds.map((id: string) => getDocument('vendors', id))
-    );
-
-    return vendors
-      .filter(Boolean)
-      .map((v: any, i: number) => ({
+    if (assignments.length > 0) {
+      const vendorIds = assignments.map((a: any) => a.vendor_id).filter(Boolean);
+      const vendors = await Promise.all(vendorIds.map((id: string) => getDocument('vendors', id)));
+      return vendors.filter(Boolean).map((v: any, i: number) => ({
         ...v,
+        photo: (v as any)?.images?.[0] || (v as any)?.photo || (v as any)?.imageUrl || '',
         status: (assignments[i] as any)?.status || 'confirmed',
         next_appointment: (assignments[i] as any)?.next_appointment || null,
       })) as VendorData[];
+    }
+
+    // Fall back to collaborations (new system)
+    const collabs = await getDocuments('collaborations', [
+      { field: 'client_id', operator: '==', value: clientId },
+    ]);
+    if (collabs.length === 0) return [];
+    const collabVendorIds = (collabs as any[]).map(c => c.vendor_id).filter(Boolean);
+    const collabVendors = await Promise.all(collabVendorIds.map((id: string) => getDocument('vendors', id)));
+    return collabVendors.filter(Boolean).map((v: any, i: number) => ({
+      ...v,
+      photo: (v as any)?.images?.[0] || (v as any)?.photo || (v as any)?.imageUrl || '',
+      status: 'active',
+      email: (v as any)?.email || (collabs[i] as any)?.vendor_email || '',
+    })) as VendorData[];
   } catch {
     return [];
   }

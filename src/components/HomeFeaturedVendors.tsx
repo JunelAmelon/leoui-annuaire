@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getDocuments } from '@/lib/db';
 import { Star, MapPin, ArrowRight } from 'lucide-react';
 
 interface Vendor {
@@ -25,35 +24,54 @@ const STATIC_FALLBACK = [
 ];
 
 export default function HomeFeaturedVendors() {
-  const [vendors, setVendors] = useState<Vendor[]>(STATIC_FALLBACK);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDocuments('vendors', [])
-      .then(docs => {
-        if (docs.length > 0) {
-          // Sort by rating desc, take top 4
-          const sorted = (docs as any[])
-            .filter(d => d.name && d.status !== 'inactive')
-            .sort((a, b) => ((b.rating || 0) - (a.rating || 0)))
-            .slice(0, 4)
-            .map(d => ({
-              id: d.id,
-              name: d.name,
-              category: d.category || '',
-              location: (d.location || '').split(',')[0].trim(),
-              rating: d.rating || 0,
-              reviewCount: d.reviewCount || 0,
-              images: d.images || [],
-              imageUrl: d.images?.[0] || d.imageUrl || '',
-              startingPrice: d.startingPrice ? `À partir de ${d.startingPrice}` : '',
-            }));
-          if (sorted.length > 0) setVendors(sorted);
-        }
+    fetch('/api/public/vendors')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        const docs = Array.isArray(json.vendors) ? json.vendors : [];
+        const mapped = (docs as any[])
+          .filter(d => d.name && d.status !== 'inactive')
+          .sort((a, b) => ((b.rating || 0) - (a.rating || 0)))
+          .slice(0, 4)
+          .map(d => ({
+            id: d.id,
+            name: d.name,
+            category: d.category || '',
+            location: (d.location || '').split(',')[0].trim(),
+            rating: d.rating || 0,
+            reviewCount: d.reviewCount || 0,
+            images: d.images || [],
+            imageUrl: d.images?.[0] || d.imageUrl || '',
+            startingPrice: d.startingPrice ? `À partir de ${d.startingPrice}` : '',
+          }));
+        setVendors(mapped.length > 0 ? mapped : STATIC_FALLBACK);
       })
-      .catch(() => {})
+      .catch(() => setVendors(STATIC_FALLBACK))
       .finally(() => setLoading(false));
   }, []);
+
+  if (loading) return (
+    <div className="space-y-0 divide-y divide-charcoal-100">
+      {[1,2,3,4].map(i => (
+        <div key={i} className="flex items-center gap-4 lg:gap-10 py-6 lg:py-7 px-2 animate-pulse">
+          <span className="hidden sm:block w-8 h-6 bg-charcoal-100 rounded" />
+          <div className="w-20 h-20 lg:w-28 lg:h-20 bg-charcoal-100 flex-shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-20 bg-charcoal-100 rounded" />
+            <div className="h-5 w-48 bg-charcoal-100 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (vendors.length === 0) return (
+    <div className="py-12 text-center text-charcoal-400 text-sm">Aucun prestataire disponible pour le moment.</div>
+  );
 
   return (
     <div className="space-y-0 divide-y divide-charcoal-100">

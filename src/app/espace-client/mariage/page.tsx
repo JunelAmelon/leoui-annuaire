@@ -40,7 +40,9 @@ export default function MariagePage() {
   const { client, event, loading: dataLoading, refresh } = useClientData();
   const [taskStats, setTaskStats] = useState({ total: 0, done: 0, confirmed: 0 });
   const [guestStats, setGuestStats] = useState({ total: 0, confirmed: 0, placed: 0 });
+  const [recentGuests, setRecentGuests] = useState<any[]>([]);
   const [teamVendors, setTeamVendors] = useState<any[]>([]);
+  const [teamFilter, setTeamFilter] = useState('Tous');
   const [totalPaid, setTotalPaid] = useState(0);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [showInfoEdit, setShowInfoEdit] = useState(false);
@@ -67,6 +69,7 @@ export default function MariagePage() {
       .then(items => {
         const all = items as any[];
         setGuestStats({ total: all.length, confirmed: all.filter(g => g.rsvp === 'confirmed').length, placed: all.filter(g => g.table).length });
+        setRecentGuests(all.slice(0, 5));
       }).catch(() => {});
     if (client?.id) {
       getClientVendors(client.id, event?.id).then(vs => setTeamVendors(vs)).catch(() => {});
@@ -260,11 +263,14 @@ export default function MariagePage() {
               <span className="bg-rose-600 text-white text-[0.65rem] font-bold px-2 py-0.5 rounded">Étape suivante</span>
               <h2 className="font-semibold text-charcoal-900 text-sm">Montez votre équipe pro</h2>
             </div>
-            <select className="border border-charcoal-200 rounded-lg px-3 py-1.5 text-xs text-charcoal-700 bg-white outline-none">
-              <option>Photo</option>
-              <option>DJ</option>
-              <option>Traiteur</option>
-              <option>Fleuriste</option>
+            <select
+              value={teamFilter}
+              onChange={e => setTeamFilter(e.target.value)}
+              className="border border-charcoal-200 rounded-lg px-3 py-1.5 text-xs text-charcoal-700 bg-white outline-none">
+              <option value="Tous">Tous</option>
+              {[...new Set(teamVendors.map(v => v.category).filter(Boolean))].map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
           </div>
           <div className="px-5 py-3">
@@ -272,11 +278,12 @@ export default function MariagePage() {
             {teamVendors.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-10 h-10 text-charcoal-200 mx-auto mb-2" />
-                <p className="text-sm text-charcoal-400">Aucun prestataire réservé pour l’instant</p>
+                <p className="text-sm text-charcoal-400">Aucun prestataire lié pour l'instant</p>
+                <Link href="/espace-client/prestataires" className="mt-2 inline-block text-xs text-rose-600 hover:underline">Parcourir les prestataires →</Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {teamVendors.slice(0, 3).map(v => {
+                {teamVendors.filter(v => teamFilter === 'Tous' || v.category === teamFilter).map(v => {
                   const initials = v.name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
                   return (
                     <div key={v.id} className="group block rounded-xl border border-charcoal-100 overflow-hidden hover:border-rose-200 transition-all">
@@ -319,11 +326,26 @@ export default function MariagePage() {
                 <p className="text-xs text-charcoal-500">Organisez vos invités.</p>
               </div>
             </div>
-            <div className="flex justify-center py-4">
-              <Users className="w-12 h-12 text-charcoal-200" />
-            </div>
+              {recentGuests.length === 0 ? (
+              <div className="flex justify-center py-4">
+                <Users className="w-12 h-12 text-charcoal-200" />
+              </div>
+            ) : (
+              <div className="space-y-1.5 mb-3">
+                {recentGuests.map(g => (
+                  <div key={g.id} className="flex items-center justify-between text-xs">
+                    <span className="text-charcoal-800 font-medium truncate">{g.first_name} {g.last_name}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[0.6rem] font-semibold flex-shrink-0 ml-2 ${
+                      g.rsvp === 'confirmed' ? 'bg-green-100 text-green-700' :
+                      g.rsvp === 'declined' ? 'bg-red-100 text-red-600' : 'bg-champagne-100 text-champagne-700'
+                    }`}>{g.rsvp === 'confirmed' ? 'Confirmé' : g.rsvp === 'declined' ? 'Décliné' : 'En attente'}</span>
+                  </div>
+                ))}
+                {guestStats.total > 5 && <p className="text-[0.65rem] text-charcoal-400 text-right">+{guestStats.total - 5} autres</p>}
+              </div>
+            )}
             <Link href="/espace-client/invites" className="w-full flex items-center justify-center py-2.5 border-2 border-rose-500 text-rose-600 hover:bg-rose-50 text-sm font-semibold rounded-xl transition-colors">
-              Ajouter un invité
+              {recentGuests.length === 0 ? 'Ajouter un invité' : 'Gérer les invités'}
             </Link>
           </div>
 
@@ -351,12 +373,18 @@ export default function MariagePage() {
       </div>
 
       {/* ── LIEU DE MARIAGE ── */}
-      {venue && (
-        <div id="lieu" className="bg-white rounded-2xl border border-charcoal-100 shadow-soft overflow-hidden">
-          <div className="px-5 py-4 border-b border-charcoal-100">
+      <div id="lieu" className="bg-white rounded-2xl border border-charcoal-100 shadow-soft overflow-hidden">
+        <div className="px-5 py-4 border-b border-charcoal-100 flex items-center justify-between">
+          <div>
             <h2 className="font-semibold text-charcoal-900 text-sm">Votre lieu de mariage</h2>
-            <p className="text-xs text-rose-600 mt-0.5">Félicitations pour ce choix !</p>
+            {venue ? <p className="text-xs text-rose-600 mt-0.5">Félicitations pour ce choix !</p>
+              : <p className="text-xs text-charcoal-400 mt-0.5">Aucun lieu sélectionné</p>}
           </div>
+          <button onClick={openInfoEdit} className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
+            <Pencil className="w-3 h-3" /> {venue ? 'Modifier' : 'Ajouter'}
+          </button>
+        </div>
+        {venue ? (
           <div className="flex items-center gap-4 p-5">
             <div className="w-20 h-16 rounded-xl overflow-hidden flex-shrink-0">
               <img src="https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=400" alt={venue} className="w-full h-full object-cover" />
@@ -367,8 +395,16 @@ export default function MariagePage() {
               <Link href="/espace-client/prestataires" className="text-xs text-rose-600 hover:underline mt-1 block">Contacter l'établissement →</Link>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="px-5 py-6 text-center">
+            <MapPin className="w-8 h-8 text-charcoal-200 mx-auto mb-2" />
+            <p className="text-xs text-charcoal-400 mb-3">Ajoutez votre lieu pour le voir apparaître ici</p>
+            <button onClick={openInfoEdit} className="text-xs text-white bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-xl font-medium transition-colors">
+              Choisir un lieu
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ── INFORMATIONS + THÈME ── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">

@@ -15,6 +15,8 @@ interface Client {
   event_date?: string;
   planner_id?: string;
   status?: string;
+  photoURL?: string;
+  photo?: string;
   created_at?: any;
 }
 
@@ -135,9 +137,13 @@ export default function AdminClientsPage() {
                     {String((page - 1) * ITEMS_PER_PAGE + i + 1).padStart(2, '0')}
                   </span>
                   {/* Avatar */}
+                  {(client.photoURL || client.photo) ? (
+                    <img src={client.photoURL || client.photo} alt={client.name} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
+                  ) : (
                   <div className="w-9 h-9 rounded-xl bg-champagne-100 border border-champagne-200 flex items-center justify-center flex-shrink-0 group-hover:border-champagne-400 transition-colors">
                     <span className="font-serif text-champagne-700 text-sm font-medium">{initials}</span>
                   </div>
+                  )}
                   {/* Name + email */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-charcoal-900 group-hover:text-rose-700 transition-colors truncate">

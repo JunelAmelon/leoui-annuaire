@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import VendorProfileDetailView from '@/components/VendorProfileDetailView';
-import { getDocument, getDocuments, addDocument, incrementDocumentFields, updateDocument } from '@/lib/db';
+import { getDocument, getDocuments, addDocument, incrementDocumentFields, updateDocument, deleteDocument } from '@/lib/db';
 import { toast } from 'sonner';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, UserCheck, UserPlus } from 'lucide-react';
 
 export default function ClientVendorProfilePage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -17,9 +17,12 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
 
   const [loading, setLoading] = useState(true);
   const [vendor, setVendor] = useState<any>(null);
+  const [resolvedVendorId, setResolvedVendorId] = useState<string>('');
   const [reviews, setReviews] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [similarVendors, setSimilarVendors] = useState<any[]>([]);
+  const [collab, setCollab] = useState<any>(null);
+  const [collabLoading, setCollabLoading] = useState(false);
 
   const coupleName = client
     ? (client.name || '') + (client.name && client.partner ? ' & ' : '') + (client.partner || '')
@@ -30,11 +33,28 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
     const load = async () => {
       setLoading(true);
       try {
-        const [vendorData, reviewsData, promoData] = await Promise.all([
-          getDocument('vendors', id),
-          getDocuments('reviews', [{ field: 'vendor_id', operator: '==', value: id }]),
+        let vendorData = await getDocument('vendors', id);
+        if (!vendorData) {
+          const [byUid, byLegacyId] = await Promise.all([
+            getDocuments('vendors', [{ field: 'uid', operator: '==', value: id }]),
+            getDocuments('vendors', [{ field: 'id', operator: '==', value: id }]),
+          ]);
+          vendorData = (byUid?.[0] as any) || (byLegacyId?.[0] as any) || null;
+        }
+
+        if (!vendorData) {
+          setVendor(null);
+          setResolvedVendorId('');
+          return;
+        }
+
+        const vendorId = (vendorData as any).id;
+        setResolvedVendorId(vendorId);
+
+        const [reviewsData, promoData] = await Promise.all([
+          getDocuments('reviews', [{ field: 'vendor_id', operator: '==', value: vendorId }]),
           getDocuments('promotions', [
-            { field: 'vendor_id', operator: '==', value: id },
+            { field: 'vendor_id', operator: '==', value: vendorId },
             { field: 'status', operator: '==', value: 'active' },
           ]),
         ]);
@@ -45,18 +65,52 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
           const sim = await getDocuments('vendors', [
             { field: 'category', operator: '==', value: (vendorData as any).category },
           ]);
-          setSimilarVendors((sim as any[]).filter(v => v.id !== id).slice(0, 3));
+          setSimilarVendors((sim as any[]).filter(v => v.id !== vendorId).slice(0, 3));
         }
-        incrementDocumentFields('vendors', id, { viewCount: 1 }).catch(() => {});
-        updateDocument('vendors', id, { lastViewedAt: new Date().toISOString() }).catch(() => {});
+        incrementDocumentFields('vendors', vendorId, { viewCount: 1 }).catch(() => {});
+        updateDocument('vendors', vendorId, { lastViewedAt: new Date().toISOString() }).catch(() => {});
+        if (client?.id) {
+          const collabs = await getDocuments('collaborations', [
+            { field: 'client_id', operator: '==', value: client.id },
+            { field: 'vendor_id', operator: '==', value: vendorId },
+          ]);
+          setCollab(collabs[0] || null);
+        }
       } catch {
         setVendor(null);
+        setResolvedVendorId('');
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [id]);
+  }, [id, client?.id]);
+
+  const handleToggleCollab = async () => {
+    if (!client?.id || !vendor) return;
+    const vendorId = resolvedVendorId || vendor?.uid || vendor?.id;
+    setCollabLoading(true);
+    try {
+      if (collab) {
+        await deleteDocument('collaborations', collab.id);
+        setCollab(null);
+        toast.success('Prestataire retiré de votre liste');
+      } else {
+        const ref = await addDocument('collaborations', {
+          client_id: client.id,
+          client_name: coupleName,
+          client_email: user?.email || '',
+          vendor_id: vendorId,
+          vendor_name: vendor.name,
+          vendor_email: vendor.email || '',
+          status: 'active',
+          created_at: new Date().toISOString(),
+        });
+        setCollab({ id: ref.id, client_id: client.id, vendor_id: vendorId });
+        toast.success(`${vendor.name} ajouté à vos prestataires`);
+      }
+    } catch { toast.error('Erreur'); } finally { setCollabLoading(false); }
+  };
 
   const handleContact = async (form: { name: string; email: string; phone: string; message: string }) => {
     if (!user) { router.push('/login'); return; }
@@ -119,18 +173,35 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   );
 
   return (
-    <VendorProfileDetailView
-      vendorId={id}
-      vendor={vendor}
-      reviews={reviews}
-      promotions={promotions}
-      similarVendors={similarVendors}
-      homeHref="/espace-client"
-      vendorsIndexHref="/espace-client/prestataires"
-      similarHrefBase="/espace-client/prestataires"
-      onSubmitContact={handleContact}
-      contactSubmitDisabled={(form) => !form.message.trim()}
-      contactIntroText="Votre message sera envoye directement via la messagerie LeOui."
-    />
+    <div>
+      {/* Collaboration action banner */}
+      <div className="flex items-center justify-end mb-4">
+        <button
+          onClick={handleToggleCollab}
+          disabled={collabLoading}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+            collab
+              ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+              : 'bg-rose-600 text-white hover:bg-rose-700'
+          } disabled:opacity-50`}
+        >
+          {collab ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+          {collabLoading ? '…' : collab ? 'Prestataire lié ✓' : 'Ajouter à mes prestataires'}
+        </button>
+      </div>
+      <VendorProfileDetailView
+        vendorId={id}
+        vendor={vendor}
+        reviews={reviews}
+        promotions={promotions}
+        similarVendors={similarVendors}
+        homeHref="/espace-client"
+        vendorsIndexHref="/espace-client/prestataires"
+        similarHrefBase="/espace-client/prestataires"
+        onSubmitContact={handleContact}
+        contactSubmitDisabled={(form) => !form.message.trim()}
+        contactIntroText="Votre message sera envoye directement via la messagerie LeOui."
+      />
+    </div>
   );
 }

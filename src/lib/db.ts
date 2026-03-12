@@ -27,7 +27,7 @@ export async function getDocument(collectionName: string, id: string): Promise<D
   const docRef = doc(db, collectionName, id);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return null;
-  return { id: docSnap.id, ...docSnap.data() };
+  return { ...docSnap.data(), id: docSnap.id };
 }
 
 export async function getDocuments(
@@ -42,13 +42,13 @@ export async function getDocuments(
       const docRef = doc(db, collectionName, filter.value as string);
       const snap = await getDoc(docRef);
       if (!snap.exists()) return [];
-      return [{ id: snap.id, ...snap.data() }];
+      return [{ ...snap.data(), id: snap.id }];
     }
     q = query(q, where(filter.field, filter.operator, filter.value));
   }
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
 }
 
 export async function addDocument(

@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ChatAssistant from '@/components/ChatAssistant';
 import VendorProfileDetailView from '@/components/VendorProfileDetailView';
-import { getDocument, getDocuments, incrementDocumentFields, updateDocument, addDocument } from '@/lib/db';
+import { toast } from 'sonner';
 
 export default function VendorProfilePage() {
   const params = useParams();
@@ -15,6 +15,7 @@ export default function VendorProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [vendor, setVendor] = useState<any>(null);
+  const [resolvedVendorId, setResolvedVendorId] = useState<string>('');
   const [reviews, setReviews] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [similarVendors, setSimilarVendors] = useState<any[]>([]);
@@ -24,27 +25,23 @@ export default function VendorProfilePage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [vendorData, reviewsData, promoData] = await Promise.all([
-          getDocument('vendors', id),
-          getDocuments('reviews', [{ field: 'vendor_id', operator: '==', value: id }]),
-          getDocuments('promotions', [
-            { field: 'vendor_id', operator: '==', value: id },
-            { field: 'status', operator: '==', value: 'active' },
-          ]),
-        ]);
+        const res = await fetch(`/api/public/vendors/${encodeURIComponent(id)}`);
+        const json = await res.json();
+        if (!res.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+
+        const vendorData = json?.vendor || null;
         setVendor(vendorData);
-        setReviews(reviewsData as any[]);
-        setPromotions(promoData as any[]);
-        if (vendorData?.category) {
-          const sim = await getDocuments('vendors', [
-            { field: 'category', operator: '==', value: vendorData.category },
-          ]);
-          setSimilarVendors((sim as any[]).filter(v => v.id !== id).slice(0, 3));
-        }
-        incrementDocumentFields('vendors', id, { viewCount: 1 }).catch(() => {});
-        updateDocument('vendors', id, { lastViewedAt: new Date().toISOString() }).catch(() => {});
+        setResolvedVendorId(vendorData?.id || '');
+        setReviews(Array.isArray(json?.reviews) ? json.reviews : []);
+        setPromotions(Array.isArray(json?.promotions) ? json.promotions : []);
+        setSimilarVendors(Array.isArray(json?.similarVendors) ? json.similarVendors : []);
       } catch (e) {
         console.error('Failed to load vendor:', e);
+        setResolvedVendorId('');
+        setVendor(null);
+        setReviews([]);
+        setPromotions([]);
+        setSimilarVendors([]);
       } finally {
         setLoading(false);
       }
@@ -74,22 +71,31 @@ export default function VendorProfilePage() {
   );
 
   const handleContact = async (form: { name: string; email: string; phone: string; message: string }) => {
-    await addDocument('conversations', {
-      vendor_id: id,
-      client_name: form.name,
-      client_email: form.email,
-      client_phone: form.phone,
-      message: form.message,
-      created_at: new Date().toISOString(),
-      status: 'new',
-    });
+    try {
+      const res = await fetch('/api/public/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vendor_id: resolvedVendorId || id,
+          client_name: form.name,
+          client_email: form.email,
+          client_phone: form.phone,
+          message: form.message,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+      toast.success('Message envoyé');
+    } catch {
+      toast.error('Impossible d\'envoyer le message');
+    }
   };
 
   return (
     <div className="min-h-screen bg-ivory-50">
       <Header />
       <VendorProfileDetailView
-        vendorId={id}
+        vendorId={resolvedVendorId || id}
         vendor={vendor}
         reviews={reviews}
         promotions={promotions}

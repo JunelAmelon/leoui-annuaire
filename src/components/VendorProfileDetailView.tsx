@@ -103,7 +103,7 @@ export default function VendorProfileDetailView({
     <>
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-2">
-        <div className="flex items-center gap-2 text-body-sm text-charcoal-500">
+        <div className="flex flex-wrap items-center gap-1.5 text-body-sm text-charcoal-500">
           <Link href={homeHref} className="hover:text-rose-600 transition-colors">Accueil</Link>
           <span>/</span>
           <Link href={vendorsIndexHref} className="hover:text-rose-600 transition-colors">Prestataires</Link>
@@ -182,7 +182,7 @@ export default function VendorProfileDetailView({
             </div>
 
             {/* Tab content */}
-            <div className="mt-6 pb-16">
+            <div className="mt-6 pb-28 lg:pb-16">
               {activeTab === 'informations' && (
                 <div>
                   {vendor.updatedAt && (
@@ -308,7 +308,7 @@ export default function VendorProfileDetailView({
 
               {activeTab === 'avis' && (
                 <div>
-                  <div className="flex items-center gap-6 p-6 bg-white rounded-2xl border border-charcoal-200 mb-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-5 sm:p-6 bg-white rounded-2xl border border-charcoal-200 mb-6">
                     <div className="text-center">
                       <p className="font-display text-[3.5rem] leading-none text-charcoal-900">{avgRating.toFixed(1)}</p>
                       <div className="flex gap-0.5 justify-center mt-1">
@@ -360,7 +360,7 @@ export default function VendorProfileDetailView({
                             .toUpperCase();
                           return (
                             <article key={i} className="bg-white rounded-2xl border border-charcoal-100 p-6">
-                              <div className="flex items-start justify-between mb-3">
+                              <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center text-rose-700 font-semibold text-sm">
                                     {initials}
@@ -377,7 +377,7 @@ export default function VendorProfileDetailView({
                                     </p>
                                   </div>
                                 </div>
-                                <div className="flex gap-0.5">
+                                <div className="flex gap-0.5 flex-shrink-0">
                                   {[...Array(5)].map((_, j) => (
                                     <Star
                                       key={j}
@@ -402,7 +402,7 @@ export default function VendorProfileDetailView({
               )}
 
               {activeTab === 'reportages' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   {reportages.map((r, i) => (
                     <article key={i} className="group relative rounded-2xl overflow-hidden cursor-pointer bg-charcoal-900">
                       {r.videoUrl ? (
@@ -413,11 +413,12 @@ export default function VendorProfileDetailView({
                             controls
                             playsInline
                             preload="metadata"
-                            className="w-full h-60 object-cover"
+                            className="w-full h-48 sm:h-60 object-cover"
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                         </div>
                       ) : (
-                        <div className="h-60">
+                        <div className="h-48 sm:h-60">
                           <img
                             src={r.imageUrl}
                             alt={r.title}
@@ -426,9 +427,9 @@ export default function VendorProfileDetailView({
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                         </div>
                       )}
-                      <div className="absolute bottom-0 p-5 pointer-events-none">
-                        <p className="text-xs text-white/70 mb-1">{r.date}</p>
-                        <h3 className="font-serif text-white text-base">{r.title}</h3>
+                      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 pointer-events-none">
+                        {r.date && <p className="text-xs text-white/70 mb-1">{r.date}</p>}
+                        <h3 className="font-serif text-white text-sm sm:text-base leading-snug">{r.title}</h3>
                       </div>
                     </article>
                   ))}
@@ -630,7 +631,7 @@ export default function VendorProfileDetailView({
       {similarVendors.length > 0 && (
         <section className="py-16 px-4 sm:px-6 bg-white">
           <div className="max-w-7xl mx-auto">
-            <h2 className="font-display text-display-sm text-charcoal-900 mb-8">Prestataires similaires</h2>
+            <h2 className="font-display text-xl sm:text-display-sm text-charcoal-900 mb-6 sm:mb-8">Prestataires similaires</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {similarVendors.map((v: any) => (
                 <VendorCard
@@ -653,9 +654,9 @@ export default function VendorProfileDetailView({
 
       {/* CONTACT MODAL */}
       {showContactModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] w-full max-w-lg overflow-hidden animate-scale-in">
-            <div className="p-7">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] w-full max-w-lg max-h-[92dvh] overflow-y-auto animate-scale-in">
+            <div className="p-5 sm:p-7">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs font-semibold text-charcoal-500 uppercase tracking-widest mb-1">{vendor.name}</p>
@@ -714,7 +715,7 @@ export default function VendorProfileDetailView({
                     className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-charcoal-600 mb-1">E-mail</label>
                     <input

@@ -37,6 +37,7 @@ export default function ContactsPage() {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
+  const [vendorPhoto, setVendorPhoto] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +62,10 @@ export default function ContactsPage() {
           } catch {}
         }));
         setClientPhotos(photos);
+        try {
+          const vp = await getDocument('vendors', user.uid);
+          if (vp) setVendorPhoto((vp as any).images?.[0] || (vp as any).imageUrl || (vp as any).photo || '');
+        } catch {}
       } catch {
         // ignore
       } finally {
@@ -236,7 +241,7 @@ export default function ContactsPage() {
                       const clientInitial = (selected.client_name || 'C').charAt(0).toUpperCase();
                       return (
                         <div key={msg.id} className={`flex items-end gap-2 ${isVendor ? 'justify-end' : 'justify-start'}`}>
-                          {!isVendor && (
+                          {!isVendor ? (
                             selected.client_id && clientPhotos[selected.client_id] ? (
                               <img src={clientPhotos[selected.client_id]} alt={clientInitial} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5" />
                             ) : (
@@ -244,7 +249,9 @@ export default function ContactsPage() {
                                 {clientInitial}
                               </div>
                             )
-                          )}
+                          ) : vendorPhoto ? (
+                            <img src={vendorPhoto} alt="Vous" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5 order-last" />
+                          ) : null}
                           <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
                             isVendor
                               ? 'bg-rose-600 text-white rounded-br-md'
