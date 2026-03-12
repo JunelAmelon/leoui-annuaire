@@ -34,7 +34,7 @@ export default function AdminParametresPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Administration</p>
         <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Paramètres du compte</h1>

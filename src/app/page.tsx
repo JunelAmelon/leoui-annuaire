@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import HomeSearchBar from '@/components/HomeSearchBar';
+import HomeFeaturedVendors from '@/components/HomeFeaturedVendors';
 import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, TrendingUp, Users, Award, Check, Store } from 'lucide-react';
 
 const MÉTIERS = [
@@ -11,12 +12,6 @@ const MÉTIERS = [
   { n: '04', label: 'Musique & Son',  icon: Music,     href: '/vendors?cat=DJ+%26+Musiciens', img: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=600' },
 ];
 
-const VENDORS = [
-  { id: 'atelier-lumiere',    name: 'Atelier Lumière',    cat: 'Photographie', city: 'Paris',    rating: 4.9, reviews: 127, price: 'À partir de 2 500 €', img: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=500' },
-  { id: 'maison-florale',     name: 'Maison Florale',     cat: 'Fleuriste',    city: 'Lyon',     rating: 4.8, reviews: 98,  price: 'À partir de 1 800 €', img: 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=500' },
-  { id: 'saveurs-et-delices', name: 'Saveurs & Délices',  cat: 'Traiteur',     city: 'Provence', rating: 5.0, reviews: 156, price: 'À partir de 85 €/pers', img: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=500' },
-  { id: 'harmonie-musicale',  name: 'Harmonie Musicale',  cat: 'DJ & Musique', city: 'Bordeaux', rating: 4.9, reviews: 84,  price: 'À partir de 1 200 €', img: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=500' },
-];
 
 const TESTIMONIALS = [
   { name: 'Sophie & Thomas',    city: 'Paris · juin 2025',      text: '« Une sélection irréprochable. Chaque prestataire trouvé sur LeOui a dépassé nos attentes. Notre jour J était exactement comme imaginé. »' },
@@ -187,52 +182,8 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Magazine list */}
-          <div className="space-y-0 divide-y divide-charcoal-100">
-            {VENDORS.map((v, i) => (
-              <Link key={v.id} href={`/vendors/${v.id}`} className="group flex items-center gap-4 lg:gap-10 py-6 lg:py-7 hover:bg-white/60 transition-colors duration-200 px-2">
-                {/* Index */}
-                <span
-                  className="hidden sm:block font-serif text-charcoal-200 text-3xl flex-shrink-0 w-8 text-right"
-                  style={{ fontWeight: 300, fontStyle: 'italic', lineHeight: 1 }}
-                >
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                {/* Thumbnail */}
-                <div className="w-20 h-20 lg:w-28 lg:h-20 flex-shrink-0 overflow-hidden">
-                  <img
-                    src={v.img}
-                    alt={v.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="label-xs text-charcoal-400 mb-1">{v.cat}</p>
-                  <h3
-                    className="font-serif text-charcoal-900 group-hover:text-rose-700 transition-colors duration-200"
-                    style={{ fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', fontWeight: 400, letterSpacing: '-0.005em' }}
-                  >
-                    {v.name}
-                  </h3>
-                  <p className="text-charcoal-500 text-xs font-medium mt-0.5 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {v.city}
-                  </p>
-                </div>
-                {/* Rating + price */}
-                <div className="hidden md:flex flex-col items-end gap-1 flex-shrink-0">
-                  <div className="flex items-center gap-1.5">
-                    <Star className="w-3 h-3 text-champagne-500 fill-champagne-500" />
-                    <span className="text-sm font-medium text-charcoal-900">{v.rating}</span>
-                    <span className="text-xs text-charcoal-400">({v.reviews})</span>
-                  </div>
-                  <span className="text-xs text-charcoal-500 font-light">{v.price}</span>
-                </div>
-                {/* Arrow */}
-                <ArrowRight className="w-4 h-4 text-charcoal-300 group-hover:text-rose-600 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
-              </Link>
-            ))}
-          </div>
+          {/* Magazine list — dynamic data from DB */}
+          <HomeFeaturedVendors />
 
           <div className="mt-10 text-center">
             <Link href="/vendors" className="btn-secondary">

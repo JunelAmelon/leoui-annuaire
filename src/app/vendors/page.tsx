@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import ChatAssistant from '@/components/ChatAssistant';
 import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDocuments } from '@/lib/db';
+import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 
 const STATIC_VENDORS = [
   { id: 'atelier-lumiere', name: 'Atelier Lumière', category: 'Photographes', location: 'Paris, Île-de-France', rating: 5.0, reviewCount: 127, imageUrl: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '2 500€', featured: true, hasPromo: true, description: 'Spécialiste du reportage photographique de mariage depuis 12 ans. Approche documentaire et artistique. Chaque image raconte une histoire.', responseTime: '24h' },
@@ -33,6 +34,14 @@ export default function VendorsPage() {
   const [allVendors, setAllVendors] = useState(STATIC_VENDORS);
   const [vendorsLoading, setVendorsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
+  const [cities, setCities] = useState<string[]>([]);
+  const [cityFilter, setCityFilter] = useState('');
+
+  const parsePrice = (priceStr: string): number => {
+    const num = (priceStr || '').replace(/[^\d]/g, '');
+    return num ? parseInt(num) : 0;
+  };
 
   const togglePrice = (v: string) =>
     setPriceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
@@ -40,39 +49,62 @@ export default function VendorsPage() {
     setServiceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
   useEffect(() => {
-    getDocuments('vendors', [])
-      .then(docs => {
-        if (docs.length > 0) {
-          setAllVendors(docs.map((d: any) => ({
-            id: d.id,
-            name: d.name || '',
-            category: d.category || 'Autres',
-            location: d.location || '',
-            rating: d.rating || 0,
-            reviewCount: d.reviewCount || 0,
-            imageUrl: d.images?.[0] || d.imageUrl || d.photo || '',
-            startingPrice: d.startingPrice || '',
-            featured: d.featured || false,
-            hasPromo: d.hasPromo || false,
-            description: d.description || '',
-            responseTime: d.responseTime || '48h',
-          })));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setVendorsLoading(false));
+    Promise.all([
+      getDocuments('vendors', []),
+      getDocuments('cities', [{ field: 'active', operator: '==', value: true }]),
+    ]).then(([docs, cityDocs]) => {
+      const mapped = (docs as any[]).map((d: any) => ({
+        id: d.id,
+        name: d.name || '',
+        category: d.category || 'Autres',
+        location: d.location || '',
+        rating: d.rating || 0,
+        reviewCount: d.reviewCount || 0,
+        imageUrl: d.images?.[0] || d.imageUrl || d.photo || '',
+        startingPrice: d.startingPrice || '',
+        featured: d.featured || false,
+        hasPromo: d.hasPromo || false,
+        description: d.description || '',
+        responseTime: d.responseTime || '48h',
+      }));
+      if (mapped.length > 0) setAllVendors(mapped);
+      const dbCities = (cityDocs as any[]).map(c => c.name).sort();
+      if (dbCities.length > 0) setCities(dbCities);
+    }).catch(() => {}).finally(() => setVendorsLoading(false));
   }, []);
 
   const categories = ['Tous', 'Photographes', 'Vidéastes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception'];
   const priceOptions = ['Moins de 500€', '500€ - 1 000€', '1 000€ - 1 500€', 'Plus de 1 500€'];
   const serviceOptions = ['Séance d\'engagement', 'Après le mariage', 'Album photo', 'Album digital', 'Photos haute résolution', 'Blu-ray / DVD'];
 
-  const filteredVendors = allVendors.filter(v => {
-    const matchCategory = selectedCategory === 'Tous' || v.category === selectedCategory;
-    const matchPromo = !hasPromo || v.hasPromo;
-    const matchSearch = !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCategory && matchPromo && matchSearch;
-  });
+  const filteredVendors = allVendors
+    .filter(v => {
+      const matchCategory = selectedCategory === 'Tous' || v.category === selectedCategory;
+      const matchPromo = !hasPromo || v.hasPromo;
+      const matchAward = !hasAward || (v as any).weddingAward || (v as any).award;
+      const matchSearch = !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCity = !cityFilter || (v.location || '').toLowerCase().includes(cityFilter.toLowerCase());
+      const price = parsePrice(v.startingPrice);
+      const matchPrice = priceFilters.length === 0 || priceFilters.some(f => {
+        if (f === 'Moins de 500€') return price > 0 && price < 500;
+        if (f === '500€ - 1 000€') return price >= 500 && price < 1000;
+        if (f === '1 000€ - 1 500€') return price >= 1000 && price < 1500;
+        if (f === 'Plus de 1 500€') return price >= 1500;
+        return true;
+      });
+      const matchRating = !ratingFilter || (v.rating || 0) >= ratingFilter;
+      const matchService = serviceFilters.length === 0 ||
+        serviceFilters.some(s => (v as any).services?.includes(s) || (v as any).tags?.includes(s));
+      return matchCategory && matchPromo && matchAward && matchSearch && matchCity && matchPrice && matchRating && matchService;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'note') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'prix-asc') return parsePrice(a.startingPrice) - parsePrice(b.startingPrice);
+      if (sortBy === 'prix-desc') return parsePrice(b.startingPrice) - parsePrice(a.startingPrice);
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return (b.rating || 0) - (a.rating || 0);
+    });
 
   const totalPages = Math.max(1, Math.ceil(filteredVendors.length / PER_PAGE));
   const pagedVendors = filteredVendors.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
@@ -116,23 +148,30 @@ export default function VendorsPage() {
           </p>
           {/* Search bar */}
           <div className="flex flex-col sm:flex-row gap-2 bg-white/10 backdrop-blur-sm rounded-2xl p-2 max-w-lg border border-white/10">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder={selectedCategory === 'Tous' ? 'Photo mariage...' : selectedCategory + '...'}
-                className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all"
-              />
-            </div>
+            <VendorSearchAutocomplete
+              placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
+              value={searchQuery}
+              onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+              className="flex-1"
+              inputClassName="flex items-center bg-white/10 rounded-xl"
+              showIcon
+            />
             <div className="relative flex-1">
               <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-              <input
-                type="text"
-                placeholder="Où ?"
-                className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all"
-              />
+              {cities.length > 0 ? (
+                <select
+                  value={cityFilter}
+                  onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white rounded-xl outline-none text-sm focus:bg-white/20 transition-all appearance-none"
+                >
+                  <option value="" className="text-charcoal-900">Toutes les villes</option>
+                  {cities.map(c => <option key={c} value={c} className="text-charcoal-900">{c}</option>)}
+                </select>
+              ) : (
+                <input type="text" value={cityFilter} onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
+                  placeholder="Où ?"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all" />
+              )}
             </div>
             <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
               Rechercher
@@ -246,10 +285,15 @@ export default function VendorsPage() {
                 <ChevronDown className="w-4 h-4" />
               </button>
               <div className="space-y-2">
-                {['4.5+ étoiles', '4.0+ étoiles', '3.5+ étoiles'].map(opt => (
-                  <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-charcoal-300 accent-rose-600" />
-                    <span className="text-sm text-charcoal-700">{opt}</span>
+                {([{label: '4.5+ étoiles', val: 4.5}, {label: '4.0+ étoiles', val: 4.0}, {label: '3.5+ étoiles', val: 3.5}] as const).map(opt => (
+                  <label key={opt.label} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={ratingFilter === opt.val}
+                      onChange={() => { setRatingFilter(ratingFilter === opt.val ? null : opt.val); setCurrentPage(1); }}
+                      className="w-4 h-4 rounded border-charcoal-300 accent-rose-600"
+                    />
+                    <span className="text-sm text-charcoal-700">{opt.label}</span>
                   </label>
                 ))}
               </div>
@@ -356,11 +400,12 @@ export default function VendorsPage() {
                           <span className="text-xs text-charcoal-500 flex items-center gap-1">
                             <Zap className="w-3 h-3 text-amber-500" /> Réponse en {vendor.responseTime}
                           </span>
-                          <button
+                          <Link
+                            href={`/vendors/${vendor.id}`}
                             className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
                           >
                             Nous contacter
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     </div>

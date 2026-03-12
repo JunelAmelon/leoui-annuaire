@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -9,6 +9,7 @@ import {
   FileCheck2, Receipt, Tag, Star,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDocument } from '@/lib/db';
 
 const NAV = [
   { href: '/espace-prestataire',              label: 'Tableau de bord',     icon: LayoutDashboard, exact: true },
@@ -27,6 +28,17 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
   const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState('');
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    getDocument('vendors', user.uid).then(v => {
+      if (v) {
+        const photo = (v as any).profilePhoto || (v as any).images?.[0] || '';
+        if (photo) setProfilePhoto(photo);
+      }
+    }).catch(() => {});
+  }, [user?.uid]);
 
   const isActive = (item: typeof NAV[0]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -113,8 +125,14 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
 
             {/* Avatar row */}
             <div className={`flex items-center gap-2.5 mt-1 ${collapsed ? 'justify-center' : 'px-3 py-1'}`}>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                <span className="text-white text-[11px] font-bold leading-none">{initials}</span>
+              <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm flex-shrink-0">
+                {profilePhoto ? (
+                  <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
+                    <span className="text-white text-[11px] font-bold leading-none">{initials}</span>
+                  </div>
+                )}
               </div>
               {!collapsed && (
                 <span className="text-xs text-charcoal-500 truncate">{displayName}</span>
@@ -170,8 +188,14 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
               </button>
             </div>
             <div className="px-5 py-4 border-b border-stone-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-bold">{initials}</span>
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                {profilePhoto ? (
+                  <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">{initials}</span>
+                  </div>
+                )}
               </div>
               <p className="font-serif text-charcoal-900 text-sm font-medium truncate">{displayName}</p>
             </div>
@@ -211,8 +235,14 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
             <Menu className="w-5 h-5" />
           </button>
           <span className="font-serif text-lg text-charcoal-900">LeOui Pro</span>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">{initials}</span>
+          <div className="w-9 h-9 rounded-full overflow-hidden">
+            {profilePhoto ? (
+              <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">{initials}</span>
+              </div>
+            )}
           </div>
         </header>
 

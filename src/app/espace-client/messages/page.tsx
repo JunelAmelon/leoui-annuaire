@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { addDocument, getDocuments, updateDocument } from '@/lib/db';
-import { MessageSquare, Send, Heart, Search, Users } from 'lucide-react';
+import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db';
+import { MessageSquare, Send, Heart, Search, Users, Store } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Conversation {
@@ -17,6 +17,7 @@ interface Conversation {
   last_message?: string;
   last_message_at?: string;
   unread_count_client?: number;
+  vendorPhoto?: string;
 }
 
 interface Msg {
@@ -40,6 +41,7 @@ export default function MessagesPage() {
   const [search, setSearch] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [vendorPhotos, setVendorPhotos] = useState<Record<string, string>>({});
 
   const coupleName = client
     ? `${client.name || ''}${client.name && client.partner ? ' & ' : ''}${client.partner || ''}`.trim()
@@ -68,8 +70,25 @@ export default function MessagesPage() {
           setConversations(newConvs as Conversation[]);
           setSelected(newConvs[0] as Conversation);
         } else {
-          setConversations(convs as Conversation[]);
-          if (convs.length > 0) { setSelected(convs[0] as Conversation); }
+          const sorted = (convs as Conversation[]).sort((a, b) => {
+            const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+            const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+            return tb - ta;
+          });
+          setConversations(sorted);
+          if (sorted.length > 0) { setSelected(sorted[0]); }
+          // Fetch vendor photos for vendor conversations
+          const vendorConvs = (convs as Conversation[]).filter(c => c.type === 'vendor' && c.vendor_id);
+          if (vendorConvs.length > 0) {
+            const photos: Record<string, string> = {};
+            await Promise.all(vendorConvs.map(async c => {
+              try {
+                const v = await getDocument('vendors', c.vendor_id!);
+                if (v) photos[c.vendor_id!] = (v as any).images?.[0] || (v as any).imageUrl || '';
+              } catch {}
+            }));
+            setVendorPhotos(photos);
+          }
         }
       } catch {
         toast.error('Erreur lors du chargement des conversations');
@@ -203,12 +222,17 @@ export default function MessagesPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                      conv.type === 'vendor'
-                        ? 'bg-gradient-to-br from-champagne-100 to-champagne-200 text-champagne-800'
-                        : 'bg-gradient-to-br from-rose-100 to-champagne-200 text-charcoal-700'
-                    }`}>
-                      {convInitial(conv)}
+                    {/* Vendor photo or initial */}
+                    <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden">
+                      {conv.type === 'vendor' && conv.vendor_id && vendorPhotos[conv.vendor_id] ? (
+                        <img src={vendorPhotos[conv.vendor_id]} alt={convLabel(conv)} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className={`w-full h-full flex items-center justify-center text-xs font-bold ${
+                          conv.type === 'vendor'
+                            ? 'bg-gradient-to-br from-champagne-100 to-champagne-200 text-champagne-800'
+                            : 'bg-gradient-to-br from-rose-100 to-champagne-200 text-charcoal-700'
+                        }`}>{convInitial(conv)}</div>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
@@ -244,12 +268,16 @@ export default function MessagesPage() {
                 <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-charcoal-50 transition-colors flex-shrink-0">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </button>
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                  selected.type === 'vendor'
-                    ? 'bg-gradient-to-br from-champagne-100 to-champagne-200 text-champagne-800'
-                    : 'bg-gradient-to-br from-rose-100 to-champagne-200 text-charcoal-700'
-                }`}>
-                  {convInitial(selected)}
+                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                  {selected.type === 'vendor' && selected.vendor_id && vendorPhotos[selected.vendor_id] ? (
+                    <img src={vendorPhotos[selected.vendor_id]} alt={convLabel(selected)} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={`w-full h-full flex items-center justify-center text-sm font-bold ${
+                      selected.type === 'vendor'
+                        ? 'bg-gradient-to-br from-champagne-100 to-champagne-200 text-champagne-800'
+                        : 'bg-gradient-to-br from-rose-100 to-champagne-200 text-charcoal-700'
+                    }`}>{convInitial(selected)}</div>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-charcoal-900">{convLabel(selected)}</p>
@@ -268,8 +296,20 @@ export default function MessagesPage() {
                 ) : (
                   messages.map(msg => {
                     const isMe = msg.sender_id === user?.uid || msg.sender_role === 'client';
+                    const otherPhoto = selected.type === 'vendor' && selected.vendor_id ? vendorPhotos[selected.vendor_id] : '';
                     return (
-                      <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        {!isMe && (
+                          <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mb-0.5">
+                            {otherPhoto ? (
+                              <img src={otherPhoto} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-champagne-100 flex items-center justify-center">
+                                <Store className="w-3.5 h-3.5 text-champagne-700" />
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
                           isMe ? 'bg-rose-600 text-white rounded-br-md' : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
                         }`}>

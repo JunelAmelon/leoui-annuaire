@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { MessageSquare, Send, Paperclip, Clock, Search, Heart } from 'lucide-react';
-import { getDocuments, addDocument, updateDocument } from '@/lib/db';
+import { getDocuments, getDocument, addDocument, updateDocument } from '@/lib/db';
 import { toast } from 'sonner';
 
 interface Conversation {
   id: string;
+  client_id?: string;
   client_name: string;
   client_email?: string;
   last_message?: string;
@@ -35,6 +36,7 @@ export default function ContactsPage() {
   const [search, setSearch] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -43,10 +45,22 @@ export default function ContactsPage() {
         const convs = await getDocuments('conversations', [
           { field: 'vendor_id', operator: '==', value: user.uid },
         ]);
-        setConversations(convs as Conversation[]);
-        if (convs.length > 0 && !selected) {
-          setSelected(convs[0] as Conversation);
-        }
+        const sorted = (convs as Conversation[]).sort((a, b) => {
+          const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+          const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+          return tb - ta;
+        });
+        setConversations(sorted);
+        if (sorted.length > 0 && !selected) setSelected(sorted[0]);
+        const photos: Record<string, string> = {};
+        await Promise.all(sorted.map(async c => {
+          if (!c.client_id) return;
+          try {
+            const cl = await getDocument('clients', c.client_id);
+            if (cl) photos[c.client_id] = (cl as any).photoURL || '';
+          } catch {}
+        }));
+        setClientPhotos(photos);
       } catch {
         // ignore
       } finally {
@@ -63,7 +77,12 @@ export default function ContactsPage() {
         const msgs = await getDocuments('messages', [
           { field: 'conversation_id', operator: '==', value: selected.id },
         ]);
-        setMessages(msgs as Message[]);
+        const sorted = (msgs as Message[]).sort((a, b) => {
+          const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return ta - tb;
+        });
+        setMessages(sorted);
         setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       } catch {
         setMessages([]);
@@ -152,9 +171,13 @@ export default function ContactsPage() {
                     className={`w-full text-left px-4 py-3.5 border-b border-charcoal-50 transition-colors hover:bg-charcoal-50 ${selected?.id === conv.id ? 'bg-rose-50 border-l-2 border-l-rose-400' : ''}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700 flex-shrink-0">
-                        {conv.client_name?.charAt(0) || 'C'}
-                      </div>
+                      {conv.client_id && clientPhotos[conv.client_id] ? (
+                        <img src={clientPhotos[conv.client_id]} alt={conv.client_name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700 flex-shrink-0">
+                          {conv.client_name?.charAt(0) || 'C'}
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-charcoal-900 truncate">{conv.client_name || 'Client'}</p>
@@ -188,9 +211,13 @@ export default function ContactsPage() {
                   <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-charcoal-50 transition-colors flex-shrink-0">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   </button>
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700">
-                    {selected.client_name?.charAt(0) || 'C'}
-                  </div>
+                  {selected.client_id && clientPhotos[selected.client_id] ? (
+                    <img src={clientPhotos[selected.client_id]} alt={selected.client_name} className="w-9 h-9 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700">
+                      {selected.client_name?.charAt(0) || 'C'}
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-semibold text-charcoal-900">{selected.client_name}</p>
                     {selected.client_email && <p className="text-xs text-charcoal-500">{selected.client_email}</p>}
@@ -206,8 +233,18 @@ export default function ContactsPage() {
                   ) : (
                     messages.map((msg) => {
                       const isVendor = msg.sender_role === 'vendor';
+                      const clientInitial = (selected.client_name || 'C').charAt(0).toUpperCase();
                       return (
-                        <div key={msg.id} className={`flex ${isVendor ? 'justify-end' : 'justify-start'}`}>
+                        <div key={msg.id} className={`flex items-end gap-2 ${isVendor ? 'justify-end' : 'justify-start'}`}>
+                          {!isVendor && (
+                            selected.client_id && clientPhotos[selected.client_id] ? (
+                              <img src={clientPhotos[selected.client_id]} alt={clientInitial} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0 mb-0.5">
+                                {clientInitial}
+                              </div>
+                            )
+                          )}
                           <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
                             isVendor
                               ? 'bg-rose-600 text-white rounded-br-md'

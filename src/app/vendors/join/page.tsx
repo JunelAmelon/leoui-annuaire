@@ -1,15 +1,57 @@
 ﻿'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import {
   Check, ArrowRight, Building2, LayoutDashboard, Star, Megaphone,
   CalendarDays, FileText, BarChart3, MessageSquare, Eye, Clock,
-  Search, Award,
+  Search, Award, Loader2,
 } from 'lucide-react';
 
 export default function VendorJoinPage() {
+  const router = useRouter();
+  const [form, setForm] = useState({ firstName: '', lastName: '', businessName: '', category: '', city: '', email: '', phone: '', password: '', terms: false });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const setField = (field: string, value: string | boolean) => setForm(p => ({ ...p, [field]: value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.terms) { setError('Vous devez accepter les conditions d\'utilisation.'); return; }
+    if (form.password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/register-vendor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          businessName: form.businessName,
+          category: form.category,
+          city: form.city,
+          phone: form.phone,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
+      await signInWithCustomToken(auth, data.customToken);
+      router.push('/espace-prestataire');
+    } catch (e: any) {
+      setError(e?.message || 'Une erreur est survenue.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-ivory-50">
       <Header />
@@ -295,62 +337,68 @@ export default function VendorJoinPage() {
                 </h2>
                 <p className="text-charcoal-600 text-sm">Commencez gratuitement — sans engagement, sans carte bancaire.</p>
               </div>
-              <form className="space-y-4">
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
+              )}
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Prénom</label>
-                    <input type="text" className="input-field text-sm" placeholder="Votre prénom" />
+                    <input type="text" required value={form.firstName} onChange={e => setField('firstName', e.target.value)} className="input-field text-sm" placeholder="Votre prénom" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Nom</label>
-                    <input type="text" className="input-field text-sm" placeholder="Votre nom" />
+                    <input type="text" required value={form.lastName} onChange={e => setField('lastName', e.target.value)} className="input-field text-sm" placeholder="Votre nom" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Nom de l&apos;entreprise</label>
-                  <input type="text" className="input-field text-sm" placeholder="Atelier Lumière, Maison Florale..." />
+                  <input type="text" value={form.businessName} onChange={e => setField('businessName', e.target.value)} className="input-field text-sm" placeholder="Atelier Lumière, Maison Florale..." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Secteur d&apos;activité</label>
-                    <select className="input-field text-sm">
+                    <select required value={form.category} onChange={e => setField('category', e.target.value)} className="input-field text-sm">
                       <option value="">Sélectionnez...</option>
                       <option>Photographe</option>
                       <option>Vidéaste</option>
                       <option>Traiteur</option>
                       <option>Fleuriste</option>
-                      <option>DJ &amp; Musicien</option>
+                      <option>DJ & Animation</option>
                       <option>Décorateur</option>
                       <option>Wedding Planner</option>
-                      <option>Lieu de réception</option>
-                      <option>Autre</option>
+                      <option>Salle & Domaine</option>
+                      <option>Pâtissier</option>
+                      <option>Musicien</option>
+                      <option>Coiffure & Beauté</option>
+                      <option>Transport</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Ville principale</label>
-                    <input type="text" className="input-field text-sm" placeholder="Paris, Lyon..." />
+                    <input type="text" value={form.city} onChange={e => setField('city', e.target.value)} className="input-field text-sm" placeholder="Paris, Lyon..." />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Email professionnel</label>
-                  <input type="email" className="input-field text-sm" placeholder="contact@votrebusiness.fr" />
+                  <input type="email" required value={form.email} onChange={e => setField('email', e.target.value)} className="input-field text-sm" placeholder="contact@votrebusiness.fr" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Téléphone</label>
-                  <input type="tel" className="input-field text-sm" placeholder="06 12 34 56 78" />
+                  <input type="tel" value={form.phone} onChange={e => setField('phone', e.target.value)} className="input-field text-sm" placeholder="06 12 34 56 78" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Mot de passe</label>
-                  <input type="password" className="input-field text-sm" placeholder="Au moins 8 caractères" />
+                  <input type="password" required minLength={8} value={form.password} onChange={e => setField('password', e.target.value)} className="input-field text-sm" placeholder="Au moins 8 caractères" />
                 </div>
                 <div className="flex items-start gap-2 pt-1">
-                  <input type="checkbox" id="vendor-terms" className="mt-1 w-4 h-4 rounded text-rose-600 flex-shrink-0" />
+                  <input type="checkbox" id="vendor-terms" checked={form.terms} onChange={e => setField('terms', e.target.checked)} className="mt-1 w-4 h-4 rounded text-rose-600 flex-shrink-0" />
                   <label htmlFor="vendor-terms" className="text-xs text-charcoal-600 leading-relaxed">
                     J&apos;accepte les <Link href="/terms" className="text-rose-600 hover:underline">conditions d&apos;utilisation</Link> et la <Link href="/privacy" className="text-rose-600 hover:underline">politique de confidentialité</Link>
                   </label>
                 </div>
-                <button type="submit" className="w-full inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm">
-                  Créer mon espace prestataire gratuit <ArrowRight className="w-4 h-4" />
+                <button type="submit" disabled={loading} className="w-full inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm">
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Création du compte...</> : <>Créer mon espace prestataire gratuit <ArrowRight className="w-4 h-4" /></>}
                 </button>
                 <p className="text-center text-xs text-charcoal-500 pt-1">
                   Déjà inscrit ?{' '}

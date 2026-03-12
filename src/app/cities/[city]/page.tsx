@@ -1,8 +1,12 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import VendorCard from '@/components/VendorCard';
 import { MapPin, ArrowLeft, Search, SlidersHorizontal } from 'lucide-react';
+import { getDocuments } from '@/lib/db';
 
 interface CityPageProps {
   params: { city: string };
@@ -51,71 +55,51 @@ export default function CityPage({ params }: CityPageProps) {
   const slug = params.city.toLowerCase();
   const city = cityData[slug] ?? { ...defaultCity, name: params.city.charAt(0).toUpperCase() + params.city.slice(1) };
 
-  const vendors = [
-    {
-      id: 'atelier-lumiere',
-      name: 'Atelier Lumière',
-      category: 'Photographie',
-      location: city.name,
-      rating: 4.9,
-      reviewCount: 127,
-      imageUrl: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800',
-      startingPrice: '2 500€',
-      featured: true,
-    },
-    {
-      id: 'maison-florale',
-      name: 'Maison Florale',
-      category: 'Fleuriste',
-      location: city.name,
-      rating: 4.8,
-      reviewCount: 98,
-      imageUrl: 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=800',
-      startingPrice: '1 800€',
-    },
-    {
-      id: 'saveurs-et-delices',
-      name: 'Saveurs & Délices',
-      category: 'Traiteur',
-      location: city.name,
-      rating: 5.0,
-      reviewCount: 156,
-      imageUrl: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=800',
-      startingPrice: '85€/pers',
-    },
-    {
-      id: 'harmonie-musicale',
-      name: 'Harmonie Musicale',
-      category: 'DJ & Animation',
-      location: city.name,
-      rating: 4.9,
-      reviewCount: 84,
-      imageUrl: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800',
-      startingPrice: '1 200€',
-    },
-    {
-      id: 'elegance-deco',
-      name: 'Élégance Déco',
-      category: 'Décoration',
-      location: city.name,
-      rating: 4.8,
-      reviewCount: 91,
-      imageUrl: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=800',
-      startingPrice: '3 500€',
-    },
-    {
-      id: 'vision-cine',
-      name: 'Vision Ciné',
-      category: 'Vidéographie',
-      location: city.name,
-      rating: 4.9,
-      reviewCount: 73,
-      imageUrl: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800',
-      startingPrice: '3 200€',
-    },
-  ];
+  const [allVendors, setAllVendors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tous');
+  const [sortBy, setSortBy] = useState('recommandés');
+
+  useEffect(() => {
+    getDocuments('vendors', [])
+      .then(docs => {
+        const cityLower = city.name.toLowerCase();
+        const filtered = (docs as any[]).filter(d =>
+          (d.location || '').toLowerCase().includes(cityLower)
+        ).map(d => ({
+          id: d.id,
+          name: d.name || '',
+          category: d.category || 'Autres',
+          location: d.location || '',
+          rating: d.rating || 0,
+          reviewCount: d.reviewCount || 0,
+          imageUrl: d.images?.[0] || d.imageUrl || '',
+          startingPrice: d.startingPrice || '',
+          featured: d.featured || false,
+        }));
+        setAllVendors(filtered);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [city.name]);
 
   const categories = ['Tous', 'Photographes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Vidéastes'];
+
+  const vendors = allVendors
+    .filter(v => {
+      const matchCat = selectedCategory === 'Tous' || v.category === selectedCategory;
+      const matchSearch = !search || v.name.toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'note') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'prix-asc') return (parseInt((a.startingPrice || '0').replace(/\D/g, '')) || 0) - (parseInt((b.startingPrice || '0').replace(/\D/g, '')) || 0);
+      if (sortBy === 'prix-desc') return (parseInt((b.startingPrice || '0').replace(/\D/g, '')) || 0) - (parseInt((a.startingPrice || '0').replace(/\D/g, '')) || 0);
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return (b.rating || 0) - (a.rating || 0);
+    });
 
   return (
     <div className="min-h-screen bg-ivory-50">
@@ -153,7 +137,7 @@ export default function CityPage({ params }: CityPageProps) {
 
           <div className="inline-flex items-center px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full text-white font-medium">
             <MapPin className="w-5 h-5 mr-2 text-rose-400" />
-            {city.vendorCount} prestataires disponibles
+            {loading ? '…' : vendors.length > 0 ? vendors.length : city.vendorCount} prestataires disponibles
           </div>
         </div>
       </section>
@@ -167,6 +151,8 @@ export default function CityPage({ params }: CityPageProps) {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal-400" />
                   <input
                     type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
                     placeholder={`Rechercher un prestataire à ${city.name}...`}
                     className="w-full pl-12 pr-4 py-3 bg-charcoal-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-rose-200 transition-all outline-none"
                   />
@@ -183,11 +169,12 @@ export default function CityPage({ params }: CityPageProps) {
           </div>
 
           <div className="flex items-center space-x-3 overflow-x-auto pb-2 mb-8">
-            {categories.map((cat, i) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
+                onClick={() => setSelectedCategory(cat)}
                 className={`px-5 py-2.5 rounded-full font-medium text-body-sm whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                  i === 0
+                  selectedCategory === cat
                     ? 'bg-rose-600 text-white shadow-soft'
                     : 'bg-white text-charcoal-700 hover:bg-charcoal-50 border border-charcoal-200'
                 }`}
@@ -199,35 +186,41 @@ export default function CityPage({ params }: CityPageProps) {
 
           <div className="flex items-center justify-between mb-6">
             <p className="text-body-md text-charcoal-600">
-              <span className="font-semibold text-charcoal-900">{vendors.length}</span> prestataires à {city.name}
+              {loading ? (
+                <span className="animate-pulse bg-charcoal-100 rounded w-24 h-5 inline-block" />
+              ) : (
+                <><span className="font-semibold text-charcoal-900">{vendors.length}</span> prestataires à {city.name}</>
+              )}
             </p>
-            <select className="input-field w-auto py-2">
-              <option>Trier par : Recommandés</option>
-              <option>Note (décroissante)</option>
-              <option>Prix (croissant)</option>
-              <option>Prix (décroissant)</option>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="input-field w-auto py-2"
+            >
+              <option value="recommandés">Trier par : Recommandés</option>
+              <option value="note">Note (décroissante)</option>
+              <option value="prix-asc">Prix (croissant)</option>
+              <option value="prix-desc">Prix (décroissant)</option>
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vendors.map((vendor) => (
-              <VendorCard key={vendor.id} {...vendor} />
-            ))}
-          </div>
-
-          <div className="mt-12 flex justify-center">
-            <nav className="flex items-center space-x-2">
-              <button className="px-4 py-2 border-2 border-charcoal-200 rounded-lg text-charcoal-600 hover:bg-charcoal-50 transition-colors">
-                Précédent
-              </button>
-              <button className="px-4 py-2 bg-rose-600 text-white rounded-lg">1</button>
-              <button className="px-4 py-2 border-2 border-charcoal-200 rounded-lg text-charcoal-700 hover:bg-charcoal-50 transition-colors">2</button>
-              <button className="px-4 py-2 border-2 border-charcoal-200 rounded-lg text-charcoal-700 hover:bg-charcoal-50 transition-colors">3</button>
-              <button className="px-4 py-2 border-2 border-charcoal-200 rounded-lg text-charcoal-600 hover:bg-charcoal-50 transition-colors">
-                Suivant
-              </button>
-            </nav>
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1,2,3,4,5,6].map(i => <div key={i} className="h-72 bg-charcoal-100 rounded-2xl animate-pulse" />)}
+            </div>
+          ) : vendors.length === 0 ? (
+            <div className="text-center py-20">
+              <MapPin className="w-10 h-10 text-charcoal-200 mx-auto mb-3" />
+              <p className="text-charcoal-500">Aucun prestataire trouvé à {city.name}</p>
+              <Link href="/vendors" className="mt-4 inline-block text-rose-600 hover:underline text-sm">Voir tous les prestataires</Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {vendors.map((vendor) => (
+                <VendorCard key={vendor.id} {...vendor} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

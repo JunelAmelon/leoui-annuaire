@@ -2,15 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getDocuments, addDocument } from '@/lib/db';
-import { toast } from 'sonner';
+import { getDocuments } from '@/lib/db';
 import {
-  Star, MapPin, Camera, ChevronLeft, ChevronRight, X,
-  Search, Heart, MessageSquare, Send, List, Grid3X3,
-  Tag, Zap, ChevronDown,
+  Star, MapPin, Camera, ChevronLeft, ChevronRight,
+  Heart, List, Grid3X3,
+  Tag, ChevronDown,
 } from 'lucide-react';
+import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 
 interface Vendor {
   id: string;
@@ -71,8 +70,7 @@ const PER_PAGE = 6;
 export default function PrestatairesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
-  const { client, event, loading: dataLoading } = useClientData();
+  const { loading: dataLoading } = useClientData();
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,11 +84,6 @@ export default function PrestatairesPage() {
   const [priceFilters, setPriceFilters] = useState<string[]>([]);
   const [serviceFilters, setServiceFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('recommandés');
-  const [profile, setProfile] = useState<Vendor | null>(null);
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-
   const togglePrice = (v: string) => setPriceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
   const toggleService = (v: string) => setServiceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
@@ -110,75 +103,42 @@ export default function PrestatairesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const coupleName = client
-    ? `${client.name || ''}${client.name && client.partner ? ' & ' : ''}${client.partner || ''}`.trim()
-    : event?.couple_names || user?.displayName || 'Client';
+  const parsePrice = (s: string) => { const n = (s || '').replace(/[^\d]/g, ''); return n ? parseInt(n) : 0; };
 
-  const filtered = vendors.filter(v => {
-    const matchCat = category === 'Tous' || v.category === category;
-    const q = search.toLowerCase();
-    const matchSearch = !q || v.name.toLowerCase().includes(q) || v.category.toLowerCase().includes(q);
-    const matchCity = !citySearch || (v.location || '').toLowerCase().includes(citySearch.toLowerCase());
-    const matchPromo = !hasPromo || (v as any).hasPromo;
-    return matchCat && matchSearch && matchCity && matchPromo;
-  });
+  const filtered = vendors
+    .filter(v => {
+      const matchCat = category === 'Tous' || v.category === category;
+      const q = search.toLowerCase();
+      const matchSearch = !q || v.name.toLowerCase().includes(q) || v.category.toLowerCase().includes(q);
+      const matchCity = !citySearch || (v.location || '').toLowerCase().includes(citySearch.toLowerCase());
+      const matchPromo = !hasPromo || (v as any).hasPromo;
+      const price = parsePrice(v.startingPrice || '');
+      const matchPrice = priceFilters.length === 0 || priceFilters.some(f => {
+        if (f === 'Moins de 500€') return price > 0 && price < 500;
+        if (f === '500€ – 1 000€') return price >= 500 && price < 1000;
+        if (f === '1 000€ – 2 000€') return price >= 1000 && price < 2000;
+        if (f === 'Plus de 2 000€') return price >= 2000;
+        return true;
+      });
+      const matchService = serviceFilters.length === 0 ||
+        serviceFilters.some(s => (v as any).services?.includes(s) || (v as any).tags?.includes(s));
+      return matchCat && matchSearch && matchCity && matchPromo && matchPrice && matchService;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'note') return ((b as any).rating || 0) - ((a as any).rating || 0);
+      if (sortBy === 'prix-asc') return parsePrice(a.startingPrice || '') - parsePrice(b.startingPrice || '');
+      if (sortBy === 'prix-desc') return parsePrice(b.startingPrice || '') - parsePrice(a.startingPrice || '');
+      if ((a as any).featured && !(b as any).featured) return -1;
+      if (!(a as any).featured && (b as any).featured) return 1;
+      return ((b as any).rating || 0) - ((a as any).rating || 0);
+    });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const openProfile = useCallback((v: Vendor) => {
-    setProfile(v);
-    setShowContact(false);
-    setMessage(`Bonjour, je suis ${coupleName} et je souhaite en savoir plus sur vos prestations pour notre mariage.`);
-  }, [coupleName]);
-
-  const handleContact = async () => {
-    if (!user || !message.trim() || !profile || !client?.id) {
-      toast.error('Profil client introuvable.');
-      return;
-    }
-    setSending(true);
-    try {
-      const existingConvs = await getDocuments('conversations', [
-        { field: 'client_id', operator: '==', value: client.id },
-      ]);
-      const existing = (existingConvs as any[]).find(c => c.vendor_id === (profile.uid || profile.id));
-      let convId: string;
-      if (existing) {
-        convId = existing.id;
-      } else {
-        const ref = await addDocument('conversations', {
-          client_id: client.id,
-          vendor_id: profile.uid || profile.id,
-          client_name: coupleName,
-          vendor_name: profile.name,
-          vendor_email: profile.email || '',
-          type: 'vendor',
-          last_message: message.trim(),
-          last_message_at: new Date().toISOString(),
-          unread_count_vendor: 1,
-          unread_count_client: 0,
-          created_at: new Date().toISOString(),
-        });
-        convId = ref.id;
-      }
-      await addDocument('messages', {
-        conversation_id: convId,
-        sender_id: user.uid,
-        sender_role: 'client',
-        sender_name: coupleName,
-        content: message.trim(),
-        created_at: new Date().toISOString(),
-      });
-      toast.success(`Message envoyé à ${profile.name} !`);
-      setProfile(null);
-      router.push('/espace-client/messages');
-    } catch {
-      toast.error("Erreur lors de l'envoi.");
-    } finally {
-      setSending(false);
-    }
-  };
+    router.push(`/espace-client/prestataires/${v.id}`);
+  }, [router]);
 
   if (dataLoading || loading) return (
     <div className="space-y-5 animate-pulse">
@@ -212,12 +172,13 @@ export default function PrestatairesPage() {
         </div>
         {/* Search row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-stone-200 shadow-sm">
-            <Search className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
-            <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Nom, catégorie…"
-              className="text-sm text-charcoal-700 placeholder-charcoal-400 bg-transparent outline-none w-28" />
-          </div>
+          <VendorSearchAutocomplete
+            placeholder="Nom, catégorie…"
+            value={search}
+            onValueChange={v => { setSearch(v); setPage(1); }}
+            className="w-48"
+            inputClassName="flex items-center border border-stone-200 rounded-xl bg-white shadow-sm"
+          />
           <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-stone-200 shadow-sm">
             <MapPin className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
             <input type="text" value={citySearch} onChange={e => { setCitySearch(e.target.value); setPage(1); }}
@@ -366,7 +327,7 @@ export default function PrestatairesPage() {
                         </div>
                         <button onClick={() => openProfile(vendor)}
                           className="bg-charcoal-900 hover:bg-charcoal-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors">
-                          Contacter
+                          Voir le profil
                         </button>
                       </div>
                     </div>
@@ -429,97 +390,6 @@ export default function PrestatairesPage() {
         </div>
       </div>
 
-      {/* ── VENDOR PROFILE SLIDE-OVER ── */}
-      {profile && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-charcoal-900/50" onClick={() => setProfile(null)} />
-          <div className="relative w-full max-w-lg bg-white shadow-2xl flex flex-col overflow-hidden">
-            {/* Hero image */}
-            <div className="relative h-64 bg-charcoal-100 flex-shrink-0">
-              {(profile.imageUrl || profile.images?.[0] || profile.photo) ? (
-                <img src={profile.imageUrl || profile.images?.[0] || profile.photo || ''} alt={profile.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center"><Camera className="w-14 h-14 text-charcoal-300" /></div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/60 to-transparent" />
-              <button onClick={() => setProfile(null)} className="absolute top-4 right-4 w-8 h-8 bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors">
-                <X className="w-4 h-4 text-white" />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 px-6 pb-5">
-                <p className="label-xs text-white/60 mb-1 tracking-[0.12em]">{profile.category}</p>
-                <h2 className="font-serif text-white" style={{ fontSize: '1.5rem', fontWeight: 300, lineHeight: 1.1 }}>{profile.name}</h2>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              {/* Meta */}
-              <div className="px-6 py-5 border-b border-charcoal-100">
-                <div className="flex items-center gap-5 flex-wrap">
-                  {profile.rating && (
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex gap-0.5">
-                        {[1,2,3,4,5].map(i => <Star key={i} className={`w-3.5 h-3.5 ${i <= Math.round(profile.rating!) ? 'text-champagne-500 fill-champagne-500' : 'text-charcoal-200'}`} />)}
-                      </div>
-                      <span className="text-sm text-charcoal-500 font-light">{profile.rating} · {profile.reviewCount} avis</span>
-                    </div>
-                  )}
-                  {(profile.location || profile.address) && (
-                    <p className="text-sm text-charcoal-500 font-light flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-charcoal-400" />{profile.location || profile.address}
-                    </p>
-                  )}
-                  {profile.startingPrice && (
-                    <p className="label-xs text-champagne-700 tracking-[0.08em]">À partir de {profile.startingPrice}</p>
-                  )}
-                </div>
-              </div>
-
-              {profile.description && (
-                <div className="px-6 py-5 border-b border-charcoal-100">
-                  <p className="label-xs text-charcoal-400 mb-3 tracking-[0.1em]">À propos</p>
-                  <p className="text-charcoal-700 text-sm font-light leading-relaxed">{profile.description}</p>
-                </div>
-              )}
-
-              {/* Contact form */}
-              {showContact ? (
-                <div className="px-6 py-5">
-                  <p className="label-xs text-charcoal-400 mb-3 tracking-[0.1em]">Votre message</p>
-                  <textarea
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    rows={5}
-                    className="w-full px-4 py-3 border border-charcoal-200 text-sm bg-ivory-50 focus:outline-none focus:border-charcoal-400 transition-colors resize-none"
-                  />
-                  <div className="flex gap-3 mt-4">
-                    <button onClick={() => setShowContact(false)} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">
-                      Annuler
-                    </button>
-                    <button
-                      onClick={handleContact}
-                      disabled={!message.trim() || sending}
-                      className="flex-1 py-2.5 bg-charcoal-900 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      {sending ? 'Envoi…' : 'Envoyer'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="px-6 py-5">
-                  <button
-                    onClick={() => setShowContact(true)}
-                    className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-charcoal-900 text-white text-sm font-medium tracking-[0.05em] hover:bg-charcoal-700 transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4" /> Contacter ce prestataire
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

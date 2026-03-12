@@ -31,10 +31,10 @@ export default function Footer() {
           <div>
             <h3 className="font-sans font-semibold text-heading-sm mb-4">Prestataires</h3>
             <ul className="space-y-3">
-              <li><Link href="/vendors/photographes" className="text-charcoal-300 hover:text-rose-400 transition-colors">Photographes</Link></li>
-              <li><Link href="/vendors/traiteurs" className="text-charcoal-300 hover:text-rose-400 transition-colors">Traiteurs</Link></li>
-              <li><Link href="/vendors/fleuristes" className="text-charcoal-300 hover:text-rose-400 transition-colors">Fleuristes</Link></li>
-              <li><Link href="/vendors/dj" className="text-charcoal-300 hover:text-rose-400 transition-colors">DJ & Musiciens</Link></li>
+              <li><Link href="/vendors?cat=Photographes" className="text-charcoal-300 hover:text-rose-400 transition-colors">Photographes</Link></li>
+              <li><Link href="/vendors?cat=Traiteurs" className="text-charcoal-300 hover:text-rose-400 transition-colors">Traiteurs</Link></li>
+              <li><Link href="/vendors?cat=Fleuristes" className="text-charcoal-300 hover:text-rose-400 transition-colors">Fleuristes</Link></li>
+              <li><Link href="/vendors?cat=DJ+%26+Musiciens" className="text-charcoal-300 hover:text-rose-400 transition-colors">DJ & Musiciens</Link></li>
               <li><Link href="/vendors" className="text-charcoal-300 hover:text-rose-400 transition-colors">Tous les prestataires</Link></li>
             </ul>
           </div>

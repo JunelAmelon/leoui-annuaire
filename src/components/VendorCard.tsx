@@ -11,6 +11,7 @@ interface VendorCardProps {
   imageUrl: string;
   startingPrice?: string;
   featured?: boolean;
+  hrefBase?: string;
 }
 
 export default function VendorCard({
@@ -23,9 +24,10 @@ export default function VendorCard({
   imageUrl,
   startingPrice,
   featured = false,
+  hrefBase = '/vendors',
 }: VendorCardProps) {
   return (
-    <Link href={`/vendors/${id}`} className="group block">
+    <Link href={`${hrefBase}/${id}`} className="group block">
       <article className="card-elevated">
         <div className="relative aspect-[4/3] overflow-hidden">
           <img

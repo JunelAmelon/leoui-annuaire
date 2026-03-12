@@ -73,7 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const tokenResult = await firebaseUser.getIdTokenResult(true);
       const role = (tokenResult.claims.role as string) || 'client';
-      if (role === 'planner' || role === 'admin' || role === 'vendor') {
+      if (role === 'admin') {
+        router.push('/admin');
+      } else if (role === 'planner' || role === 'vendor') {
         router.push('/espace-prestataire');
       } else {
         router.push('/espace-client');

@@ -8,7 +8,7 @@ import {
   ArrowRight, CalendarDays, BadgeCheck, Clock, ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { getDocuments } from '@/lib/db';
+import { getDocuments, getDocument } from '@/lib/db';
 
 export default function EspacePrestatairePage() {
   const { user } = useAuth();
@@ -20,17 +20,20 @@ export default function EspacePrestatairePage() {
     if (!user) return;
     const load = async () => {
       try {
-        const conversations = await getDocuments('conversations', [
-          { field: 'vendor_id', operator: '==', value: user.uid },
+        const [conversations, devisList, vendorDoc, reviewsList] = await Promise.all([
+          getDocuments('conversations', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
+          getDocuments('devis', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
+          getDocument('vendors', user.uid),
+          getDocuments('reviews', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
         ]);
-        const devisList = await getDocuments('devis', [
-          { field: 'vendor_id', operator: '==', value: user.uid },
-        ]);
+        const avgRating = reviewsList.length > 0
+          ? Math.round(reviewsList.reduce((s: number, r: any) => s + (r.rating || 5), 0) / reviewsList.length * 10) / 10
+          : (vendorDoc as any)?.rating || 0;
         setStats({
-          views: 142,
+          views: (vendorDoc as any)?.viewCount || 0,
           messages: conversations.length,
           devis: devisList.length,
-          rating: 4.8,
+          rating: avgRating,
         });
         setRecentContacts(conversations.slice(0, 4));
       } catch {
@@ -51,6 +54,7 @@ export default function EspacePrestatairePage() {
 
   const quickActions = [
     { href: '/espace-prestataire/mon-annonce', label: 'Modifier mon annonce', icon: BadgeCheck, desc: 'Mettez à jour vos photos et infos' },
+    { href: user?.uid ? `/espace-prestataire/prestataires/${user.uid}` : '#', label: 'Prévisualiser mon annonce', icon: Eye, desc: 'Voir votre profil comme un client le voit' },
     { href: '/espace-prestataire/contacts', label: 'Voir les contacts', icon: MessageSquare, desc: 'Répondez aux demandes de clients' },
     { href: '/espace-prestataire/devis', label: 'Créer un devis', icon: FileText, desc: 'Envoyez une proposition tarifaire' },
     { href: '/espace-prestataire/planning', label: 'Mon planning', icon: CalendarDays, desc: 'Gérez vos disponibilités' },

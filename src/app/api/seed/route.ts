@@ -36,16 +36,35 @@ export async function GET() {
       clientUid = u.uid;
     }
 
-    await adminAuth.setCustomUserClaims(adminUid, { role: 'vendor', vendorType: 'Photographes' });
+    await adminAuth.setCustomUserClaims(adminUid, { role: 'admin' });
     await adminAuth.setCustomUserClaims(clientUid, { role: 'client' });
+
+    await adminDb.collection('users').doc(adminUid).set(
+      {
+        uid: adminUid,
+        email: adminEmail,
+        role: 'admin',
+        created_at: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    await adminDb.collection('users').doc(clientUid).set(
+      {
+        uid: clientUid,
+        email: clientEmail,
+        role: 'client',
+        created_at: new Date().toISOString(),
+      },
+      { merge: true }
+    );
 
     await adminDb.collection('profiles').doc(adminUid).set(
       {
         uid: adminUid,
         email: adminEmail,
-        name: 'Atelier Lumière',
-        role: 'vendor',
-        vendorType: 'Photographes',
+        name: 'LeOui Admin',
+        role: 'admin',
         created_at: new Date().toISOString(),
       },
       { merge: true }

@@ -7,6 +7,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  increment,
   query,
   where,
   orderBy,
@@ -83,6 +84,18 @@ export async function updateDocument(
     }
     throw err;
   }
+}
+
+export async function incrementDocumentFields(
+  collectionName: string,
+  id: string,
+  fields: Record<string, number>
+): Promise<void> {
+  const data: Record<string, any> = {};
+  for (const [k, v] of Object.entries(fields)) {
+    data[k] = increment(v);
+  }
+  await updateDocument(collectionName, id, data);
 }
 
 export async function deleteDocument(collectionName: string, id: string): Promise<void> {
