@@ -134,7 +134,7 @@ export default function VendorProfileDetailView({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* LEFT COLUMN */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full overflow-x-hidden">
             {/* Photo Gallery — mobile: horizontal scroll strip; desktop: editorial grid */}
             <div className="sm:hidden w-full overflow-hidden rounded-2xl">
               <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
@@ -180,7 +180,7 @@ export default function VendorProfileDetailView({
             </div>
 
             {/* Tabs */}
-            <div className="mt-4 lg:mt-6 border-b border-charcoal-200 overflow-x-auto">
+            <div className="mt-4 lg:mt-6 border-b border-charcoal-200 w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="flex gap-1 min-w-max">
                 {tabs.map((tab) => (
                   <button
@@ -213,7 +213,7 @@ export default function VendorProfileDetailView({
                   )}
 
                   {vendor.description && (
-                    <p className="text-body-lg text-charcoal-700 leading-relaxed mb-6 whitespace-pre-line">{vendor.description}</p>
+                    <p className="text-body-lg text-charcoal-700 leading-relaxed mb-6 whitespace-pre-line break-words" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{vendor.description}</p>
                   )}
 
                   {(vendor.experience || vendor.weddingsCompleted) && (
