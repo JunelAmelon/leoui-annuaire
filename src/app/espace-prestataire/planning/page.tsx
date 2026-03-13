@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, MapPin, X, Trash2, Loader2 } from 'lucide-react';
-import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
+import { getDocuments, addDocument, deleteDocument, getDocument } from '@/lib/db';
 import { toast } from 'sonner';
 
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -26,6 +26,8 @@ type PlanningEvent = {
   type: 'mariage' | 'seance' | 'rdv' | 'autre';
   notes?: string;
   uid: string;
+  client_id?: string;
+  client_name?: string;
 };
 
 const TYPE_OPTIONS = [
@@ -58,16 +60,21 @@ export default function PlanningPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [linkedClients, setLinkedClients] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [vendorName, setVendorName] = useState<string>('');
   const [form, setForm] = useState({
     date: '',
     title: '',
     location: '',
     type: 'mariage' as PlanningEvent['type'],
     notes: '',
+    client_id: '',
+    client_name: '',
   });
 
   useEffect(() => {
     if (!user) return;
+    setVendorName(user.displayName || user.email?.split('@')[0] || 'Prestataire');
     const load = async () => {
       setLoading(true);
       try {
@@ -82,6 +89,10 @@ export default function PlanningPage() {
       }
     };
     load();
+    // Charger les clients liés
+    getDocuments('collaborations', [{ field: 'vendor_id', operator: '==', value: user.uid }])
+      .then(collabs => setLinkedClients((collabs as any[]).map(c => ({ id: c.client_id || c.id, name: c.client_name || '', email: c.client_email || '' })).filter(c => c.name || c.email)))
+      .catch(() => {});
   }, [user]);
 
   const daysInMonth = getDaysInMonth(year, month);
@@ -109,7 +120,7 @@ export default function PlanningPage() {
     const dateStr = day
       ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       : '';
-    setForm({ date: dateStr, title: '', location: '', type: 'mariage', notes: '' });
+    setForm({ date: dateStr, title: '', location: '', type: 'mariage', notes: '', client_id: '', client_name: '' });
     setShowModal(true);
   };
 
@@ -120,11 +131,32 @@ export default function PlanningPage() {
     }
     setSaving(true);
     try {
-      const data = { ...form, uid: user.uid, createdAt: new Date().toISOString() };
-      const { id } = await addDocument('planning_events', data);
-      setEvents(p => [...p, { ...data, id } as PlanningEvent]);
+      const data = { ...form, uid: user.uid, vendor_id: user.uid, createdAt: new Date().toISOString() };
+      const newDoc = await addDocument('planning_events', data);
+      const newId = (newDoc as any).id || '';
+      setEvents(p => [...p, { ...data, id: newId } as PlanningEvent]);
+
+      // Sync agenda client si un client est sélectionné
+      if (form.client_id) {
+        await addDocument('client_planning_events', {
+          client_id: form.client_id,
+          vendor_id: user.uid,
+          vendor_name: vendorName,
+          planning_event_id: newId,
+          date: form.date,
+          title: form.title,
+          location: form.location,
+          type: form.type,
+          notes: form.notes,
+          client_name: form.client_name,
+          created_at: new Date().toISOString(),
+          source: 'vendor',
+        });
+        toast.success(`Événement ajouté ✓ — Synchronisé dans l'agenda de ${form.client_name || 'votre client'}`);
+      } else {
+        toast.success('Événement ajouté');
+      }
       setShowModal(false);
-      toast.success('Événement ajouté');
     } catch {
       toast.error('Erreur lors de l\'ajout');
     } finally {
@@ -283,6 +315,24 @@ export default function PlanningPage() {
               </button>
             </div>
             <div className="space-y-4">
+              {linkedClients.length > 0 && (
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3">
+                  <label className="block text-sm font-semibold text-rose-700 mb-2">📅 Lier à un client (sync agenda)</label>
+                  <select
+                    value={form.client_id}
+                    onChange={e => {
+                      const cl = linkedClients.find(x => x.id === e.target.value);
+                      setForm(p => ({ ...p, client_id: e.target.value, client_name: cl?.name || '' }));
+                    }}
+                    className="w-full px-3 py-2 border border-rose-200 rounded-xl text-sm bg-white focus:outline-none focus:border-rose-400">
+                    <option value="">— Aucun client (pas de sync) —</option>
+                    {linkedClients.map(c => <option key={c.id} value={c.id}>{c.name}{c.email ? ` (${c.email})` : ''}</option>)}
+                  </select>
+                  {form.client_id && (
+                    <p className="text-xs text-rose-600 mt-1.5">✓ Cet événement apparaitra dans l&apos;agenda de {form.client_name}</p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Titre *</label>
                 <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
@@ -324,7 +374,7 @@ export default function PlanningPage() {
               <button onClick={handleSave} disabled={saving || !form.title.trim() || !form.date}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {saving ? 'Sauvegarde…' : 'Enregistrer'}
+                {saving ? 'Sauvegarde…' : form.client_id ? '📅 Sauv. & synchroniser' : 'Enregistrer'}
               </button>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/db';
 import { toast } from 'sonner';
-import { Calendar, CheckCircle, Clock, MapPin, Plus, Trash2, User, X } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, MapPin, Plus, Trash2, User, X, Building2 } from 'lucide-react';
 
 interface Appointment {
   id: string;
@@ -27,10 +27,21 @@ interface Step {
   kind?: string;
 }
 
+interface VendorEvent {
+  id: string;
+  title: string;
+  date: string;
+  location?: string;
+  type?: string;
+  vendor_name?: string;
+  notes?: string;
+}
+
 export default function PlanningPage() {
   const { client, event, loading: dataLoading } = useClientData();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
+  const [vendorEvents, setVendorEvents] = useState<VendorEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -57,10 +68,14 @@ export default function PlanningPage() {
           ? { field: 'event_id', operator: '==', value: eventId }
           : { field: 'client_id', operator: '==', value: clientId! };
 
-        const items = await getDocuments('tasks', [filter as any]);
+        const [items, vendorItems] = await Promise.all([
+          getDocuments('tasks', [filter as any]),
+          clientId ? getDocuments('client_planning_events', [{ field: 'client_id', operator: '==', value: clientId }]) : Promise.resolve([]),
+        ]);
         const allTasks = items as any[];
         setSteps(allTasks.filter((t) => t?.kind === 'milestone'));
         setAppointments(allTasks.filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv'));
+        setVendorEvents((vendorItems as VendorEvent[]).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
       } catch (e) {
         console.error(e);
       } finally {
@@ -156,6 +171,31 @@ export default function PlanningPage() {
                 <Plus className="w-3.5 h-3.5" /> Ajouter
               </button>
             </div>
+
+            {/* Vendor events synced */}
+            {vendorEvents.length > 0 && (
+              <div className="mb-5 border-b border-charcoal-100 pb-5">
+                <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" /> Événements synchronisés depuis vos prestataires
+                </p>
+                <div className="space-y-2">
+                  {vendorEvents.map(ev => (
+                    <div key={ev.id} className="flex items-start gap-3 p-3 bg-rose-50 border border-rose-100 rounded-xl">
+                      <div className="flex-shrink-0 text-center min-w-[40px]">
+                        <p className="text-[10px] font-semibold text-rose-400 uppercase leading-none">{new Date(ev.date).toLocaleDateString('fr-FR', { month: 'short' })}</p>
+                        <p className="text-lg font-bold text-rose-700 leading-tight">{new Date(ev.date).getDate()}</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-charcoal-900 truncate">{ev.title}</p>
+                        {ev.vendor_name && <p className="text-xs text-charcoal-500 mt-0.5 flex items-center gap-1"><Building2 className="w-3 h-3" />{ev.vendor_name}</p>}
+                        {ev.location && <p className="text-xs text-charcoal-500 mt-0.5 flex items-center gap-1"><MapPin className="w-3 h-3" />{ev.location}</p>}
+                      </div>
+                      {ev.type && <span className="text-xs px-2 py-0.5 bg-rose-100 text-rose-600 rounded-full font-medium flex-shrink-0">{ev.type}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {appointments.length === 0 ? (
               <p className="text-charcoal-400 text-sm text-center py-8 italic">Aucun rendez-vous planifié.</p>
             ) : (

@@ -7,7 +7,7 @@ import { getDocuments } from '@/lib/db';
 import {
   Star, MapPin, Camera, ChevronLeft, ChevronRight,
   Heart, List, Grid3X3,
-  Tag, ChevronDown,
+  Tag, CheckCircle2, Users,
 } from 'lucide-react';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 
@@ -70,7 +70,7 @@ const PER_PAGE = 6;
 export default function PrestatairesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { loading: dataLoading } = useClientData();
+  const { client, loading: dataLoading } = useClientData();
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +84,10 @@ export default function PrestatairesPage() {
   const [priceFilters, setPriceFilters] = useState<string[]>([]);
   const [serviceFilters, setServiceFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('recommandés');
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [selectedVendorIds, setSelectedVendorIds] = useState<Set<string>>(new Set());
+  const [selectedVendors, setSelectedVendors] = useState<Vendor[]>([]);
+
   const togglePrice = (v: string) => setPriceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
   const toggleService = (v: string) => setServiceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
@@ -102,6 +106,26 @@ export default function PrestatairesPage() {
       .catch(() => setVendors(STATIC_VENDORS))
       .finally(() => setLoading(false));
   }, []);
+
+  // Charger les prestataires déjà sélectionnés via collaborations
+  useEffect(() => {
+    if (!client?.id) return;
+    getDocuments('collaborations', [{ field: 'client_id', operator: '==', value: client.id }])
+      .then(collabs => {
+        const ids = new Set((collabs as any[]).map(c => c.vendor_id).filter(Boolean) as string[]);
+        setSelectedVendorIds(ids);
+        // Charger le détail de ces vendors
+        if (ids.size > 0) {
+          getDocuments('vendors', [])
+            .then(allVendors => {
+              const sel = (allVendors as Vendor[]).filter(v => ids.has(v.id) || ids.has((v as any).uid));
+              setSelectedVendors(sel);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [client?.id]);
 
   const parsePrice = (s: string) => { const n = (s || '').replace(/[^\d]/g, ''); return n ? parseInt(n) : 0; };
 
@@ -122,7 +146,8 @@ export default function PrestatairesPage() {
       });
       const matchService = serviceFilters.length === 0 ||
         serviceFilters.some(s => (v as any).services?.includes(s) || (v as any).tags?.includes(s));
-      return matchCat && matchSearch && matchCity && matchPromo && matchPrice && matchService;
+      const matchSelected = !showSelectedOnly || selectedVendorIds.has(v.id) || selectedVendorIds.has((v as any).uid);
+      return matchCat && matchSearch && matchCity && matchPromo && matchPrice && matchService && matchSelected;
     })
     .sort((a, b) => {
       if (sortBy === 'note') return ((b as any).rating || 0) - ((a as any).rating || 0);
@@ -164,10 +189,10 @@ export default function PrestatairesPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>
-            {category === 'Tous' ? 'Vos prestataires' : category}
+            {showSelectedOnly ? 'Mes prestataires sélectionnés' : category === 'Tous' ? 'Vos prestataires' : category}
           </h1>
           <p className="text-sm text-charcoal-500 mt-0.5">
-            {filtered.length} prestataire{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} prestataire{filtered.length !== 1 ? 's' : ''} {showSelectedOnly ? 'sélectionné' : 'disponible'}{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
         {/* Search row */}
@@ -185,6 +210,17 @@ export default function PrestatairesPage() {
               placeholder="Ville…"
               className="text-sm text-charcoal-700 placeholder-charcoal-400 bg-transparent outline-none w-20" />
           </div>
+          <button
+            onClick={() => { setShowSelectedOnly(p => !p); setPage(1); }}
+            disabled={selectedVendorIds.size === 0}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+              showSelectedOnly ? 'bg-charcoal-900 text-white' : 'border border-charcoal-200 text-charcoal-600 hover:bg-stone-50'
+            } ${selectedVendorIds.size === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            title={selectedVendorIds.size === 0 ? 'Aucun prestataire sélectionné' : 'Afficher uniquement mes prestataires sélectionnés'}
+          >
+            <Users className="w-3.5 h-3.5" />
+            {showSelectedOnly ? 'Voir tous' : 'Filtrer mes prestataires'}
+          </button>
         </div>
       </div>
 

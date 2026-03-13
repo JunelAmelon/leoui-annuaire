@@ -5,7 +5,7 @@ import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
 import { getClientDevis } from '@/lib/client-helpers';
 import { uploadFile } from '@/lib/storage';
-import { FileText, Search, Upload, Eye, Download, FileCheck, FilePen, File, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { FileText, Search, Upload, Eye, Download, FileCheck, FilePen, File, Trash2, ChevronLeft, ChevronRight, X, CheckCircle2, XCircle, AlertCircle, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DocumentItem {
@@ -48,6 +48,9 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
 
+  const [validating, setValidating] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
   const fetchDocs = async () => {
     if (!client?.id) { setLoading(false); return; }
     try {
@@ -57,20 +60,75 @@ export default function DocumentsPage() {
       ]);
       const mapped = (docItems as any[]).map((d) => ({ ...d, source: 'documents' }));
       const devisMapped = (devisItems as any[])
-        .filter((dv) => Boolean(dv?.pdf_url) && dv?.status !== 'draft')
+        .filter((dv) => dv?.status !== 'draft')
         .map((dv) => ({
           id: `devis:${dv.id}`,
           name: `Devis - ${dv.reference || ''}`,
           type: 'devis',
-          file_url: dv.pdf_url,
+          file_url: dv.pdf_url || '',
           uploaded_at: dv.sent_at || dv.date || '',
-          uploaded_by: 'planner',
+          uploaded_by: 'vendor',
           status: dv.status,
           source: 'devis',
+          raw: dv,
         }));
       setDocs([...mapped, ...devisMapped]);
     } catch { toast.error('Erreur lors du chargement'); }
     finally { setLoading(false); }
+  };
+
+  const handleValidateDevis = async (doc: DocumentItem) => {
+    const devisId = (doc as any).raw?.id || doc.id.replace('devis:', '');
+    setValidating(doc.id);
+    try {
+      const { updateDocument: upd, addDocument: add } = await import('@/lib/db');
+      await upd('devis', devisId, { status: 'accepted', accepted_at: new Date().toISOString() });
+      // Créer la facture automatiquement
+      const raw = (doc as any).raw;
+      const invoiceRef = `FAC-${Date.now().toString().slice(-6)}`;
+      await add('invoices', {
+        vendor_id: raw?.vendor_id || '',
+        client_id: client?.id || '',
+        client_name: client?.name || '',
+        client_email: client?.email || '',
+        devis_id: devisId,
+        reference: invoiceRef,
+        amount_ht: (raw?.items || []).reduce((s: number, i: any) => s + i.qty * i.unit_price, 0),
+        amount_ttc: raw?.amount || 0,
+        tva: raw?.tva || 0,
+        items: raw?.items || [],
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        notes: `Facture générée depuis le devis ${raw?.reference}`,
+      });
+      toast.success('Devis accepté ✓ — Une facture a été générée');
+      await fetchDocs();
+    } catch { toast.error('Erreur'); } finally { setValidating(null); }
+  };
+
+  const handleRejectDevis = async (doc: DocumentItem) => {
+    const devisId = (doc as any).raw?.id || doc.id.replace('devis:', '');
+    setValidating(doc.id);
+    try {
+      const { updateDocument: upd } = await import('@/lib/db');
+      await upd('devis', devisId, { status: 'rejected', rejected_at: new Date().toISOString() });
+      toast.success('Devis refusé');
+      await fetchDocs();
+    } catch { toast.error('Erreur'); } finally { setValidating(null); }
+  };
+
+  const handleSignContract = async (doc: DocumentItem) => {
+    const contractId = (doc as any).contract_id || '';
+    if (!contractId) { toast.error('Contrat introuvable'); return; }
+    setValidating(doc.id);
+    try {
+      const { updateDocument: upd } = await import('@/lib/db');
+      await upd('contracts', contractId, { status: 'signed', signed_at: new Date().toISOString() });
+      // Aussi mettre à jour le document
+      await upd('documents', doc.id, { status: 'signed' });
+      toast.success('Contrat signé ✓');
+      await fetchDocs();
+    } catch { toast.error('Erreur'); } finally { setValidating(null); }
   };
 
   useEffect(() => { if (!dataLoading) fetchDocs(); }, [client?.id, dataLoading]);
@@ -198,7 +256,7 @@ export default function DocumentsPage() {
           <>
             <div className="space-y-2">
               {paginated.map((doc) => (
-                <div key={doc.id} className="flex items-center gap-3 p-3.5 rounded-xl border border-charcoal-100 hover:border-rose-200 bg-ivory-50 transition-all">
+                <div key={doc.id} className="relative flex items-center gap-3 p-3.5 rounded-xl border border-charcoal-100 hover:border-rose-200 bg-ivory-50 transition-all">
                   <div className="w-9 h-9 rounded-xl bg-white border border-charcoal-100 flex items-center justify-center flex-shrink-0">
                     {getTypeIcon(doc.type)}
                   </div>
@@ -209,23 +267,104 @@ export default function DocumentsPage() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${typeColors[(doc.type||'').toLowerCase()]||typeColors.autre}`}>
                     {typeLabels[(doc.type||'').toLowerCase()]||doc.type}
                   </span>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {doc.file_url && (
-                      <>
-                        <a href={doc.file_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors" title="Ouvrir">
-                          <Eye className="w-4 h-4 text-charcoal-500" />
-                        </a>
-                        <a href={doc.file_url} download={doc.name} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors" title="Télécharger">
-                          <Download className="w-4 h-4 text-charcoal-500" />
-                        </a>
-                      </>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {doc.type === 'devis' && doc.status === 'accepted' && (
+                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full font-medium">
+                        <CheckCircle2 className="w-3 h-3" /> Accepté
+                      </span>
                     )}
-                    {doc.source === 'documents' && (
-                      <button
-                        onClick={e => handleDeleteDoc(doc, e)}
-                        className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors group/del" title="Supprimer">
-                        <Trash2 className="w-4 h-4 text-charcoal-300 group-hover/del:text-rose-500 transition-colors" />
-                      </button>
+                    {doc.type === 'devis' && doc.status === 'rejected' && (
+                      <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full font-medium">
+                        <XCircle className="w-3 h-3" /> Refusé
+                      </span>
+                    )}
+                    {doc.type === 'contrat' && doc.status === 'signed' && (
+                      <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                        <CheckCircle2 className="w-3 h-3" /> Signé
+                      </span>
+                    )}
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOpenMenuId((p) => p === doc.id ? null : doc.id); }}
+                      className="p-2 rounded-lg hover:bg-charcoal-100 transition-colors"
+                      title="Actions"
+                    >
+                      <MoreVertical className="w-4 h-4 text-charcoal-500" />
+                    </button>
+
+                    {openMenuId === doc.id && (
+                      <div className="absolute right-3 top-12 z-30 w-56 bg-white border border-charcoal-100 rounded-xl shadow-soft overflow-hidden">
+                        <div className="py-1">
+                          {doc.type === 'devis' && doc.status === 'sent' && (
+                            <>
+                              <button
+                                onClick={() => { setOpenMenuId(null); handleValidateDevis(doc); }}
+                                disabled={validating === doc.id}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 text-green-700 disabled:opacity-50"
+                              >
+                                Accepter
+                              </button>
+                              <button
+                                onClick={() => { setOpenMenuId(null); handleRejectDevis(doc); }}
+                                disabled={validating === doc.id}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 disabled:opacity-50"
+                              >
+                                Refuser
+                              </button>
+                              <div className="h-px bg-charcoal-100 my-1" />
+                            </>
+                          )}
+
+                          {doc.type === 'contrat' && doc.status === 'sent' && (
+                            <>
+                              <button
+                                onClick={() => { setOpenMenuId(null); handleSignContract(doc); }}
+                                disabled={validating === doc.id}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-800 disabled:opacity-50"
+                              >
+                                Signer
+                              </button>
+                              <div className="h-px bg-charcoal-100 my-1" />
+                            </>
+                          )}
+
+                          {doc.file_url && (
+                            <>
+                              <a
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={() => setOpenMenuId(null)}
+                                className="block px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
+                              >
+                                Ouvrir
+                              </a>
+                              <a
+                                href={doc.file_url}
+                                download={doc.name}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={() => setOpenMenuId(null)}
+                                className="block px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
+                              >
+                                Télécharger
+                              </a>
+                            </>
+                          )}
+
+                          {doc.source === 'documents' && doc.type !== 'devis' && (
+                            <>
+                              <div className="h-px bg-charcoal-100 my-1" />
+                              <button
+                                onClick={(e) => { setOpenMenuId(null); handleDeleteDoc(doc, e as any); }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
+                              >
+                                Supprimer
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
