@@ -6,21 +6,22 @@ import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, Megaphone, MessageSquare, FileText,
   CalendarDays, Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
-  FileCheck2, Receipt, Tag, Star,
+  FileCheck2, Receipt, Tag, Star, Bell,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDocument } from '@/lib/db';
+import { getDocument, getDocuments } from '@/lib/db';
 
 const NAV = [
-  { href: '/espace-prestataire',              label: 'Tableau de bord',     icon: LayoutDashboard, exact: true },
-  { href: '/espace-prestataire/mon-annonce',  label: 'Mon annonce',         icon: Megaphone },
-  { href: '/espace-prestataire/contacts',     label: 'Contacts',            icon: MessageSquare },
-  { href: '/espace-prestataire/devis',        label: 'Devis',               icon: FileText },
-  { href: '/espace-prestataire/contrats',     label: 'Contrats',            icon: FileCheck2 },
-  { href: '/espace-prestataire/factures',     label: 'Factures',            icon: Receipt },
-  { href: '/espace-prestataire/planning',     label: 'Planning',            icon: CalendarDays },
-  { href: '/espace-prestataire/promotions',   label: 'Promotions',          icon: Tag },
-  { href: '/espace-prestataire/avis',         label: 'Avis clients',        icon: Star },
+  { href: '/espace-prestataire',                    label: 'Tableau de bord',  icon: LayoutDashboard, exact: true },
+  { href: '/espace-prestataire/mon-annonce',        label: 'Mon annonce',      icon: Megaphone },
+  { href: '/espace-prestataire/contacts',           label: 'Contacts',         icon: MessageSquare },
+  { href: '/espace-prestataire/devis',              label: 'Devis',            icon: FileText },
+  { href: '/espace-prestataire/contrats',           label: 'Contrats',         icon: FileCheck2 },
+  { href: '/espace-prestataire/factures',           label: 'Factures',         icon: Receipt },
+  { href: '/espace-prestataire/planning',           label: 'Planning',         icon: CalendarDays },
+  { href: '/espace-prestataire/promotions',         label: 'Promotions',       icon: Tag },
+  { href: '/espace-prestataire/avis',               label: 'Avis clients',     icon: Star },
+  { href: '/espace-prestataire/notifications',      label: 'Notifications',    icon: Bell },
 ];
 
 export default function PrestataireDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,15 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
   const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    getDocuments('notifications', [
+      { field: 'recipient_id', operator: '==', value: user.uid },
+      { field: 'read', operator: '==', value: false },
+    ]).then(items => setUnreadNotifCount(items.length)).catch(() => {});
+  }, [user?.uid]);
   const [profilePhoto, setProfilePhoto] = useState('');
 
   useEffect(() => {
@@ -83,10 +93,22 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                       collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'
                     } ${active ? 'bg-rose-600' : 'hover:bg-rose-50'}`}
                   >
-                    <item.icon className={`flex-shrink-0 w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
+                    <div className="relative flex-shrink-0">
+                      <item.icon className={`w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
+                      {item.href.includes('notifications') && unreadNotifCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-rose-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                          {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                        </span>
+                      )}
+                    </div>
                     {!collapsed && (
-                      <span className={`text-sm font-medium truncate ${active ? 'text-white' : 'text-charcoal-600 group-hover:text-rose-700'}`}>
+                      <span className={`text-sm font-medium truncate flex-1 ${active ? 'text-white' : 'text-charcoal-600 group-hover:text-rose-700'}`}>
                         {item.label}
+                      </span>
+                    )}
+                    {!collapsed && item.href.includes('notifications') && unreadNotifCount > 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                        {unreadNotifCount}
                       </span>
                     )}
                   </Link>

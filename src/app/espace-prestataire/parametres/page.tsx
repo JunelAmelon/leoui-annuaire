@@ -40,7 +40,7 @@ export default function ParametresPage() {
 
   return (
     <PrestataireDashboardLayout>
-      <div className="max-w-2xl">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
           <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Paramètres</h1>

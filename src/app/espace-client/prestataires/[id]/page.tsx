@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import VendorProfileDetailView from '@/components/VendorProfileDetailView';
 import { getDocument, getDocuments, addDocument, incrementDocumentFields, updateDocument, deleteDocument } from '@/lib/db';
+import { createNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { Image as ImageIcon, UserCheck, UserPlus } from 'lucide-react';
 
@@ -23,6 +24,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   const [similarVendors, setSimilarVendors] = useState<any[]>([]);
   const [collab, setCollab] = useState<any>(null);
   const [collabLoading, setCollabLoading] = useState(false);
+  const [existingClientReview, setExistingClientReview] = useState<{ rating: number; comment: string } | null>(null);
 
   const coupleName = client
     ? (client.name || '') + (client.name && client.partner ? ' & ' : '') + (client.partner || '')
@@ -70,11 +72,19 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
         incrementDocumentFields('vendors', vendorId, { viewCount: 1 }).catch(() => {});
         updateDocument('vendors', vendorId, { lastViewedAt: new Date().toISOString() }).catch(() => {});
         if (client?.id) {
-          const collabs = await getDocuments('collaborations', [
-            { field: 'client_id', operator: '==', value: client.id },
-            { field: 'vendor_id', operator: '==', value: vendorId },
+          const [collabs, existingReviews] = await Promise.all([
+            getDocuments('collaborations', [
+              { field: 'client_id', operator: '==', value: client.id },
+              { field: 'vendor_id', operator: '==', value: vendorId },
+            ]),
+            getDocuments('reviews', [
+              { field: 'vendor_id', operator: '==', value: vendorId },
+              { field: 'client_id', operator: '==', value: client.id },
+            ]),
           ]);
           setCollab(collabs[0] || null);
+          const myReview = (existingReviews[0] as any);
+          if (myReview) setExistingClientReview({ rating: myReview.rating, comment: myReview.comment || '' });
         }
       } catch {
         setVendor(null);
@@ -152,8 +162,49 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       content: form.message.trim(),
       created_at: new Date().toISOString(),
     });
-    toast.success('Message envoye !');
+    // Notifier le prestataire
+    createNotification({
+      recipientId: vendorId,
+      type: 'message',
+      title: `Nouveau message de ${coupleName}`,
+      message: form.message.trim().slice(0, 100),
+      link: '/espace-prestataire/messages',
+    });
+    toast.success('Message envoyé !');
     router.push('/espace-client/messages');
+  };
+
+  const handleSubmitReview = async (review: { rating: number; comment: string }) => {
+    if (!client?.id || !resolvedVendorId) { toast.error('Données manquantes'); return; }
+    await addDocument('reviews', {
+      vendor_id: resolvedVendorId,
+      client_id: client.id,
+      client_name: coupleName,
+      rating: review.rating,
+      comment: review.comment,
+      date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      status: 'verified',
+    });
+    const updatedReviews = [
+      { id: Date.now().toString(), vendor_id: resolvedVendorId, client_id: client.id, client_name: coupleName, rating: review.rating, comment: review.comment, date: new Date().toISOString(), status: 'verified' },
+      ...reviews,
+    ];
+    setExistingClientReview({ rating: review.rating, comment: review.comment });
+    setReviews(updatedReviews);
+    // Recalculer et enregistrer la note du prestataire dans son document
+    const newCount = updatedReviews.length;
+    const newAvg = Math.round(updatedReviews.reduce((s, r) => s + (r.rating || 5), 0) / newCount * 10) / 10;
+    updateDocument('vendors', resolvedVendorId, { rating: newAvg, reviewCount: newCount }).catch(() => {});
+    // Notifier le prestataire
+    createNotification({
+      recipientId: resolvedVendorId,
+      type: 'review',
+      title: `Nouvel avis de ${coupleName}`,
+      message: `${review.rating}/5 — ${review.comment.slice(0, 80)}`,
+      link: '/espace-prestataire/avis',
+    });
+    toast.success('Avis publié !');
   };
 
   if (loading) return (
@@ -200,7 +251,12 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
         similarHrefBase="/espace-client/prestataires"
         onSubmitContact={handleContact}
         contactSubmitDisabled={(form) => !form.message.trim()}
-        contactIntroText="Votre message sera envoye directement via la messagerie LeOui."
+        contactIntroText="Votre message sera envoyé directement via la messagerie LeOui."
+        isLoggedIn={Boolean(user)}
+        clientName={coupleName}
+        canReview={Boolean(collab) && !existingClientReview}
+        existingClientReview={existingClientReview}
+        onSubmitReview={handleSubmitReview}
       />
     </div>
   );

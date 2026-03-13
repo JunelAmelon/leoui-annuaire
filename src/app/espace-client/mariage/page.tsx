@@ -286,7 +286,7 @@ export default function MariagePage() {
                 {teamVendors.filter(v => teamFilter === 'Tous' || v.category === teamFilter).map(v => {
                   const initials = v.name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
                   return (
-                    <div key={v.id} className="group block rounded-xl border border-charcoal-100 overflow-hidden hover:border-rose-200 transition-all">
+                    <Link key={v.id} href={`/espace-client/prestataires/${v.id}`} className="group block rounded-xl border border-charcoal-100 overflow-hidden hover:border-rose-200 transition-all">
                       <div className="relative h-28 bg-stone-100">
                         {v.photo ? (
                           <img src={v.photo} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -305,13 +305,13 @@ export default function MariagePage() {
                         <p className="text-[0.65rem] text-charcoal-400">{v.category}</p>
                         {v.email && <p className="text-[0.6rem] text-charcoal-400 truncate mt-0.5">{v.email}</p>}
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
             )}
             <Link href="/espace-client/prestataires" className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl transition-colors">
-              Découvrir les photographes
+              Découvrir les prestataires
             </Link>
           </div>
         </div>

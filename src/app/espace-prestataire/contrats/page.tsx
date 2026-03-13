@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, Clock, XCircle, X, Trash2, Sparkles, Minus, Euro, AlertCircle, MoreVertical } from 'lucide-react';
 import { getDocuments, addDocument, updateDocument, deleteDocument, getDocument } from '@/lib/db';
+import { createNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { uploadPdf } from '@/lib/storage';
@@ -325,6 +326,15 @@ export default function ContratsPage() {
         await updateDocument('conversations', convId, { last_message: `Contrat envoyé : ${c.title}`, unread_client: 1, updated_at: new Date().toISOString() });
       }
 
+      if (resolvedClientId) {
+        createNotification({
+          recipientId: resolvedClientId,
+          type: 'contrat',
+          title: 'Contrat reçu',
+          message: `${vendorName} vous a envoyé le contrat ${c.reference} — ${c.amount.toLocaleString('fr-FR')} €. À signer.`,
+          link: '/espace-client/documents',
+        });
+      }
       await updateDocument('contracts', c.id, { status: 'sent', pdf_url: file_url });
       toast.success(resolvedClientId ? `Contrat envoyé et visible dans les documents du client` : `PDF généré — email non trouvé dans la base`, { duration: 4000 });
       load();

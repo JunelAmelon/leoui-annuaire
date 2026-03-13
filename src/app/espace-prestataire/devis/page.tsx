@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { FileText, Plus, Clock, CheckCircle, XCircle, Send, Euro, Search, Download, Trash2, X, Minus, Eye, Sparkles, AlertCircle, MoreVertical } from 'lucide-react';
 import { getDocuments, addDocument, updateDocument, deleteDocument, getDocument } from '@/lib/db';
+import { createNotification } from '@/lib/notifications';
 import { uploadPdf } from '@/lib/storage';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
@@ -230,6 +231,13 @@ export default function DevisPage() {
           created_at: new Date().toISOString(), read: false,
         });
         await updateDocument('conversations', convId, { last_message: `Devis envoyé : ${ref}`, unread_client: 1, updated_at: new Date().toISOString() });
+        createNotification({
+          recipientId: resolvedClientId,
+          type: 'document',
+          title: 'Nouveau devis reçu',
+          message: `${vendorName} vous a envoyé le devis ${ref} — ${ttc.toLocaleString('fr-FR')} €`,
+          link: '/espace-client/documents',
+        });
       }
       toast.success(resolvedClientId ? `Devis envoyé — visible dans les documents et la messagerie du client` : `Devis créé — email non trouvé dans la base`, { duration: 4000 });
       setShowModal(false); load();
@@ -263,8 +271,14 @@ export default function DevisPage() {
           created_at: new Date().toISOString(), read: false,
         });
         await updateDocument('conversations', convId, { last_message: `Devis (re-)envoyé : ${d.reference}`, unread_client: 1, updated_at: new Date().toISOString() });
-        // Upsert document in client's documents
         await addDocument('documents', { client_id: resolvedClientId, vendor_id: user.uid, name: `Devis ${d.reference} — ${d.client_name}`, type: 'devis', file_url: pdf_url, uploaded_by: 'vendor', uploaded_at: new Date().toLocaleDateString('fr-FR'), devis_id: d.id, status: 'sent' });
+        createNotification({
+          recipientId: resolvedClientId,
+          type: 'document',
+          title: 'Devis reçu',
+          message: `${vendorName} vous a envoyé le devis ${d.reference || ''}.`,
+          link: '/espace-client/documents',
+        });
       }
       await updateDocument('devis', d.id, { status: 'sent', pdf_url, sent_at: new Date().toISOString() });
       toast.success('Devis renvoyé au client');

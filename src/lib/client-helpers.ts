@@ -224,11 +224,12 @@ export async function getClientPayments(clientId: string): Promise<PaymentData[]
     ]);
     return payments.map((p: any) => ({
       ...p,
-      amount: Number(p.amount || p.total || 0),
-      amount_due: Number(p.amount_due ?? 0),
+      amount: Number(p.amount || p.amount_ttc || p.total || 0),
+      amount_due: Number(p.amount_due ?? p.amount ?? p.amount_ttc ?? 0),
       status: p.status || 'pending',
-      description: p.description || p.title || 'Paiement',
-      vendor: p.vendor || '',
+      description: p.description || p.notes || p.title || 'Paiement',
+      vendor: p.vendor || p.vendor_name || '',
+      category: p.category || 'Prestataire',
       invoice: Boolean(p.pdf_url),
     })) as PaymentData[];
   } catch {

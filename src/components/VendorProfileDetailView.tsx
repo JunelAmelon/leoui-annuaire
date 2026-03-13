@@ -50,6 +50,11 @@ export type VendorProfileDetailViewProps = {
   onSubmitContact: (form: ContactForm) => Promise<void>;
   contactSubmitDisabled?: (form: ContactForm) => boolean;
   contactIntroText?: string;
+  isLoggedIn?: boolean;
+  canReview?: boolean;
+  existingClientReview?: { rating: number; comment: string } | null;
+  clientName?: string;
+  onSubmitReview?: (review: { rating: number; comment: string }) => Promise<void>;
 };
 
 export default function VendorProfileDetailView({
@@ -64,6 +69,11 @@ export default function VendorProfileDetailView({
   onSubmitContact,
   contactSubmitDisabled,
   contactIntroText,
+  isLoggedIn = false,
+  canReview = false,
+  existingClientReview = null,
+  clientName = '',
+  onSubmitReview,
 }: VendorProfileDetailViewProps) {
   const [activeTab, setActiveTab] = useState('informations');
   const [showContactModal, setShowContactModal] = useState(false);
@@ -76,6 +86,10 @@ export default function VendorProfileDetailView({
     message: 'Bonjour, nous sommes en pleins préparatifs de mariage et nous aimerions en savoir plus sur vos services et disponibilités.',
   });
   const [sending, setSending] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(Boolean(existingClientReview));
 
   const photos: string[] = vendor.images?.length ? vendor.images : FALLBACK_PHOTOS;
   const faqs: { q: string; a: string }[] = vendor.faqs || [];
@@ -97,7 +111,9 @@ export default function VendorProfileDetailView({
     { id: 'carte', label: 'Carte' },
   ];
 
-  const isContactDisabled = contactSubmitDisabled ? contactSubmitDisabled(contactForm) : (!contactForm.name || !contactForm.email);
+  const isContactDisabled = contactSubmitDisabled
+    ? contactSubmitDisabled(contactForm)
+    : isLoggedIn ? !contactForm.message.trim() : (!contactForm.name || !contactForm.email);
 
   return (
     <>
@@ -120,12 +136,14 @@ export default function VendorProfileDetailView({
           {/* LEFT COLUMN */}
           <div className="flex-1 min-w-0">
             {/* Photo Gallery — mobile: horizontal scroll strip; desktop: editorial grid */}
-            <div className="sm:hidden flex gap-2 overflow-x-auto pb-1 rounded-2xl" style={{ scrollSnapType: 'x mandatory' }}>
-              {photos.map((p, i) => (
-                <div key={i} className="flex-shrink-0 w-[85vw] h-56 rounded-2xl overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
-                  <img src={p} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
+            <div className="sm:hidden w-full overflow-hidden rounded-2xl">
+              <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                {photos.map((p, i) => (
+                  <div key={i} className="flex-shrink-0 rounded-2xl overflow-hidden" style={{ width: '82vw', height: '220px', scrollSnapAlign: 'start' }}>
+                    <img src={p} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="hidden sm:flex gap-2 h-80 lg:h-[460px] rounded-2xl overflow-hidden">
@@ -308,6 +326,59 @@ export default function VendorProfileDetailView({
 
               {activeTab === 'avis' && (
                 <div>
+                  {/* Formulaire laisser un avis — client connecté uniquement */}
+                  {canReview && !reviewSubmitted && (
+                    <div className="mb-6 bg-white rounded-2xl border border-charcoal-100 p-6 shadow-sm">
+                      <h3 className="font-serif text-charcoal-900 text-base font-medium mb-1">Laisser un avis</h3>
+                      <p className="text-xs text-charcoal-500 mb-4 flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 text-green-500" />
+                        Avis vérifié — vous avez fait appel à ce prestataire
+                      </p>
+                      <div className="flex gap-1.5 mb-4">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <button key={n} type="button" onClick={() => setReviewRating(n)}>
+                            <Star className={`w-7 h-7 transition-colors ${n <= reviewRating ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`} />
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Partagez votre expérience avec ce prestataire…"
+                        rows={4}
+                        className="w-full px-4 py-3 bg-stone-50 border border-charcoal-200 rounded-xl text-sm resize-none focus:outline-none focus:border-rose-400 transition-all"
+                      />
+                      <button
+                        disabled={!reviewComment.trim() || submittingReview}
+                        onClick={async () => {
+                          if (!onSubmitReview) return;
+                          setSubmittingReview(true);
+                          try {
+                            await onSubmitReview({ rating: reviewRating, comment: reviewComment });
+                            setReviewSubmitted(true);
+                          } finally { setSubmittingReview(false); }
+                        }}
+                        className="mt-3 px-5 py-2.5 bg-charcoal-900 text-white text-sm font-semibold rounded-xl hover:bg-charcoal-800 disabled:opacity-50 transition-colors"
+                      >
+                        {submittingReview ? 'Envoi…' : 'Publier mon avis'}
+                      </button>
+                    </div>
+                  )}
+                  {reviewSubmitted && existingClientReview && (
+                    <div className="mb-6 bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
+                      <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">Votre avis a été publié</p>
+                        <div className="flex gap-0.5 mt-1">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i < existingClientReview.rating ? 'text-amber-400 fill-amber-400':'text-charcoal-200'}`}/>)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {reviewSubmitted && !existingClientReview && (
+                    <div className="mb-6 bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
+                      <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <p className="text-sm font-semibold text-green-800">Votre avis a été publié. Merci !</p>
+                    </div>
+                  )}
                   <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-5 sm:p-6 bg-white rounded-2xl border border-charcoal-200 mb-6">
                     <div className="text-center">
                       <p className="font-display text-[3.5rem] leading-none text-charcoal-900">{avgRating.toFixed(1)}</p>
@@ -579,9 +650,19 @@ export default function VendorProfileDetailView({
                 >
                   Nous contacter
                 </button>
-                <button className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0">
-                  <Phone className="w-4 h-4" />
-                </button>
+                {vendor.phone ? (
+                  <a
+                    href={`tel:${vendor.phone}`}
+                    className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+                    title={`Appeler ${vendor.name}`}
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <button disabled className="w-12 h-12 border-2 border-charcoal-200 rounded-xl flex items-center justify-center text-charcoal-300 flex-shrink-0 cursor-not-allowed">
+                    <Phone className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               <div className="space-y-3 pt-4 border-t border-charcoal-100">
@@ -619,9 +700,18 @@ export default function VendorProfileDetailView({
                 >
                   Nous contacter
                 </button>
-                <button className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0">
-                  <Phone className="w-4 h-4" />
-                </button>
+                {vendor.phone ? (
+                  <a
+                    href={`tel:${vendor.phone}`}
+                    className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <button disabled className="w-12 h-12 border-2 border-charcoal-200 rounded-xl flex items-center justify-center text-charcoal-300 flex-shrink-0 cursor-not-allowed">
+                    <Phone className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -670,18 +760,20 @@ export default function VendorProfileDetailView({
                 </button>
               </div>
 
-              <p className="text-body-sm text-charcoal-500 mb-1">
-                Ce n'est pas vous ?{' '}
-                <button className="underline underline-offset-1 hover:text-rose-600 transition-colors">Effacer données</button>
-              </p>
-              <p className="text-body-sm text-charcoal-600 mb-6">
-                {contactIntroText || (
-                  <>
-                    Remplissez ce formulaire et <strong>{vendor.name}</strong> vous contactera dans les plus brefs délais.
-                    Toutes les données que vous nous soumettez seront traitées de manière confidentielle.
-                  </>
-                )}
-              </p>
+              {isLoggedIn ? (
+                <p className="text-body-sm text-green-700 bg-green-50 rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2">
+                  <Check className="w-4 h-4 flex-shrink-0" />
+                  Connecté en tant que <strong className="ml-1">{clientName || 'Client'}</strong>
+                </p>
+              ) : (
+                <p className="text-body-sm text-charcoal-600 mb-6">
+                  {contactIntroText || (
+                    <>
+                      Remplissez ce formulaire et <strong>{vendor.name}</strong> vous contactera dans les plus brefs délais.
+                    </>
+                  )}
+                </p>
+              )}
 
               <form
                 className="space-y-3"
@@ -705,38 +797,42 @@ export default function VendorProfileDetailView({
                     className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm text-charcoal-800 resize-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-charcoal-600 mb-1">Prénom et Nom</label>
-                  <input
-                    type="text"
-                    value={contactForm.name}
-                    onChange={(e) => setContactForm((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="Sophie Dupont"
-                    className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-charcoal-600 mb-1">E-mail</label>
-                    <input
-                      type="email"
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))}
-                      placeholder="sophie@email.fr"
-                      className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-charcoal-600 mb-1">Téléphone</label>
-                    <input
-                      type="tel"
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))}
-                      placeholder="06 12 34 56 78"
-                      className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
-                    />
-                  </div>
-                </div>
+                {!isLoggedIn && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-charcoal-600 mb-1">Prénom et Nom</label>
+                      <input
+                        type="text"
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm((p) => ({ ...p, name: e.target.value }))}
+                        placeholder="Sophie Dupont"
+                        className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-charcoal-600 mb-1">E-mail</label>
+                        <input
+                          type="email"
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))}
+                          placeholder="sophie@email.fr"
+                          className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-charcoal-600 mb-1">Téléphone</label>
+                        <input
+                          type="tel"
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))}
+                          placeholder="06 12 34 56 78"
+                          className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
                 <button
                   type="submit"
                   disabled={sending || isContactDisabled}

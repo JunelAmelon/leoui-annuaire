@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
+import { getDocuments, addDocument, deleteDocument, updateDocument } from '@/lib/db';
 import { getClientDevis } from '@/lib/client-helpers';
+import { createNotification } from '@/lib/notifications';
 import { uploadFile } from '@/lib/storage';
 import { FileText, Search, Upload, Eye, Download, FileCheck, FilePen, File, Trash2, ChevronLeft, ChevronRight, X, CheckCircle2, XCircle, AlertCircle, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
@@ -86,6 +87,7 @@ export default function DocumentsPage() {
       // Créer la facture automatiquement
       const raw = (doc as any).raw;
       const invoiceRef = `FAC-${Date.now().toString().slice(-6)}`;
+      const amountTTC = raw?.amount || 0;
       await add('invoices', {
         vendor_id: raw?.vendor_id || '',
         client_id: client?.id || '',
@@ -93,13 +95,34 @@ export default function DocumentsPage() {
         client_email: client?.email || '',
         devis_id: devisId,
         reference: invoiceRef,
+        amount: amountTTC,
         amount_ht: (raw?.items || []).reduce((s: number, i: any) => s + i.qty * i.unit_price, 0),
-        amount_ttc: raw?.amount || 0,
+        amount_ttc: amountTTC,
         tva: raw?.tva || 0,
         items: raw?.items || [],
+        description: `${raw?.client_name || 'Client'} — ${raw?.reference || devisId}`,
+        category: 'Prestataire',
         status: 'pending',
         created_at: new Date().toISOString(),
         notes: `Facture générée depuis le devis ${raw?.reference}`,
+      });
+      // Notifier le prestataire
+      if (raw?.vendor_id) {
+        createNotification({
+          recipientId: raw.vendor_id,
+          type: 'devis',
+          title: 'Devis accepté',
+          message: `${client?.name || 'Un client'} a accepté le devis ${raw?.reference || ''} — ${amountTTC.toLocaleString('fr-FR')} €`,
+          link: '/espace-prestataire/devis',
+        });
+      }
+      // Notifier le client (confirmation)
+      createNotification({
+        recipientId: client?.id || '',
+        type: 'payment',
+        title: 'Facture créée',
+        message: `La facture ${invoiceRef} de ${amountTTC.toLocaleString('fr-FR')} € est disponible dans vos paiements.`,
+        link: '/espace-client/paiements',
       });
       toast.success('Devis accepté ✓ — Une facture a été générée');
       await fetchDocs();
@@ -108,10 +131,19 @@ export default function DocumentsPage() {
 
   const handleRejectDevis = async (doc: DocumentItem) => {
     const devisId = (doc as any).raw?.id || doc.id.replace('devis:', '');
+    const raw = (doc as any).raw;
     setValidating(doc.id);
     try {
-      const { updateDocument: upd } = await import('@/lib/db');
-      await upd('devis', devisId, { status: 'rejected', rejected_at: new Date().toISOString() });
+      await updateDocument('devis', devisId, { status: 'rejected', rejected_at: new Date().toISOString() });
+      if (raw?.vendor_id) {
+        createNotification({
+          recipientId: raw.vendor_id,
+          type: 'devis',
+          title: 'Devis refusé',
+          message: `${client?.name || 'Un client'} a refusé le devis ${raw?.reference || ''}.`,
+          link: '/espace-prestataire/devis',
+        });
+      }
       toast.success('Devis refusé');
       await fetchDocs();
     } catch { toast.error('Erreur'); } finally { setValidating(null); }
@@ -120,12 +152,20 @@ export default function DocumentsPage() {
   const handleSignContract = async (doc: DocumentItem) => {
     const contractId = (doc as any).contract_id || '';
     if (!contractId) { toast.error('Contrat introuvable'); return; }
+    const vendorId = (doc as any).vendor_id || '';
     setValidating(doc.id);
     try {
-      const { updateDocument: upd } = await import('@/lib/db');
-      await upd('contracts', contractId, { status: 'signed', signed_at: new Date().toISOString() });
-      // Aussi mettre à jour le document
-      await upd('documents', doc.id, { status: 'signed' });
+      await updateDocument('contracts', contractId, { status: 'signed', signed_at: new Date().toISOString() });
+      await updateDocument('documents', doc.id, { status: 'signed' });
+      if (vendorId) {
+        createNotification({
+          recipientId: vendorId,
+          type: 'contrat',
+          title: 'Contrat signé',
+          message: `${client?.name || 'Un client'} a signé le contrat.`,
+          link: '/espace-prestataire/contrats',
+        });
+      }
       toast.success('Contrat signé ✓');
       await fetchDocs();
     } catch { toast.error('Erreur'); } finally { setValidating(null); }
