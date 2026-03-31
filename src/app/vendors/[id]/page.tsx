@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ChatAssistant from '@/components/ChatAssistant';
 import VendorProfileDetailView from '@/components/VendorProfileDetailView';
 import { toast } from 'sonner';
 
@@ -106,7 +105,6 @@ export default function VendorProfilePage() {
         onSubmitContact={handleContact}
       />
       <Footer />
-      <ChatAssistant />
     </div>
   );
 }

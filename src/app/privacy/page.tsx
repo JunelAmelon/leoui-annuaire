@@ -14,7 +14,7 @@ export default function PrivacyPage() {
           {[
             {
               title: '1. Collecte des données',
-              text: 'LeOui collecte des informations personnelles lorsque vous créez un compte, contactez un prestataire ou utilisez nos services. Ces informations incluent votre nom, adresse e-mail, numéro de téléphone et préférences de mariage.',
+              text: 'LeOui.net collecte des informations personnelles lorsque vous créez un compte, contactez un prestataire ou utilisez nos services. Ces informations incluent votre nom, adresse e-mail, numéro de téléphone et préférences de mariage.',
             },
             {
               title: '2. Utilisation des données',
@@ -34,15 +34,15 @@ export default function PrivacyPage() {
             },
             {
               title: '6. Vos droits',
-              text: 'Conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, de suppression et de portabilité de vos données. Pour exercer ces droits, contactez-nous à privacy@leoui.fr.',
+              text: 'Conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, de suppression et de portabilité de vos données. Pour exercer ces droits, contactez-nous à privacy@leoui.net.',
             },
             {
               title: '7. Conservation',
-              text: 'Vos données sont conservées pendant la durée de votre relation avec LeOui et jusqu\'à 3 ans après la clôture de votre compte, sauf obligation légale contraire.',
+              text: 'Vos données sont conservées pendant la durée de votre relation avec LeOui.net et jusqu\'à 3 ans après la clôture de votre compte, sauf obligation légale contraire.',
             },
             {
               title: '8. Contact',
-              text: 'Pour toute question relative à notre politique de confidentialité, contactez notre délégué à la protection des données à privacy@leoui.fr ou par courrier à LeOui, 15 rue de la Paix, 75001 Paris.',
+              text: 'Pour toute question relative à notre politique de confidentialité, contactez notre délégué à la protection des données à privacy@leoui.net ou par courrier à LeOui.net, 15 rue de la Paix, 75001 Paris.',
             },
           ].map(({ title, text }) => (
             <div key={title}>

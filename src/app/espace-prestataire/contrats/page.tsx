@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, Clock, XCircle, X, Trash2, Sparkles, Minus, Euro, AlertCircle, MoreVertical } from 'lucide-react';
+import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, Clock, XCircle, X, Trash2, Sparkles, Minus, Euro, AlertCircle, MoreVertical, Save, Upload } from 'lucide-react';
 import { getDocuments, addDocument, updateDocument, deleteDocument, getDocument } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
@@ -162,11 +162,13 @@ function buildPDF(c: Contract, vendorName: string, vendorAddress?: string): jsPD
 
 export default function ContratsPage() {
   const { user } = useAuth();
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [modalTab, setModalTab] = useState<'form' | 'preview'>('form');
+  const [docMode, setDocMode] = useState<'generate' | 'import'>('generate');
   const [editItem, setEditItem] = useState<Contract | null>(null);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -175,6 +177,7 @@ export default function ContratsPage() {
   const [vendorCategory, setVendorCategory] = useState<string>('Autre');
   const [vendorAddress, setVendorAddress] = useState<string>('');
   const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_LINE }]);
+  const [importedPdfUrl, setImportedPdfUrl] = useState<string>('');
   const [form, setForm] = useState({
     title: '', client_name: '', client_email: '', client_id: '',
     type: TYPES[0], tva: '0', event_date: '', content: '', status: 'draft' as keyof typeof STATUS_CFG
@@ -233,6 +236,21 @@ export default function ContratsPage() {
     toast.success('Clauses juridiques appliquées');
   };
 
+  const handleImportPdf = async (file: File) => {
+    try {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error('Fichier trop volumineux (max 20MB)');
+        return;
+      }
+      const safeRef = (form.title || 'contrat').replace(/[^a-z0-9-_ ]/gi, '').slice(0, 40) || 'contrat';
+      const url = await uploadPdf(file, `contrat-${Date.now()}-${safeRef}`);
+      setImportedPdfUrl(url);
+      toast.success('PDF importé');
+    } catch {
+      toast.error('Import impossible');
+    }
+  };
+
   const openCreate = () => {
     setEditItem(null);
     const defaults = getDefaultServicesForCategory(vendorCategory);
@@ -245,6 +263,8 @@ export default function ContratsPage() {
     });
     setModalTab('form');
     setShowModal(true);
+    setImportedPdfUrl('');
+    setDocMode('generate');
   };
 
   const openEdit = (c: Contract) => {
@@ -257,6 +277,8 @@ export default function ContratsPage() {
     });
     setModalTab('form');
     setShowModal(true);
+    setDocMode(c.pdf_url ? 'import' : 'generate');
+    setImportedPdfUrl(c.pdf_url || '');
   };
 
   const handleSave = async () => {
@@ -270,6 +292,7 @@ export default function ContratsPage() {
         client_name: form.client_name, client_email: form.client_email, client_id: form.client_id,
         type: form.type, amount: total, items, tva: Number(form.tva) || 0,
         event_date: form.event_date, status: form.status, content: form.content,
+        pdf_url: importedPdfUrl || (editItem as any)?.pdf_url || '',
         created_at: editItem?.created_at || new Date().toISOString(),
         signed_at: form.status === 'signed' ? (editItem?.signed_at || new Date().toISOString()) : null
       };
@@ -284,10 +307,14 @@ export default function ContratsPage() {
     if (!c.client_email) { toast.error('Email client requis pour envoyer'); return; }
     setSending(c.id);
     try {
-      const pdf = buildPDF(c, vendorName, vendorAddress);
-      const pdfBlob = pdf.output('blob');
       let file_url = '';
-      try { file_url = await uploadPdf(pdfBlob, c.reference); } catch {}
+      if (c.pdf_url) {
+        file_url = c.pdf_url;
+      } else {
+        const pdf = buildPDF(c, vendorName, vendorAddress);
+        const pdfBlob = pdf.output('blob');
+        try { file_url = await uploadPdf(pdfBlob, c.reference); } catch {}
+      }
 
       // Chercher client par email
       const clients = await getDocuments('clients', [{ field: 'email', operator: '==', value: c.client_email }]);
@@ -317,13 +344,25 @@ export default function ContratsPage() {
           });
           convId = (newConv as any).id;
         }
-        await addDocument(`conversations/${convId}/messages`, {
-          sender: 'vendor', type: 'document',
-          content: `📄 Contrat envoyé : ${c.title}\nRéf. ${c.reference} — Montant : ${c.amount.toLocaleString('fr-FR')} €\n${file_url ? `Voir le contrat : ${file_url}` : 'Disponible dans vos documents.'}`,
-          file_url, document_type: 'contrat', contract_id: c.id,
-          created_at: new Date().toISOString(), read: false,
+        const msgContent = `📄 Contrat envoyé : ${c.title}\nRéf. ${c.reference} — Montant : ${c.amount.toLocaleString('fr-FR')} €\n${file_url ? `Voir le contrat : ${file_url}` : 'Disponible dans vos documents.'}`;
+        await addDocument('messages', {
+          conversation_id: convId,
+          sender_id: user.uid,
+          sender_role: 'vendor',
+          sender_name: vendorName,
+          content: msgContent,
+          created_at: new Date().toISOString(),
+          type: 'document',
+          file_url,
+          document_type: 'contrat',
+          contract_id: c.id,
+        } as any);
+        await updateDocument('conversations', convId, {
+          last_message: `Contrat envoyé : ${c.title}`,
+          last_message_at: new Date().toISOString(),
+          unread_count_client: 1,
+          updated_at: new Date().toISOString(),
         });
-        await updateDocument('conversations', convId, { last_message: `Contrat envoyé : ${c.title}`, unread_client: 1, updated_at: new Date().toISOString() });
       }
 
       if (resolvedClientId) {
@@ -519,6 +558,24 @@ export default function ContratsPage() {
                 <span className="ml-2 text-sm font-sans font-normal text-charcoal-400 bg-charcoal-50 px-2 py-0.5 rounded">{vendorCategory}</span>
               </h2>
               <div className="flex items-center gap-3">
+                <div className="hidden sm:flex bg-stone-100 rounded-xl p-1 gap-1">
+                  {([
+                    { key: 'generate' as const, label: 'Générer' },
+                    { key: 'import' as const, label: 'Importer PDF' },
+                  ]).map(m => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => {
+                        setDocMode(m.key);
+                        if (m.key === 'generate') setImportedPdfUrl('');
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${docMode === m.key ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500 hover:text-charcoal-700'}`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex bg-stone-100 rounded-xl p-1 gap-1">
                   {(['form', 'preview'] as const).map(t => (
                     <button key={t} onClick={() => setModalTab(t)}
@@ -535,7 +592,27 @@ export default function ContratsPage() {
             <div className="flex-1 overflow-y-auto">
               {modalTab === 'preview' ? (
                 <div className="p-6">
-                  <div className="bg-white border border-stone-200 rounded-xl shadow-sm font-sans text-sm max-w-2xl mx-auto overflow-hidden">
+                  {docMode === 'import' ? (
+                    <div className="max-w-2xl mx-auto">
+                      <div className="bg-ivory-50 border border-charcoal-100 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-charcoal-900">Contrat importé</p>
+                        <p className="text-xs text-charcoal-500 mt-1">Envoyez votre propre document PDF officiel.</p>
+                        {importedPdfUrl ? (
+                          <a
+                            href={importedPdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex mt-3 items-center gap-2 px-4 py-2 bg-white border border-charcoal-200 rounded-xl text-sm hover:bg-charcoal-50 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" /> Ouvrir le PDF
+                          </a>
+                        ) : (
+                          <p className="text-xs text-rose-700 mt-3">Importez un PDF pour afficher l'aperçu.</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-stone-200 rounded-xl shadow-sm font-sans text-sm max-w-2xl mx-auto overflow-hidden">
                     <div className="bg-charcoal-900 text-white text-center py-4 px-6">
                       <p className="text-xs tracking-widest uppercase text-white/60 mb-1">Contrat de prestation de services</p>
                       <p className="text-xs text-white/50">{editItem?.reference || 'Nouvelle référence'} — {new Date().toLocaleDateString('fr-FR')}</p>
@@ -591,10 +668,30 @@ export default function ContratsPage() {
                         <div><p className="font-semibold mb-8">Lu et approuvé — Signature client</p><div className="border-b border-charcoal-300 w-36" /><p className="mt-1">Nom : _______________ Date ___________</p></div>
                       </div>
                     </div>
-                  </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-6 space-y-5">
+                  <div className="sm:hidden flex bg-stone-100 rounded-xl p-1 gap-1 w-fit">
+                    {([
+                      { key: 'generate' as const, label: 'Générer' },
+                      { key: 'import' as const, label: 'Importer PDF' },
+                    ]).map(m => (
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => {
+                          setDocMode(m.key);
+                          if (m.key === 'generate') setImportedPdfUrl('');
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${docMode === m.key ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500 hover:text-charcoal-700'}`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* Client selection */}
                   {linkedClients.length > 0 && (
                     <div className="bg-rose-50 border border-rose-100 rounded-xl p-4">
@@ -627,86 +724,124 @@ export default function ContratsPage() {
                         className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" placeholder="email@exemple.com" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Type de contrat</label>
-                      <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
-                        className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400">
-                        {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal-700 mb-1.5">TVA (%)</label>
-                      <input type="number" value={form.tva} onChange={e => setForm(p => ({ ...p, tva: e.target.value }))} min="0" max="100"
-                        className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Date de l'événement</label>
-                      <input type="date" value={form.event_date} onChange={e => setForm(p => ({ ...p, event_date: e.target.value }))}
-                        className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" />
-                    </div>
-                  </div>
-
-                  {/* ===== PRESTATIONS ===== */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-semibold text-charcoal-700">Prestations &amp; tarifs</label>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={applyDefaultServices}
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-champagne-300 text-champagne-700 rounded-lg hover:bg-champagne-50 transition-colors">
-                          <Sparkles className="w-3.5 h-3.5" /> Prestations {vendorCategory}
-                        </button>
-                        <button type="button" onClick={() => setItems(p => [...p, { ...EMPTY_LINE }])}
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-charcoal-200 text-charcoal-600 rounded-lg hover:bg-stone-50 transition-colors">
-                          <Plus className="w-3.5 h-3.5" /> Ajouter
-                        </button>
-                      </div>
-                    </div>
-                    <div className="border border-charcoal-200 rounded-xl overflow-hidden">
-                      <div className="grid grid-cols-12 gap-2 bg-stone-50 px-3 py-2 text-xs font-semibold text-charcoal-500">
-                        <div className="col-span-6">Désignation</div>
-                        <div className="col-span-2 text-right">Qté</div>
-                        <div className="col-span-3 text-right">Prix HT</div>
-                        <div className="col-span-1" />
-                      </div>
-                      {items.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-12 gap-2 px-3 py-2 border-t border-charcoal-100 items-center">
-                          <input value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
-                            className="col-span-6 px-2 py-1.5 border border-charcoal-200 rounded-lg text-xs bg-white focus:outline-none focus:border-rose-400" placeholder="Désignation…" />
-                          <input type="number" value={item.qty} onChange={e => updateItem(idx, 'qty', Math.max(1, Number(e.target.value)))} min="1"
-                            className="col-span-2 px-2 py-1.5 border border-charcoal-200 rounded-lg text-xs text-right bg-white focus:outline-none focus:border-rose-400" />
-                          <div className="col-span-3 relative">
-                            <Euro className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-charcoal-400" />
-                            <input type="number" value={item.unit_price} onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))} min="0"
-                              className="w-full pl-5 pr-2 py-1.5 border border-charcoal-200 rounded-lg text-xs text-right bg-white focus:outline-none focus:border-rose-400" />
-                          </div>
-                          <button onClick={() => setItems(p => p.filter((_, i) => i !== idx))} disabled={items.length === 1}
-                            className="col-span-1 flex justify-center text-charcoal-300 hover:text-red-500 disabled:opacity-30 transition-colors">
-                            <Minus className="w-3.5 h-3.5" />
+                  {docMode === 'import' ? (
+                    <div className="bg-ivory-50 border border-charcoal-100 rounded-xl p-4">
+                      <p className="text-sm font-semibold text-charcoal-900">Importer votre contrat PDF</p>
+                      <p className="text-xs text-charcoal-500 mt-1">
+                        Dans ce mode, nous n'affichons pas le formulaire de génération. Vous envoyez votre document officiel.
+                      </p>
+                      {importedPdfUrl ? (
+                        <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
+                          <a
+                            href={importedPdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-charcoal-200 rounded-xl text-sm hover:bg-charcoal-50 transition-colors w-fit"
+                          >
+                            <Eye className="w-4 h-4" /> Ouvrir le PDF
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setImportedPdfUrl('')}
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-charcoal-200 rounded-xl text-sm hover:bg-stone-100 transition-colors w-fit"
+                          >
+                            <X className="w-4 h-4" /> Retirer
                           </button>
                         </div>
-                      ))}
+                      ) : (
+                        <p className="text-xs text-rose-700 mt-3">Aucun PDF importé pour le moment.</p>
+                      )}
                     </div>
-                    <div className="mt-3 flex flex-col items-end gap-1 text-sm">
-                      <div className="flex items-center gap-6 text-charcoal-500 text-xs"><span>Sous-total HT</span><span className="w-24 text-right">{ht.toFixed(2)} €</span></div>
-                      {Number(form.tva) > 0 && <div className="flex items-center gap-6 text-charcoal-500 text-xs"><span>TVA ({form.tva}%)</span><span className="w-24 text-right">{(ttc - ht).toFixed(2)} €</span></div>}
-                      <div className="flex items-center gap-6 font-bold text-charcoal-900 border-t border-charcoal-200 pt-1.5"><span>Total TTC</span><span className="w-24 text-right">{ttc.toFixed(2)} €</span></div>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Type de contrat</label>
+                          <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+                            className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400">
+                            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-charcoal-700 mb-1.5">TVA (%)</label>
+                          <input type="number" value={form.tva} onChange={e => setForm(p => ({ ...p, tva: e.target.value }))} min="0" max="100"
+                            className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Date de l'événement</label>
+                          <input type="date" value={form.event_date} onChange={e => setForm(p => ({ ...p, event_date: e.target.value }))}
+                            className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" />
+                        </div>
+                      </div>
 
-                  {/* ===== CONDITIONS JURIDIQUES ===== */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-semibold text-charcoal-700">Conditions générales &amp; clauses juridiques</label>
-                      <button type="button" onClick={applyLegalTemplate}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
-                        <Sparkles className="w-3.5 h-3.5" /> Template {vendorCategory}
-                      </button>
-                    </div>
-                    <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} rows={12}
-                      className="w-full px-4 py-3 border border-charcoal-200 rounded-xl text-xs bg-stone-50 focus:outline-none focus:border-rose-400 resize-y font-mono leading-relaxed"
-                      placeholder="Les clauses juridiques seront pré-remplies selon votre catégorie. Cliquez sur 'Template' pour appliquer." />
-                  </div>
+                      {/* ===== PRESTATIONS ===== */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-semibold text-charcoal-700">Prestations &amp; tarifs</label>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={applyDefaultServices}
+                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-champagne-300 text-champagne-700 rounded-lg hover:bg-champagne-50 transition-colors">
+                              <Sparkles className="w-3.5 h-3.5" /> Prestations {vendorCategory}
+                            </button>
+                            <button type="button" onClick={() => setItems(p => [...p, { ...EMPTY_LINE }])}
+                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-charcoal-200 text-charcoal-600 rounded-lg hover:bg-stone-50 transition-colors">
+                              <Plus className="w-3.5 h-3.5" /> Ajouter
+                            </button>
+                          </div>
+                        </div>
+                        <div className="border border-charcoal-200 rounded-xl overflow-hidden">
+                          <div className="grid grid-cols-12 gap-2 bg-stone-50 px-3 py-2 text-xs font-semibold text-charcoal-500">
+                            <div className="col-span-6">Désignation</div>
+                            <div className="col-span-2 text-right">Qté</div>
+                            <div className="col-span-3 text-right">Prix HT</div>
+                            <div className="col-span-1" />
+                          </div>
+                          {items.map((item, idx) => (
+                            <div key={idx} className="grid grid-cols-12 gap-2 px-3 py-2 border-t border-charcoal-100 items-center">
+                              <input value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
+                                className="col-span-6 px-2 py-1.5 border border-charcoal-200 rounded-lg text-xs bg-white focus:outline-none focus:border-rose-400" placeholder="Désignation…" />
+                              <input type="number" value={item.qty} onChange={e => updateItem(idx, 'qty', Math.max(1, Number(e.target.value)))} min="1"
+                                className="col-span-2 px-2 py-1.5 border border-charcoal-200 rounded-lg text-xs text-right bg-white focus:outline-none focus:border-rose-400" />
+                              <div className="col-span-3 relative">
+                                <Euro className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-charcoal-400" />
+                                <input type="number" value={item.unit_price} onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))} min="0"
+                                  className="w-full pl-5 pr-2 py-1.5 border border-charcoal-200 rounded-lg text-xs text-right bg-white focus:outline-none focus:border-rose-400" />
+                              </div>
+                              <button onClick={() => setItems(p => p.filter((_, i) => i !== idx))} disabled={items.length === 1}
+                                className="col-span-1 flex justify-center text-charcoal-300 hover:text-red-500 disabled:opacity-30 transition-colors">
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex flex-col items-end gap-1 text-sm">
+                          <div className="flex items-center gap-6 text-charcoal-500 text-xs"><span>Sous-total HT</span><span className="w-24 text-right">{ht.toFixed(2)} €</span></div>
+                          {Number(form.tva) > 0 && <div className="flex items-center gap-6 text-charcoal-500 text-xs"><span>TVA ({form.tva}%)</span><span className="w-24 text-right">{(ttc - ht).toFixed(2)} €</span></div>}
+                          <div className="flex items-center gap-6 font-bold text-charcoal-900 border-t border-charcoal-200 pt-1.5"><span>Total TTC</span><span className="w-24 text-right">{ttc.toFixed(2)} €</span></div>
+                        </div>
+                      </div>
+
+                      {/* ===== CONDITIONS JURIDIQUES ===== */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-semibold text-charcoal-700">Conditions générales &amp; clauses juridiques</label>
+                          <button type="button" onClick={applyLegalTemplate}
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
+                            <Sparkles className="w-3.5 h-3.5" /> Template {vendorCategory}
+                          </button>
+                        </div>
+                        <div className="mb-2 text-xs text-charcoal-500 flex items-start gap-2 bg-stone-50 border border-charcoal-100 rounded-xl px-3 py-2">
+                          <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <p>
+                            Le template est fourni à titre <strong>indicatif</strong> et ne constitue pas un conseil juridique.
+                          </p>
+                        </div>
+                        <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} rows={12}
+                          className="w-full px-4 py-3 border border-charcoal-200 rounded-xl text-xs bg-stone-50 focus:outline-none focus:border-rose-400 resize-y font-mono leading-relaxed"
+                          placeholder="Les clauses juridiques seront pré-remplies selon votre catégorie. Cliquez sur 'Template' pour appliquer." />
+                      </div>
+                    </>
+                  )}
 
                   {/* Statut */}
                   <div>
@@ -724,12 +859,32 @@ export default function ContratsPage() {
             <div className="flex gap-3 px-6 py-4 border-t border-stone-100 bg-stone-50 rounded-b-2xl flex-shrink-0">
               <button onClick={() => setShowModal(false)} className="px-4 py-2.5 border border-charcoal-200 text-charcoal-600 rounded-xl text-sm hover:bg-stone-50 transition-colors">Annuler</button>
               <div className="flex-1" />
-              <button onClick={() => { setModalTab('preview'); }} className="flex items-center gap-1.5 px-4 py-2.5 border border-charcoal-300 text-charcoal-700 rounded-xl text-sm hover:bg-stone-100 transition-colors">
-                <Eye className="w-4 h-4" /> Prévisualiser
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImportPdf(f);
+                  e.currentTarget.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => importInputRef.current?.click()}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm transition-colors ${docMode === 'import' ? 'bg-white border border-rose-200 text-rose-700 hover:bg-rose-50' : 'border border-charcoal-300 text-charcoal-700 hover:bg-stone-100'}`}
+              >
+                <Upload className="w-4 h-4" /> Importer PDF
               </button>
+              {docMode === 'generate' && (
+                <button onClick={() => { setModalTab('preview'); }} className="flex items-center gap-1.5 px-4 py-2.5 border border-charcoal-300 text-charcoal-700 rounded-xl text-sm hover:bg-stone-100 transition-colors">
+                  <Eye className="w-4 h-4" /> Prévisualiser
+                </button>
+              )}
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-charcoal-800 text-white rounded-xl text-sm font-semibold hover:bg-charcoal-900 disabled:opacity-50 transition-colors">
-                {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : '💾 Sauvegarder'}
+                <Save className="w-4 h-4" /> {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : 'Sauvegarder'}
               </button>
             </div>
           </div>

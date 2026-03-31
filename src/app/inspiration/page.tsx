@@ -1,77 +1,41 @@
+'use client';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Clock, ArrowRight, Bookmark } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
+import type { Article } from '@/lib/articles';
+
+const ALL_CATS = ['Tous', 'Real Wedding', 'Tendances', 'Conseils', 'Décoration', 'Mode'];
 
 export default function InspirationPage() {
-  const featured = {
-    title: 'Mariage Romantique au Château de Provence',
-    excerpt: 'Découvrez ce mariage élégant et intime célébré dans un château provençal, entre lavande et oliviers',
-    imageUrl: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    category: 'Real Wedding',
-    readTime: '8 min',
-    date: 'Mars 2026',
-  };
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('Tous');
 
-  const articles = [
-    {
-      title: 'Les tendances mariage 2026',
-      excerpt: 'Découvrez les couleurs, styles et idées qui marqueront les mariages cette année',
-      imageUrl: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'Tendances',
-      readTime: '5 min',
-      date: 'Février 2026',
-    },
-    {
-      title: 'Comment choisir son photographe',
-      excerpt: 'Nos conseils pour trouver le photographe parfait qui saura immortaliser votre journée',
-      imageUrl: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'Conseils',
-      readTime: '6 min',
-      date: 'Février 2026',
-    },
-    {
-      title: 'Mariage champêtre en Normandie',
-      excerpt: 'Une célébration bucolique et authentique dans une ferme rénovée',
-      imageUrl: 'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'Real Wedding',
-      readTime: '7 min',
-      date: 'Janvier 2026',
-    },
-    {
-      title: 'Budget mariage : le guide complet',
-      excerpt: 'Tout ce qu\'il faut savoir pour planifier et gérer le budget de votre mariage',
-      imageUrl: 'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'Conseils',
-      readTime: '10 min',
-      date: 'Janvier 2026',
-    },
-    {
-      title: 'Élégance parisienne : un mariage au Pavillon',
-      excerpt: 'Un mariage sophistiqué dans un lieu d\'exception au cœur de Paris',
-      imageUrl: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'Real Wedding',
-      readTime: '8 min',
-      date: 'Décembre 2025',
-    },
-    {
-      title: 'La checklist ultime du mariage',
-      excerpt: 'Organisez votre mariage mois par mois avec notre guide complet',
-      imageUrl: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800',
-      category: 'Conseils',
-      readTime: '12 min',
-      date: 'Décembre 2025',
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/public/articles', { cache: 'no-store' });
+        const data = await res.json();
+        if (res.ok && data?.ok && Array.isArray(data.articles)) {
+          setArticles(data.articles as Article[]);
+        }
+      } catch { /* ignore */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
 
-  const categories = [
-    { name: 'Tous', count: 156 },
-    { name: 'Real Weddings', count: 67 },
-    { name: 'Tendances', count: 34 },
-    { name: 'Conseils', count: 42 },
-    { name: 'Décoration', count: 28 },
-    { name: 'Mode', count: 21 },
-  ];
+  const featured = articles.find((a) => a.featured) ?? articles[0];
+  const rest = articles.filter((a) => a.id !== featured?.id);
+  const filtered = activeCategory === 'Tous' ? rest : rest.filter((a) => a.category === activeCategory);
+
+  const catCounts = ALL_CATS.map((c) => ({
+    name: c,
+    count: c === 'Tous' ? articles.length : articles.filter((a) => a.category === c).length,
+  }));
 
   return (
     <div className="min-h-screen bg-ivory-50">
@@ -80,140 +44,132 @@ export default function InspirationPage() {
       <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="font-display text-display-lg text-charcoal-900 mb-4">
-              Inspiration Mariage
-            </h1>
+            <h1 className="font-display text-display-lg text-charcoal-900 mb-4">Inspiration Mariage</h1>
             <p className="text-body-lg text-charcoal-600 max-w-2xl mx-auto">
               Idées, tendances et vrais mariages pour imaginer le vôtre
             </p>
           </div>
 
+          {/* Category filters */}
           <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {categories.map((cat, index) => (
+            {catCounts.map(({ name, count }) => (
               <button
-                key={index}
+                key={name}
+                onClick={() => setActiveCategory(name)}
                 className={`px-6 py-2.5 rounded-full font-medium text-body-sm transition-all duration-200 ${
-                  index === 0
+                  activeCategory === name
                     ? 'bg-rose-600 text-white shadow-soft'
                     : 'bg-white text-charcoal-700 hover:bg-charcoal-50 border border-charcoal-200'
                 }`}
               >
-                {cat.name} <span className="text-charcoal-500">({cat.count})</span>
+                {name} {count > 0 && <span className={activeCategory === name ? 'text-white/70' : 'text-charcoal-400'}>({count})</span>}
               </button>
             ))}
           </div>
 
-          <Link href="/inspiration/article" className="group block mb-16">
-            <article className="relative h-[600px] rounded-3xl overflow-hidden shadow-soft-xl hover:shadow-soft-xl transition-all duration-300">
-              <img
-                src={featured.imageUrl}
-                alt={featured.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-              <div className="absolute bottom-0 left-0 right-0 p-12">
-                <div className="max-w-3xl">
-                  <div className="flex items-center space-x-4 mb-6">
-                    <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md text-white text-caption font-semibold rounded-full">
-                      {featured.category}
-                    </span>
-                    <div className="flex items-center text-white/90 text-body-sm">
-                      <Clock className="w-4 h-4 mr-2" />
-                      {featured.readTime}
-                    </div>
-                    <span className="text-white/80 text-body-sm">{featured.date}</span>
-                  </div>
-
-                  <h2 className="font-display text-display-md text-white mb-4 group-hover:text-champagne-200 transition-colors">
-                    {featured.title}
-                  </h2>
-                  <p className="text-body-lg text-white/95 mb-6 max-w-2xl">
-                    {featured.excerpt}
-                  </p>
-
-                  <div className="flex items-center space-x-4">
-                    <span className="text-white font-medium flex items-center space-x-2">
-                      <span>Lire l'article</span>
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </Link>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((article, index) => (
-              <Link key={index} href="/inspiration/article" className="group block">
-                <article className="card-elevated">
-                  <div className="relative aspect-[4/3] overflow-hidden">
+          {loading ? (
+            <div className="flex justify-center py-24">
+              <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+            </div>
+          ) : articles.length === 0 ? (
+            <div className="text-center py-20 text-charcoal-400">
+              <p className="text-lg mb-2">Aucun article pour le moment</p>
+              <p className="text-sm">Revenez bientôt ou contactez un administrateur pour publier des articles.</p>
+            </div>
+          ) : (
+            <>
+              {/* Featured article */}
+              {featured && activeCategory === 'Tous' && (
+                <Link href={`/inspiration/${featured.id}`} className="group block mb-16">
+                  <article className="relative h-[480px] sm:h-[600px] rounded-3xl overflow-hidden shadow-soft-xl">
                     <img
-                      src={article.imageUrl}
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={featured.imageUrl}
+                      alt={featured.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
-                    <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors opacity-0 group-hover:opacity-100">
-                      <Bookmark className="w-5 h-5 text-charcoal-700" />
-                    </button>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <span className="px-3 py-1 bg-champagne-100 text-champagne-800 text-caption font-semibold rounded-full">
-                        {article.category}
-                      </span>
-                      <div className="flex items-center text-charcoal-500 text-body-sm">
-                        <Clock className="w-4 h-4 mr-1" />
-                        {article.readTime}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12">
+                      <div className="max-w-3xl">
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                          <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-full">
+                            {featured.category}
+                          </span>
+                          <span className="flex items-center text-white/80 text-sm gap-1.5">
+                            <Clock className="w-4 h-4" />{featured.readTime}
+                          </span>
+                          <span className="text-white/60 text-sm">{featured.date}</span>
+                        </div>
+                        <h2 className="font-display text-2xl sm:text-display-md text-white mb-3 group-hover:text-champagne-200 transition-colors">
+                          {featured.title}
+                        </h2>
+                        <p className="text-white/80 text-sm sm:text-body-lg mb-5 max-w-2xl line-clamp-2">
+                          {featured.excerpt}
+                        </p>
+                        <span className="text-white font-medium flex items-center gap-2 text-sm">
+                          Lire l&apos;article <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </span>
                       </div>
                     </div>
+                  </article>
+                </Link>
+              )}
 
-                    <h3 className="font-serif text-heading-md text-charcoal-900 mb-2 group-hover:text-rose-600 transition-colors">
-                      {article.title}
-                    </h3>
-                    <p className="text-body-md text-charcoal-600 mb-4 line-clamp-2">
-                      {article.excerpt}
-                    </p>
+              {/* Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filtered.map((article) => (
+                  <Link key={article.id} href={`/inspiration/${article.id}`} className="group block">
+                    <article className="card-elevated">
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        <img
+                          src={article.imageUrl}
+                          alt={article.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                      <div className="p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="px-3 py-1 bg-champagne-100 text-champagne-800 text-xs font-semibold rounded-full">
+                            {article.category}
+                          </span>
+                          <span className="flex items-center text-charcoal-500 text-sm gap-1">
+                            <Clock className="w-3.5 h-3.5" />{article.readTime}
+                          </span>
+                        </div>
+                        <h3 className="font-serif text-heading-md text-charcoal-900 mb-2 group-hover:text-rose-600 transition-colors">
+                          {article.title}
+                        </h3>
+                        <p className="text-body-md text-charcoal-600 mb-4 line-clamp-2">{article.excerpt}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-body-sm text-charcoal-500">{article.date}</span>
+                          <span className="text-rose-600 font-medium flex items-center gap-1 text-sm">
+                            Lire <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+              </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-body-sm text-charcoal-500">{article.date}</span>
-                      <span className="text-rose-600 font-medium flex items-center space-x-1 text-body-sm">
-                        <span>Lire</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-12 flex justify-center">
-            <button className="btn-primary">
-              Voir plus d'articles
-            </button>
-          </div>
+              {filtered.length === 0 && activeCategory !== 'Tous' && (
+                <div className="text-center py-16 text-charcoal-400">
+                  Aucun article dans cette catégorie pour le moment.
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
       <section className="py-16 px-4 bg-gradient-rose">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display text-display-md text-charcoal-900 mb-6">
-            Restez inspiré
-          </h2>
+          <h2 className="font-display text-display-md text-charcoal-900 mb-6">Restez inspiré</h2>
           <p className="text-body-lg text-charcoal-700 mb-8">
             Recevez nos derniers articles et conseils directement dans votre boîte mail
           </p>
           <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
-            <input
-              type="email"
-              placeholder="Votre adresse email"
-              className="flex-1 input-field"
-            />
-            <button type="submit" className="btn-primary whitespace-nowrap">
-              S'abonner
-            </button>
+            <input type="email" placeholder="Votre adresse email" className="flex-1 input-field" />
+            <button type="submit" className="btn-primary whitespace-nowrap">S&apos;abonner</button>
           </form>
         </div>
       </section>

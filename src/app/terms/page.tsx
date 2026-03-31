@@ -14,7 +14,7 @@ export default function TermsPage() {
           {[
             {
               title: '1. Objet',
-              text: 'Les présentes conditions générales d\'utilisation régissent l\'accès et l\'utilisation de la plateforme LeOui (leoui.fr), qui met en relation des couples souhaitant organiser leur mariage avec des prestataires professionnels.',
+              text: 'Les présentes conditions générales d\'utilisation régissent l\'accès et l\'utilisation de la plateforme LeOui.net (leoui.net), qui met en relation des couples souhaitant organiser leur mariage avec des prestataires professionnels.',
             },
             {
               title: '2. Inscription et compte',
@@ -22,11 +22,11 @@ export default function TermsPage() {
             },
             {
               title: '3. Utilisation du service',
-              text: 'LeOui est une plateforme de mise en relation. Nous ne sommes pas partie aux contrats conclus entre les couples et les prestataires. Les transactions, devis et engagements sont établis directement entre les parties.',
+              text: 'LeOui.net est une plateforme de mise en relation. Nous ne sommes pas partie aux contrats conclus entre les couples et les prestataires. Les transactions, devis et engagements sont établis directement entre les parties.',
             },
             {
               title: '4. Prestataires',
-              text: 'Les prestataires inscrits sur LeOui sont des professionnels indépendants. LeOui procède à une vérification de leurs profils mais ne garantit pas la qualité finale des prestations. Les avis publiés reflètent l\'expérience des couples.',
+              text: 'Les prestataires inscrits sur LeOui.net sont des professionnels indépendants. LeOui.net procède à une vérification de leurs profils mais ne garantit pas la qualité finale des prestations. Les avis publiés reflètent l\'expérience des couples.',
             },
             {
               title: '5. Propriété intellectuelle',
@@ -34,11 +34,11 @@ export default function TermsPage() {
             },
             {
               title: '6. Responsabilité',
-              text: 'LeOui ne peut être tenu responsable des dommages résultant de l\'utilisation de la plateforme, d\'une interruption de service ou de la conduite des prestataires référencés.',
+              text: 'LeOui.net ne peut être tenu responsable des dommages résultant de l\'utilisation de la plateforme, d\'une interruption de service ou de la conduite des prestataires référencés.',
             },
             {
               title: '7. Modification des CGU',
-              text: 'LeOui se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront informés de tout changement substantiel par e-mail ou notification sur la plateforme.',
+              text: 'LeOui.net se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront informés de tout changement substantiel par e-mail ou notification sur la plateforme.',
             },
             {
               title: '8. Droit applicable',

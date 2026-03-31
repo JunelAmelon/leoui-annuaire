@@ -28,7 +28,7 @@ export default function SignupPage() {
     setError('');
     try {
       const { isNew } = await signInWithGoogle();
-      if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui 🎉');
+      if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui.net 🎉');
       else toast.success('Connexion réussie !');
     } catch (err: any) {
       const code = err?.code || '';
@@ -88,7 +88,7 @@ export default function SignupPage() {
             <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/15">
               <Heart className="w-5 h-5 text-white fill-white" />
             </div>
-            <span className="font-display text-2xl text-white">LeOui</span>
+            <span className="font-display text-2xl text-white">LeOui.net</span>
           </Link>
 
           {/* Spacer */}
@@ -98,7 +98,7 @@ export default function SignupPage() {
           <div>
             <div className="flex items-center gap-2 mb-5">
               <span className="h-px w-8 bg-rose-400" />
-              <span className="text-rose-400 text-sm font-medium uppercase tracking-widest">Pourquoi LeOui ?</span>
+              <span className="text-rose-400 text-sm font-medium uppercase tracking-widest">Pourquoi LeOui.net ?</span>
             </div>
             <h2 className="font-display text-3xl text-white leading-snug mb-7">
               Tout ce qu'il vous faut<br />
@@ -141,7 +141,7 @@ export default function SignupPage() {
           <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center">
             <Heart className="w-5 h-5 text-rose-600 fill-rose-200" />
           </div>
-          <span className="font-display text-xl text-charcoal-900">LeOui</span>
+          <span className="font-display text-xl text-charcoal-900">LeOui.net</span>
         </div>
 
         <div className="max-w-md w-full mx-auto">

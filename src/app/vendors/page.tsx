@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ChatAssistant from '@/components/ChatAssistant';
-import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+import { TIER_BADGE } from '@/lib/subscription-plans';
+import type { SubscriptionTier } from '@/lib/subscription-plans';
 import { getDocuments } from '@/lib/db';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 
@@ -90,9 +91,7 @@ export default function VendorsPage() {
       if (sortBy === 'note') return (b.rating || 0) - (a.rating || 0);
       if (sortBy === 'prix-asc') return parsePrice(a.startingPrice) - parsePrice(b.startingPrice);
       if (sortBy === 'prix-desc') return parsePrice(b.startingPrice) - parsePrice(a.startingPrice);
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      return (b.rating || 0) - (a.rating || 0);
+      return (b.vendorScore || 0) - (a.vendorScore || 0);
     });
 
   const totalPages = Math.max(1, Math.ceil(filteredVendors.length / PER_PAGE));
@@ -337,11 +336,15 @@ export default function VendorsPage() {
                         alt={vendor.name}
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                       />
-                      {vendor.featured && (
-                        <span className="absolute top-2 left-2 px-2 py-0.5 bg-champagne-500 text-white text-xs font-semibold rounded-full">
-                          Featured
-                        </span>
-                      )}
+                      {(() => {
+                        const tier = (vendor.subscriptionTier || 'free') as SubscriptionTier;
+                        const badge = TIER_BADGE[tier];
+                        return badge ? (
+                          <span className={`absolute top-2 left-2 px-2 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1 ${badge.classes}`}>
+                            <Crown className="w-2.5 h-2.5" />{badge.label}
+                          </span>
+                        ) : null;
+                      })()}
                     </Link>
                     {/* Content */}
                     <div className="flex-1 p-5 flex flex-col justify-between">
@@ -461,7 +464,6 @@ export default function VendorsPage() {
       </div>
 
       <Footer />
-      <ChatAssistant />
     </div>
   );
 }

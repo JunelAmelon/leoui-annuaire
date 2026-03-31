@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Delete, RefreshCw } from 'lucide-react';
+import { Delete, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { useClientData } from '@/contexts/ClientDataContext';
+import { updateDocument } from '@/lib/db';
+import { toast } from 'sonner';
 
 /* ── Types ── */
 type CalcOp = '+' | '−' | '×' | '÷' | null;
@@ -18,8 +20,16 @@ const BUDGET_ITEMS = [
   { id: 'divers',      label: 'Divers & imprévus',    pct: 2,  color: '#D4B896' },
 ];
 
+type BudgetItem = {
+  id: string;
+  label: string;
+  pct: number;
+  color: string;
+  isCustom?: boolean;
+};
+
 export default function CalculatricePage() {
-  const { client, event } = useClientData();
+  const { client, event, refresh } = useClientData();
 
   /* ── Calculator state ── */
   const [display, setDisplay] = useState('0');
@@ -39,7 +49,27 @@ export default function CalculatricePage() {
     if (dbBudget && Number(dbBudget) > 0) setBudget(String(dbBudget));
     if (dbGuests && Number(dbGuests) > 0) setGuests(String(dbGuests));
   }, [event?.budget, event?.guest_count, (client as any)?.budget, (client as any)?.guest_count]);
+
+  useEffect(() => {
+    const saved = (event as any)?.budget_breakdown || (client as any)?.budget_breakdown;
+    if (!saved) return;
+    try {
+      if (Array.isArray(saved.items) && saved.items.length > 0) {
+        setBudgetItems(saved.items as BudgetItem[]);
+      }
+      if (saved.customPct && typeof saved.customPct === 'object') {
+        setCustomPct(saved.customPct as Record<string, number>);
+      }
+    } catch {
+      // ignore
+    }
+  }, [event, client]);
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>(BUDGET_ITEMS as unknown as BudgetItem[]);
   const [customPct, setCustomPct] = useState<Record<string, number>>({});
+  const [newPosteLabel, setNewPosteLabel] = useState('');
+  const [newPostePct, setNewPostePct] = useState('');
+  const [newPosteColor, setNewPosteColor] = useState('#A68540');
+  const [savingBreakdown, setSavingBreakdown] = useState(false);
 
   /* ── Calculator logic ── */
   const inputDigit = (d: string) => {
@@ -123,6 +153,66 @@ export default function CalculatricePage() {
 
   const getPct = (id: string, defaultPct: number) => customPct[id] ?? defaultPct;
 
+  const totalPct = budgetItems.reduce((s, i) => s + getPct(i.id, i.pct), 0);
+
+  const normalizePct = () => {
+    const currentTotal = totalPct;
+    if (!currentTotal || currentTotal <= 0) return;
+    const next: Record<string, number> = { ...customPct };
+    budgetItems.forEach((i) => {
+      const raw = getPct(i.id, i.pct);
+      const scaled = (raw / currentTotal) * 100;
+      next[i.id] = Math.max(0, Math.round(scaled * 10) / 10);
+    });
+    setCustomPct(next);
+  };
+
+  const addCustomPoste = () => {
+    const label = newPosteLabel.trim();
+    if (!label) return;
+    const pct = Math.max(0, Math.min(100, Number(newPostePct) || 0));
+    const id = `custom-${Date.now()}`;
+    const item: BudgetItem = { id, label, pct, color: newPosteColor || '#A68540', isCustom: true };
+    setBudgetItems((prev) => [...prev, item]);
+    setCustomPct((prev) => ({ ...prev, [id]: pct }));
+    setNewPosteLabel('');
+    setNewPostePct('');
+  };
+
+  const removeCustomPoste = (id: string) => {
+    setBudgetItems((prev) => prev.filter((i) => i.id !== id));
+    setCustomPct((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const saveBreakdown = async () => {
+    if (!event?.id && !client?.id) return;
+    setSavingBreakdown(true);
+    try {
+      const payload = {
+        budget_breakdown: {
+          items: budgetItems,
+          customPct,
+          updated_at: new Date().toISOString(),
+        },
+      };
+      if (event?.id) {
+        await updateDocument('events', event.id, payload);
+      } else if (client?.id) {
+        await updateDocument('clients', client.id, payload);
+      }
+      await refresh();
+      toast.success('Répartition enregistrée');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur lors de l\'enregistrement');
+    } finally {
+      setSavingBreakdown(false);
+    }
+  };
+
   /* ── UI helpers ── */
   const btnBase = 'flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-100 active:scale-95 select-none cursor-pointer h-14';
 
@@ -132,8 +222,8 @@ export default function CalculatricePage() {
       {/* Page header */}
       <div>
         <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace client</p>
-        <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Calculatrice & budget</h1>
-        <p className="text-sm text-charcoal-500 mt-0.5">Calculatrice instantanée + estimateur de budget mariage</p>
+        <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Budget</h1>
+        <p className="text-sm text-charcoal-500 mt-0.5">Outils de calcul + estimateur de budget mariage</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
@@ -278,9 +368,23 @@ export default function CalculatricePage() {
 
           {/* Breakdown */}
           <div className="bg-white rounded-2xl border border-charcoal-100 shadow-soft p-5">
-            <h3 className="font-semibold text-charcoal-900 text-sm mb-4">Répartition par poste</h3>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="font-semibold text-charcoal-900 text-sm">Répartition par poste</h3>
+              <div className="flex items-center gap-3">
+                <button onClick={normalizePct} className="text-xs text-charcoal-400 hover:text-charcoal-700 transition-colors">
+                  Normaliser à 100%
+                </button>
+                <button
+                  onClick={saveBreakdown}
+                  disabled={savingBreakdown}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                >
+                  {savingBreakdown ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </div>
             <div className="space-y-3">
-              {BUDGET_ITEMS.map(item => {
+              {budgetItems.map(item => {
                 const pct = getPct(item.id, item.pct);
                 const amount = Math.round((totalBudget * pct) / 100);
                 return (
@@ -291,6 +395,16 @@ export default function CalculatricePage() {
                         <span className="text-xs text-charcoal-700">{item.label}</span>
                       </div>
                       <div className="flex items-center gap-3">
+                        {item.isCustom && (
+                          <button
+                            type="button"
+                            onClick={() => removeCustomPoste(item.id)}
+                            className="p-1 rounded-lg hover:bg-charcoal-50 text-charcoal-400 hover:text-rose-600 transition-colors"
+                            aria-label="Supprimer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <div className="flex items-center gap-1">
                           <input
                             type="number" min="0" max="100" value={pct}
@@ -314,16 +428,50 @@ export default function CalculatricePage() {
               })}
             </div>
 
+            <div className="mt-4 pt-4 border-t border-charcoal-100">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                <input
+                  value={newPosteLabel}
+                  onChange={(e) => setNewPosteLabel(e.target.value)}
+                  placeholder="Ajouter un poste (ex: Alliances)"
+                  className="sm:col-span-7 px-3 py-2 text-sm border border-charcoal-200 rounded-xl focus:outline-none focus:border-rose-400 bg-ivory-50"
+                />
+                <input
+                  value={newPostePct}
+                  onChange={(e) => setNewPostePct(e.target.value)}
+                  placeholder="%"
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="sm:col-span-2 px-3 py-2 text-sm border border-charcoal-200 rounded-xl focus:outline-none focus:border-rose-400 bg-ivory-50 font-mono"
+                />
+                <input
+                  value={newPosteColor}
+                  onChange={(e) => setNewPosteColor(e.target.value)}
+                  type="color"
+                  className="sm:col-span-2 h-10 w-full border border-charcoal-200 rounded-xl bg-white px-2"
+                />
+                <button
+                  type="button"
+                  onClick={addCustomPoste}
+                  className="sm:col-span-1 h-10 flex items-center justify-center bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors"
+                  aria-label="Ajouter"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
             {/* Total check */}
             <div className="mt-4 pt-4 border-t border-charcoal-100 flex items-center justify-between">
               <span className="text-xs text-charcoal-500">Total alloué</span>
               <span className={`font-mono text-sm font-bold ${
-                BUDGET_ITEMS.reduce((s, i) => s + getPct(i.id, i.pct), 0) === 100
+                Math.abs(totalPct - 100) < 0.05
                   ? 'text-green-600' : 'text-rose-600'
               }`}>
-                {BUDGET_ITEMS.reduce((s, i) => s + getPct(i.id, i.pct), 0)}%
+                {totalPct}%
                 {' / '}
-                {BUDGET_ITEMS.reduce((s, i) => s + Math.round((totalBudget * getPct(i.id, i.pct)) / 100), 0).toLocaleString('fr-FR')} €
+                {budgetItems.reduce((s, i) => s + Math.round((totalBudget * getPct(i.id, i.pct)) / 100), 0).toLocaleString('fr-FR')} €
               </span>
             </div>
           </div>

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ChatAssistant from '@/components/ChatAssistant';
 import { MapPin, ArrowRight, Search, X } from 'lucide-react';
 import { getDocuments } from '@/lib/db';
 
@@ -308,7 +307,6 @@ export default function CitiesPage() {
       </section>
 
       <Footer />
-      <ChatAssistant />
     </div>
   );
 }

@@ -9,9 +9,8 @@ export default function Header() {
 
   const navLinks = [
     { href: '/vendors',         label: 'Prestataires' },
-    { href: '/venues',          label: 'Lieux' },
     { href: '/inspiration',     label: 'Inspiration' },
-    { href: '/wedding-planner', label: 'Wedding Planner' },
+    { href: '/wedding-planner', label: 'Planifier' },
     { href: '/cities',          label: 'Régions' },
   ];
 
@@ -26,7 +25,7 @@ export default function Header() {
               <div className="w-7 h-7 border border-rose-600 flex items-center justify-center transition-colors duration-300 group-hover:bg-rose-600">
                 <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors duration-300" />
               </div>
-              <span className="font-serif text-[1.3rem] tracking-wide text-charcoal-900 leading-none">LeOui</span>
+              <span className="font-serif text-[1.3rem] tracking-wide text-charcoal-900 leading-none">LeOui.net</span>
             </Link>
 
             {/* Desktop nav — animated underline links */}
@@ -91,7 +90,7 @@ export default function Header() {
                 <div className="w-6 h-6 border border-rose-600 flex items-center justify-center">
                   <Heart className="w-3 h-3 text-rose-600 fill-rose-600" />
                 </div>
-                <span className="font-serif text-lg text-charcoal-900 tracking-wide">LeOui</span>
+                <span className="font-serif text-lg text-charcoal-900 tracking-wide">LeOui.net</span>
               </Link>
               <button onClick={() => setDrawerOpen(false)} className="p-1 text-charcoal-500">
                 <X className="w-5 h-5" />

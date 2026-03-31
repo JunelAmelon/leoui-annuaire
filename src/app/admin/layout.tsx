@@ -7,13 +7,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Heart, LayoutDashboard, Users, Store, MapPin, Database,
-  Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
+  Settings, LogOut, Menu, X, ChevronLeft, ChevronRight, BookOpen,
 } from 'lucide-react';
 
 const NAV = [
   { href: '/admin',               icon: LayoutDashboard, label: 'Tableau de bord', exact: true },
   { href: '/admin/clients',       icon: Users,            label: 'Clients' },
   { href: '/admin/prestataires',  icon: Store,            label: 'Prestataires' },
+  { href: '/admin/articles',      icon: BookOpen,         label: 'Articles' },
   { href: '/admin/cities',        icon: MapPin,           label: 'Villes' },
   { href: '/admin/seed',          icon: Database,         label: 'Données de test' },
 ];

@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { MessageSquare, Send, Paperclip, Clock, Search, Heart } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, Clock, Search, Heart, ChevronLeft } from 'lucide-react';
 import { getDocuments, getDocument, addDocument, updateDocument } from '@/lib/db';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/storage';
 
 interface Conversation {
   id: string;
@@ -22,6 +23,7 @@ interface Message {
   sender_role: 'client' | 'vendor';
   sender_name?: string;
   content: string;
+  attachments?: Array<{ url: string; name?: string; type?: string }>;
   created_at?: string;
 }
 
@@ -33,6 +35,7 @@ export default function ContactsPage() {
   const [newMsg, setNewMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -58,7 +61,7 @@ export default function ContactsPage() {
           if (!c.client_id) return;
           try {
             const cl = await getDocument('clients', c.client_id);
-            if (cl) photos[c.client_id] = (cl as any).photoURL || '';
+            if (cl) photos[c.client_id] = (cl as any).photoURL || (cl as any).photo || '';
           } catch {}
         }));
         setClientPhotos(photos);
@@ -96,6 +99,17 @@ export default function ContactsPage() {
     load();
   }, [selected]);
 
+  useEffect(() => {
+    if (!selected?.client_id) return;
+    if (clientPhotos[selected.client_id]) return;
+    getDocument('clients', selected.client_id)
+      .then((cl) => {
+        const url = (cl as any)?.photoURL || (cl as any)?.photo || '';
+        if (url) setClientPhotos((p) => ({ ...p, [selected.client_id!]: url }));
+      })
+      .catch(() => {});
+  }, [selected?.client_id, clientPhotos]);
+
   const sendMessage = async () => {
     if (!newMsg.trim() || !selected || !user) return;
     setSending(true);
@@ -123,6 +137,36 @@ export default function ContactsPage() {
     }
   };
 
+  const sendAttachment = async (file: File) => {
+    if (!selected || !user) return;
+    setUploading(true);
+    const desc = newMsg.trim();
+    setNewMsg('');
+    try {
+      const url = await uploadFile(file, 'chat');
+      const msg = {
+        conversation_id: selected.id,
+        sender_id: user.uid,
+        sender_role: 'vendor',
+        sender_name: user.displayName || user.email,
+        content: desc,
+        attachments: [{ url, name: file.name, type: file.type }],
+        created_at: new Date().toISOString(),
+      };
+      await addDocument('messages', msg);
+      await updateDocument('conversations', selected.id, {
+        last_message: desc ? desc : `📎 ${file.name}`,
+        last_message_at: new Date().toISOString(),
+      });
+      setMessages(prev => [...prev, { id: Date.now().toString(), ...msg } as Message]);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch {
+      toast.error('Erreur lors de l\'envoi');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const filtered = conversations.filter(c =>
     c.client_name?.toLowerCase().includes(search.toLowerCase())
   );
@@ -131,6 +175,27 @@ export default function ContactsPage() {
     if (!iso) return '';
     const d = new Date(iso);
     return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const dayKey = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const formatDayLabel = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const today = new Date();
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diffDays = Math.round((d0 - t0) / 86400000);
+    if (diffDays === 0) return 'Aujourd\'hui';
+    if (diffDays === -1) return 'Hier';
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   return (
@@ -186,9 +251,9 @@ export default function ContactsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-charcoal-900 truncate">{conv.client_name || 'Client'}</p>
-                          {(conv.unread_count_vendor ?? 0) > 0 && (
+                          {(((conv.unread_count_vendor as any) ?? (conv as any).unread_vendor) ?? 0) > 0 && (
                             <span className="ml-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center flex-shrink-0">
-                              {conv.unread_count_vendor}
+                              {((conv.unread_count_vendor as any) ?? (conv as any).unread_vendor) ?? 0}
                             </span>
                           )}
                         </div>
@@ -214,7 +279,7 @@ export default function ContactsPage() {
                 {/* Header */}
                 <div className="px-4 py-3.5 border-b border-charcoal-100 flex items-center gap-3 flex-shrink-0">
                   <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-charcoal-50 transition-colors flex-shrink-0">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                   {selected.client_id && clientPhotos[selected.client_id] ? (
                     <img src={clientPhotos[selected.client_id]} alt={selected.client_name} className="w-9 h-9 rounded-full object-cover" />
@@ -236,33 +301,62 @@ export default function ContactsPage() {
                       <p className="text-sm text-charcoal-400">Démarrez la conversation</p>
                     </div>
                   ) : (
-                    messages.map((msg) => {
+                    messages.map((msg, idx) => {
                       const isVendor = msg.sender_role === 'vendor';
                       const clientInitial = (selected.client_name || 'C').charAt(0).toUpperCase();
+                      const prev = messages[idx - 1];
+                      const showDay = dayKey(msg.created_at) !== dayKey(prev?.created_at);
+
                       return (
-                        <div key={msg.id} className={`flex items-end gap-2 ${isVendor ? 'justify-end' : 'justify-start'}`}>
-                          {!isVendor ? (
-                            selected.client_id && clientPhotos[selected.client_id] ? (
-                              <img src={clientPhotos[selected.client_id]} alt={clientInitial} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5" />
-                            ) : (
-                              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0 mb-0.5">
-                                {clientInitial}
-                              </div>
-                            )
-                          ) : vendorPhoto ? (
-                            <img src={vendorPhoto} alt="Vous" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5 order-last" />
-                          ) : null}
-                          <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
-                            isVendor
-                              ? 'bg-rose-600 text-white rounded-br-md'
-                              : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
-                          }`}>
-                            <p>{msg.content}</p>
-                            {msg.created_at && (
-                              <p className={`text-xs mt-1 ${isVendor ? 'text-rose-200' : 'text-charcoal-400'}`}>
-                                {formatTime(msg.created_at)}
-                              </p>
-                            )}
+                        <div key={msg.id}>
+                          {showDay && msg.created_at && (
+                            <div className="flex justify-center my-3">
+                              <span className="text-[11px] font-semibold text-charcoal-500 bg-charcoal-50 border border-charcoal-100 px-3 py-1 rounded-full">
+                                {formatDayLabel(msg.created_at)}
+                              </span>
+                            </div>
+                          )}
+                          <div className={`flex items-end gap-2 ${isVendor ? 'justify-end' : 'justify-start'}`}>
+                            {!isVendor ? (
+                              selected.client_id && clientPhotos[selected.client_id] ? (
+                                <img src={clientPhotos[selected.client_id]} alt={clientInitial} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5" />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0 mb-0.5">
+                                  {clientInitial}
+                                </div>
+                              )
+                            ) : vendorPhoto ? (
+                              <img src={vendorPhoto} alt="Vous" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5 order-last" />
+                            ) : null}
+                            <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
+                              isVendor
+                                ? 'bg-rose-600 text-white rounded-br-md'
+                                : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
+                            }`}>
+                              {msg.content && <p>{msg.content}</p>}
+                              {msg.attachments?.map((a, i) => {
+                                const type = (a.type || '').toLowerCase();
+                                const isImg = type.startsWith('image/');
+                                return (
+                                  <div key={i} className="mt-2">
+                                    {isImg ? (
+                                      <a href={a.url} target="_blank" rel="noreferrer">
+                                        <img src={a.url} alt={a.name || 'Image'} className="max-h-56 rounded-xl border border-white/20 object-cover" />
+                                      </a>
+                                    ) : (
+                                      <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isVendor ? 'text-rose-100' : 'text-rose-700'}`}>
+                                        📎 {a.name || 'Fichier'}
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {msg.created_at && (
+                                <p className={`text-xs mt-1 ${isVendor ? 'text-rose-200' : 'text-charcoal-400'}`}>
+                                  {formatTime(msg.created_at)}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -273,7 +367,22 @@ export default function ContactsPage() {
 
                 {/* Input */}
                 <div className="px-4 py-3 border-t border-charcoal-100 flex items-center gap-2 flex-shrink-0">
-                  <button className="p-2 text-charcoal-400 hover:text-charcoal-600 hover:bg-charcoal-50 rounded-lg transition-colors">
+                  <input
+                    type="file"
+                    id="vendor-chat-file"
+                    className="hidden"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      if (f) void sendAttachment(f);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!selected || uploading}
+                    onClick={() => document.getElementById('vendor-chat-file')?.click()}
+                    className="p-2 text-charcoal-400 hover:text-charcoal-600 hover:bg-charcoal-50 rounded-lg transition-colors disabled:opacity-40"
+                  >
                     <Paperclip className="w-4 h-4" />
                   </button>
                   <input

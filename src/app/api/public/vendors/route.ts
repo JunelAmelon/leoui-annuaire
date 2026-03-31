@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
+import { computeVendorScore } from '@/lib/subscription-plans';
 
 export async function GET() {
   try {
@@ -8,7 +9,7 @@ export async function GET() {
       adminDb.collection('cities').where('active', '==', true).get(),
     ]);
 
-    const vendors = vendorsSnap.docs
+    const rawVendors = vendorsSnap.docs
       .map((d) => ({ ...d.data(), id: d.id }))
       .filter((v: any) => v?.name && v?.status !== 'inactive')
       .map((v: any) => ({
@@ -27,7 +28,14 @@ export async function GET() {
         description: String(v.description || ''),
         responseTime: String(v.responseTime || '48h'),
         status: String(v.status || 'active'),
+        subscriptionTier: String(v.subscriptionTier || 'free'),
+        subscriptionStatus: String(v.subscriptionStatus || 'inactive'),
+        weddingsCompleted: Number(v.weddingsCompleted || 0),
       }));
+
+    const vendors = rawVendors
+      .map((v: any) => ({ ...v, vendorScore: computeVendorScore(v) }))
+      .sort((a: any, b: any) => b.vendorScore - a.vendorScore);
 
     const cities = citiesSnap.docs
       .map((d) => ({ ...d.data(), id: d.id }))

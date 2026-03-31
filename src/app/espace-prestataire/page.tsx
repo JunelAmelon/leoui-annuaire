@@ -5,16 +5,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from './PrestataireDashboardLayout';
 import {
   Eye, MessageSquare, FileText, Star, TrendingUp,
-  ArrowRight, CalendarDays, BadgeCheck, Clock, ChevronRight,
+  ArrowRight, CalendarDays, BadgeCheck, Clock, ChevronRight, Crown, Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDocuments, getDocument } from '@/lib/db';
+import type { SubscriptionTier } from '@/lib/subscription-plans';
 
 export default function EspacePrestatairePage() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ views: 0, messages: 0, devis: 0, rating: 0 });
   const [recentContacts, setRecentContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier | null>(null);
+  const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -35,7 +38,24 @@ export default function EspacePrestatairePage() {
           devis: devisList.length,
           rating: avgRating,
         });
-        setRecentContacts(conversations.slice(0, 4));
+        const recent = conversations.slice(0, 4);
+        setRecentContacts(recent);
+
+        try {
+          const photos: Record<string, string> = {};
+          await Promise.all(recent.map(async (c: any) => {
+            if (!c?.client_id) return;
+            try {
+              const cl = await getDocument('clients', c.client_id);
+              const url = (cl as any)?.photoURL || '';
+              if (url) photos[c.client_id] = url;
+            } catch {}
+          }));
+          setClientPhotos(photos);
+        } catch {}
+        const tier = (vendorDoc as any)?.subscriptionTier as SubscriptionTier || 'free';
+        const status = (vendorDoc as any)?.subscriptionStatus || 'inactive';
+        setSubscriptionTier(status === 'active' ? tier : 'free');
       } catch {
         // silently fail
       } finally {
@@ -62,6 +82,29 @@ export default function EspacePrestatairePage() {
 
   return (
     <PrestataireDashboardLayout>
+      {/* Upsell banner — visible si plan free */}
+      {!loading && subscriptionTier === 'free' && (
+        <div className="mb-6 bg-gradient-to-r from-rose-600 to-rose-500 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Crown className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-white text-sm">Boostez votre visibilité — passez au plan payant</p>
+              <p className="text-white/75 text-xs mt-0.5 leading-relaxed">
+                Les prestataires Pro et Elite apparaissent <strong className="text-white">en tête des résultats</strong> et reçoivent 3× plus de contacts.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/espace-prestataire/abonnement"
+            className="flex items-center gap-2 bg-white hover:bg-rose-50 text-rose-600 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex-shrink-0 whitespace-nowrap"
+          >
+            <Zap className="w-4 h-4" /> Voir les offres
+          </Link>
+        </div>
+      )}
+
       {/* Page header */}
       <div className="mb-6">
         <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
@@ -130,9 +173,13 @@ export default function EspacePrestatairePage() {
               <div className="divide-y divide-charcoal-50">
                 {recentContacts.map((c, i) => (
                   <div key={i} className="flex items-center gap-3 p-4 hover:bg-charcoal-50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0">
-                      {(c.client_name || 'C').charAt(0)}
-                    </div>
+                    {c?.client_id && clientPhotos[c.client_id] ? (
+                      <img src={clientPhotos[c.client_id]} alt={c.client_name || 'Client'} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0">
+                        {(c.client_name || 'C').charAt(0)}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-charcoal-900 truncate">{c.client_name || 'Client'}</p>
                       <p className="text-xs text-charcoal-400 flex items-center gap-1 mt-0.5">

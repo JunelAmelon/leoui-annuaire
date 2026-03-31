@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import HomeSearchBar from '@/components/HomeSearchBar';
 import HomeFeaturedVendors from '@/components/HomeFeaturedVendors';
+import HomeRegions from '@/components/HomeRegions';
 import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, TrendingUp, Users, Award, Check, Store } from 'lucide-react';
 
 const MÉTIERS = [
@@ -14,9 +15,9 @@ const MÉTIERS = [
 
 
 const TESTIMONIALS = [
-  { name: 'Sophie & Thomas',    city: 'Paris · juin 2025',      text: '« Une sélection irréprochable. Chaque prestataire trouvé sur LeOui a dépassé nos attentes. Notre jour J était exactement comme imaginé. »' },
-  { name: 'Marie & Alexandre',  city: 'Lyon · septembre 2025',  text: '« Grâce à LeOui, nous avons constitué toute notre équipe en quelques jours. Un gain de temps précieux, une qualité incomparable. »' },
-  { name: 'Camille & Julien',   city: 'Bordeaux · mai 2025',    text: "« L\u2019interface est élégante, les prestataires sont d\u2019une qualité rare. Notre photographe était absolument exceptionnel. »" },
+  { name: 'Sophie & Thomas',    city: 'Paris · juin 2025',      text: '« Une sélection irréprochable. Chaque prestataire trouvé sur LeOui.net a dépassé nos attentes. Notre jour J était exactement comme imaginé. »' },
+  { name: 'Marie & Alexandre',  city: 'Lyon · septembre 2025',  text: '« Grâce à LeOui.net, nous avons constitué toute notre équipe en quelques jours. Un gain de temps précieux, une qualité incomparable. »' },
+  { name: 'Camille & Julien',   city: 'Bordeaux · mai 2025',    text: "« L’interface est élégante, les prestataires sont d’une qualité rare. Notre photographe était absolument exceptionnel. »" },
 ];
 
 export default function HomePage() {
@@ -274,29 +275,7 @@ export default function HomePage() {
               </h2>
             </div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { name: 'Paris',     count: 450, img: 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=500' },
-              { name: 'Lyon',      count: 287, img: 'https://images.pexels.com/photos/2901215/pexels-photo-2901215.jpeg?auto=compress&cs=tinysrgb&w=500' },
-              { name: 'Provence',  count: 198, img: 'https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=500' },
-              { name: 'Bordeaux',  count: 165, img: 'https://images.pexels.com/photos/1974596/pexels-photo-1974596.jpeg?auto=compress&cs=tinysrgb&w=500' },
-            ].map((city) => (
-              <Link key={city.name} href={`/cities/${city.name.toLowerCase()}`} className="group block relative overflow-hidden" style={{ height: 'clamp(180px, 25vw, 280px)' }}>
-                <img
-                  src={city.img}
-                  alt={city.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/85 via-charcoal-900/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-5">
-                  <h3 className="font-serif text-white text-xl font-light" style={{ letterSpacing: '-0.005em' }}>{city.name}</h3>
-                  <p className="text-white/40 text-[0.65rem] tracking-[0.1em] uppercase font-medium mt-0.5">
-                    {city.count} prestataires
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <HomeRegions />
         </div>
       </section>
 
@@ -354,7 +333,7 @@ export default function HomePage() {
                 <em className="font-light" style={{ fontStyle: 'italic' }}>autour du mariage ?</em>
               </h2>
               <p className="text-charcoal-500 text-sm font-light leading-relaxed mb-8 max-w-md">
-                Rejoignez 1 500 professionnels qui développent leur activité via LeOui. Visibilité premium, leads qualifiés, espace de gestion dédié.
+                Rejoignez 1 500 professionnels qui développent leur activité via LeOui.net. Visibilité premium, leads qualifiés, espace de gestion dédié.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/vendors/join" className="btn-primary">

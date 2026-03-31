@@ -35,7 +35,7 @@ export function renderEmailTemplate(opts: EmailTemplateOptions): string {
             <div style="width:36px;height:36px;background:#C0392B;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;">
               <span style="color:#fff;font-size:16px;">♥</span>
             </div>
-            <span style="font-family:Georgia,serif;font-size:22px;font-weight:300;letter-spacing:0.06em;color:#1a1a1a;">LeOui</span>
+            <span style="font-family:Georgia,serif;font-size:22px;font-weight:300;letter-spacing:0.06em;color:#1a1a1a;">LeOui.net</span>
           </div>
         </td></tr>
 
@@ -62,8 +62,8 @@ export function renderEmailTemplate(opts: EmailTemplateOptions): string {
         <!-- FOOTER -->
         <tr><td style="padding:28px 16px 0;text-align:center;">
           <p style="font-size:12px;color:#9a9490;line-height:1.6;margin:0;">
-            ${footerNote || 'Vous recevez cet email car vous êtes inscrit(e) sur <strong style="color:#C0392B;">LeOui</strong>.'}
-            <br/>© ${new Date().getFullYear()} LeOui — La plateforme du mariage parfait.
+            ${footerNote || 'Vous recevez cet email car vous êtes inscrit(e) sur <strong style="color:#C0392B;">LeOui.net</strong>.'}
+            <br/>© ${new Date().getFullYear()} LeOui.net — La plateforme du mariage parfait.
           </p>
         </td></tr>
 
@@ -78,7 +78,7 @@ export function renderEmailTemplate(opts: EmailTemplateOptions): string {
 export function renderContactEmail(opts: { vendorName: string; clientName: string; message: string; replyEmail?: string }) {
   return renderEmailTemplate({
     title: `Nouveau message de ${opts.clientName}`,
-    preheader: `${opts.clientName} vous a envoyé un message via LeOui`,
+    preheader: `${opts.clientName} vous a envoyé un message via LeOui.net`,
     bodyHtml: `
       <p style="margin:0 0 12px;">Bonjour <strong>${opts.vendorName}</strong>,</p>
       <p style="margin:0 0 16px;">Vous avez reçu un nouveau message de <strong>${opts.clientName}</strong>&nbsp;:</p>
@@ -87,9 +87,9 @@ export function renderContactEmail(opts: { vendorName: string; clientName: strin
       </blockquote>
       ${opts.replyEmail ? `<p style="margin:0;font-size:13px;color:#6a6a6a;">Répondre à : <a href="mailto:${opts.replyEmail}" style="color:#C0392B;">${opts.replyEmail}</a></p>` : ''}
     `,
-    ctaLabel: 'Répondre via LeOui',
-    ctaUrl: 'https://leoui.fr/espace-prestataire/contacts',
-    footerNote: 'Vous recevez cet email car vous êtes prestataire sur LeOui.',
+    ctaLabel: 'Répondre via LeOui.net',
+    ctaUrl: 'https://leoui.net/espace-prestataire/contacts',
+    footerNote: 'Vous recevez cet email car vous êtes prestataire sur LeOui.net.',
   });
 }
 
@@ -106,17 +106,17 @@ export function renderDevisEmail(opts: { clientName: string; vendorName: string;
       </table>
     `,
     ctaLabel: 'Consulter le devis',
-    ctaUrl: opts.pdfUrl || 'https://leoui.fr/espace-client/documents',
+    ctaUrl: opts.pdfUrl || 'https://leoui.net/espace-client/documents',
   });
 }
 
 export function renderWelcomeEmail(opts: { name: string }) {
   return renderEmailTemplate({
-    title: 'Bienvenue sur LeOui !',
+    title: 'Bienvenue sur LeOui.net !',
     preheader: 'Votre compte a été créé avec succès',
     bodyHtml: `
       <p style="margin:0 0 12px;">Bonjour <strong>${opts.name}</strong>,</p>
-      <p style="margin:0 0 16px;">Bienvenue sur <strong>LeOui</strong>, la plateforme de référence pour organiser votre mariage de rêve.</p>
+      <p style="margin:0 0 16px;">Bienvenue sur <strong>LeOui.net</strong>, la plateforme de référence pour organiser votre mariage de rêve.</p>
       <p style="margin:0 0 16px;">Votre compte est maintenant actif. Vous pouvez dès maintenant&nbsp;:</p>
       <ul style="margin:0 0 20px;padding-left:20px;color:#4a4a4a;font-size:14px;line-height:2;">
         <li>Découvrir des centaines de prestataires certifiés</li>
@@ -125,6 +125,6 @@ export function renderWelcomeEmail(opts: { name: string }) {
       </ul>
     `,
     ctaLabel: 'Accéder à mon espace',
-    ctaUrl: 'https://leoui.fr/espace-client',
+    ctaUrl: 'https://leoui.net/espace-client',
   });
 }

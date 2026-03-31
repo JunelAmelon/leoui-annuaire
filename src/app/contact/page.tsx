@@ -23,7 +23,7 @@ export default function ContactPage() {
           <div className="space-y-6">
             <h2 className="font-serif text-heading-xl text-charcoal-900" style={{ fontWeight: 400 }}>Nos coordonnées</h2>
             {[
-              { icon: Mail, label: 'Email', value: 'hello@leoui.fr', href: 'mailto:hello@leoui.fr' },
+              { icon: Mail, label: 'Email', value: 'hello@leoui.net', href: 'mailto:hello@leoui.net' },
               { icon: Phone, label: 'Téléphone', value: '+33 1 23 45 67 89', href: 'tel:+33123456789' },
               { icon: MapPin, label: 'Adresse', value: '15 rue de la Paix, 75001 Paris', href: null },
             ].map(({ icon: Icon, label, value, href }) => (
@@ -45,7 +45,7 @@ export default function ContactPage() {
             <div className="pt-4 border-t border-charcoal-100">
               <p className="text-body-sm text-charcoal-500 mb-3">Vous êtes prestataire ?</p>
               <Link href="/vendors/join" className="inline-flex items-center gap-2 text-rose-600 hover:text-rose-700 font-medium text-sm transition-colors">
-                <MessageSquare className="w-4 h-4" /> Rejoindre LeOui →
+                <MessageSquare className="w-4 h-4" /> Rejoindre LeOui.net →
               </Link>
             </div>
           </div>

@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError('');
     try {
       const { isNew } = await signInWithGoogle();
-      if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui 🎉');
+      if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui.net 🎉');
       else toast.success('Connexion réussie !');
     } catch (err: any) {
       const code = err?.code || '';
@@ -75,7 +75,7 @@ export default function LoginPage() {
             <div className="w-7 h-7 border border-white/50 flex items-center justify-center group-hover:bg-white/10 transition-colors">
               <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <span className="font-serif text-[1.3rem] tracking-wide text-white">LeOui</span>
+            <span className="font-serif text-[1.3rem] tracking-wide text-white">LeOui.net</span>
           </Link>
 
           {/* Quote */}
@@ -88,7 +88,7 @@ export default function LoginPage() {
               className="font-serif text-white mb-7 leading-snug"
               style={{ fontSize: 'clamp(1.25rem, 2.2vw, 1.625rem)', fontWeight: 300, fontStyle: 'italic', maxWidth: '28ch' }}
             >
-              « LeOui a transformé l'organisation de notre mariage. Chaque prestataire était exceptionnel. »
+              « LeOui.net a transformé l'organisation de notre mariage. Chaque prestataire était exceptionnel. »
             </blockquote>
             <div className="flex items-center gap-3">
               <img
@@ -114,7 +114,7 @@ export default function LoginPage() {
           <div className="w-6 h-6 border border-rose-600 flex items-center justify-center">
             <Heart className="w-3 h-3 text-rose-600 fill-rose-600" />
           </div>
-          <span className="font-serif text-lg tracking-wide text-charcoal-900">LeOui</span>
+          <span className="font-serif text-lg tracking-wide text-charcoal-900">LeOui.net</span>
         </div>
 
         <div className="max-w-[22rem] w-full mx-auto">

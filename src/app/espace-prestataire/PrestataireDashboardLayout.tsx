@@ -6,10 +6,12 @@ import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, Megaphone, MessageSquare, FileText,
   CalendarDays, Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
-  FileCheck2, Receipt, Tag, Star, Bell,
+  FileCheck2, Receipt, Tag, Star, Bell, Crown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDocument, getDocuments } from '@/lib/db';
+import { TIER_BADGE } from '@/lib/subscription-plans';
+import type { SubscriptionTier } from '@/lib/subscription-plans';
 
 const NAV = [
   { href: '/espace-prestataire',                    label: 'Tableau de bord',  icon: LayoutDashboard, exact: true },
@@ -22,6 +24,7 @@ const NAV = [
   { href: '/espace-prestataire/promotions',         label: 'Promotions',       icon: Tag },
   { href: '/espace-prestataire/avis',               label: 'Avis clients',     icon: Star },
   { href: '/espace-prestataire/notifications',      label: 'Notifications',    icon: Bell },
+  { href: '/espace-prestataire/abonnement',         label: 'Mon abonnement',   icon: Crown },
 ];
 
 export default function PrestataireDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +42,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
     ]).then(items => setUnreadNotifCount(items.length)).catch(() => {});
   }, [user?.uid]);
   const [profilePhoto, setProfilePhoto] = useState('');
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -46,6 +50,9 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
       if (v) {
         const photo = (v as any).profilePhoto || (v as any).images?.[0] || '';
         if (photo) setProfilePhoto(photo);
+        const tier = (v as any).subscriptionTier as SubscriptionTier || 'free';
+        const status = (v as any).subscriptionStatus || 'inactive';
+        setSubscriptionTier(status === 'active' ? tier : 'free');
       }
     }).catch(() => {});
   }, [user?.uid]);
@@ -75,7 +82,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
               <Heart className="w-4 h-4 text-white fill-white" />
             </Link>
             {!collapsed && (
-              <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui Pro</span>
+              <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui.net Pro</span>
             )}
           </div>
 
@@ -157,7 +164,14 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                 )}
               </div>
               {!collapsed && (
-                <span className="text-xs text-charcoal-500 truncate">{displayName}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs text-charcoal-500 truncate block">{displayName}</span>
+                  {TIER_BADGE[subscriptionTier] && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-semibold inline-block mt-0.5 ${TIER_BADGE[subscriptionTier]!.classes}`}>
+                      {TIER_BADGE[subscriptionTier]!.label}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
 
@@ -203,7 +217,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                 <div className="w-8 h-8 bg-rose-600 rounded-xl flex items-center justify-center">
                   <Heart className="w-3.5 h-3.5 text-white fill-white" />
                 </div>
-                <span className="font-serif text-lg text-charcoal-900">LeOui Pro</span>
+                <span className="font-serif text-lg text-charcoal-900">LeOui.net Pro</span>
               </Link>
               <button onClick={() => setMobileOpen(false)} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-stone-100">
                 <X className="w-4 h-4" />
@@ -256,7 +270,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
           <button onClick={() => setMobileOpen(true)} className="p-2 text-charcoal-600 rounded-xl hover:bg-stone-100">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-serif text-lg text-charcoal-900">LeOui Pro</span>
+          <span className="font-serif text-lg text-charcoal-900">LeOui.net Pro</span>
           <div className="w-9 h-9 rounded-full overflow-hidden">
             {profilePhoto ? (
               <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />

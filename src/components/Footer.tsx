@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-6">
               <Heart className="w-8 h-8 text-rose-500 fill-rose-500" />
-              <span className="font-display text-2xl">LeOui</span>
+              <span className="font-display text-2xl">LeOui.net</span>
             </Link>
             <p className="text-body-md text-charcoal-300 mb-6 max-w-md">
               La plateforme premium pour organiser votre mariage de rêve en France.
@@ -43,14 +43,14 @@ export default function Footer() {
             <h3 className="font-sans font-semibold text-heading-sm mb-4">Ressources</h3>
             <ul className="space-y-3">
               <li><Link href="/inspiration" className="text-charcoal-300 hover:text-rose-400 transition-colors">Inspiration</Link></li>
-              <li><Link href="/wedding-planner" className="text-charcoal-300 hover:text-rose-400 transition-colors">Wedding Planner</Link></li>
-              <li><Link href="/cities" className="text-charcoal-300 hover:text-rose-400 transition-colors">Villes</Link></li>
+              <li><Link href="/wedding-planner" className="text-charcoal-300 hover:text-rose-400 transition-colors">Planifier mon mariage</Link></li>
+              <li><Link href="/cities" className="text-charcoal-300 hover:text-rose-400 transition-colors">Régions</Link></li>
               <li><Link href="/guide" className="text-charcoal-300 hover:text-rose-400 transition-colors">Guide du mariage</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-sans font-semibold text-heading-sm mb-4">LeOui</h3>
+            <h3 className="font-sans font-semibold text-heading-sm mb-4">LeOui.net</h3>
             <ul className="space-y-3">
               <li><Link href="/about" className="text-charcoal-300 hover:text-rose-400 transition-colors">À propos</Link></li>
               <li><Link href="/vendors/join" className="text-charcoal-300 hover:text-rose-400 transition-colors">Devenir prestataire</Link></li>
@@ -63,7 +63,7 @@ export default function Footer() {
 
         <div className="border-t border-charcoal-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-body-sm text-charcoal-400">
-            © 2026 LeOui. Tous droits réservés.
+            © 2026 LeOui.net. Tous droits réservés.
           </p>
           <p className="text-body-sm text-charcoal-400 mt-4 md:mt-0">
             Fait avec <span className="text-rose-500">♥</span> en France

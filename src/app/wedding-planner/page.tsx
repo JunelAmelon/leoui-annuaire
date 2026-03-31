@@ -48,14 +48,14 @@ export default function WeddingPlannerPage() {
             <span className="italic text-champagne-300">sereinement</span>
           </h1>
           <p className="text-white/70 mb-8 max-w-lg text-base leading-relaxed">
-            Votre espace couple numérique pour gérer chaque détail : planning, prestataires, documents, paiements — accompagné par notre équipe d&apos;experts.
+            Votre espace couple numérique tout-en-un : planning, prestataires, budget, documents et paiements — centralisés en un seul endroit, accessibles partout.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
-            <a href="#contact" className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm">
-              Prendre rendez-vous <ArrowRight className="w-4 h-4" />
-            </a>
+            <Link href="/signup" className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm">
+              Organiser mon mariage maintenant <ArrowRight className="w-4 h-4" />
+            </Link>
             <a href="#features" className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm">
-              Voir l&apos;espace couple
+              Découvrir l&apos;outil
             </a>
           </div>
           <div className="flex flex-wrap gap-5 mt-8">
@@ -175,9 +175,9 @@ export default function WeddingPlannerPage() {
                   </li>
                 ))}
               </ul>
-              <a href="#contact" className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm">
-                Démarrer avec un planner <ArrowRight className="w-4 h-4" />
-              </a>
+              <Link href="/signup" className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm">
+                Commencer gratuitement <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
             {/* Mock dashboard card */}
             <div className="bg-white rounded-3xl p-5 shadow-soft border border-charcoal-100">
@@ -270,62 +270,29 @@ export default function WeddingPlannerPage() {
         </div>
       </section>
 
-      {/* CONTACT FORM */}
-      <section id="contact" className="py-20 px-4 sm:px-6 bg-ivory-50">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="font-display text-charcoal-900 mb-3" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.3rem)' }}>
-              Rencontrons-nous
-            </h2>
-            <p className="text-charcoal-600 text-sm">Premier rendez-vous gratuit et sans engagement pour discuter de votre projet.</p>
+      {/* CTA FINAL */}
+      <section className="py-20 px-4 sm:px-6 bg-ivory-50">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="h-px w-8 bg-rose-300" />
+            <span className="text-rose-600 text-xs font-semibold uppercase tracking-widest">Gratuit pour les couples</span>
+            <span className="h-px w-8 bg-rose-300" />
           </div>
-          <div className="bg-white rounded-3xl shadow-soft p-8 sm:p-10">
-            <form className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Prénom</label>
-                  <input type="text" className="input-field text-sm" placeholder="Votre prénom" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Nom</label>
-                  <input type="text" className="input-field text-sm" placeholder="Votre nom" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Email</label>
-                  <input type="email" className="input-field text-sm" placeholder="votre@email.com" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Téléphone</label>
-                  <input type="tel" className="input-field text-sm" placeholder="06 12 34 56 78" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Date du mariage</label>
-                  <input type="date" className="input-field text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Nombre d&apos;invités</label>
-                  <select className="input-field text-sm">
-                    <option>Moins de 50</option>
-                    <option>50 - 100</option>
-                    <option>100 - 150</option>
-                    <option>Plus de 150</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-charcoal-700 mb-1.5">Votre projet en quelques mots</label>
-                <textarea className="input-field text-sm resize-none" rows={4} placeholder="Votre lieu de rêve, votre thème, vos envies..." />
-              </div>
-              <button type="submit" className="w-full inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm">
-                Demander mon rendez-vous gratuit <ArrowRight className="w-4 h-4" />
-              </button>
-              <p className="text-center text-xs text-charcoal-500">Réponse garantie sous 24h ouvrées.</p>
-            </form>
+          <h2 className="font-display text-charcoal-900 mb-4" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.3rem)' }}>
+            Prêt à organiser votre mariage de rêve ?
+          </h2>
+          <p className="text-charcoal-600 text-sm mb-8 max-w-md mx-auto leading-relaxed">
+            Créez votre espace couple gratuitement en 2 minutes. Planning, budget, prestataires, documents — tout y est.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/signup" className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-sm">
+              Créer mon espace couple gratuit <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/vendors" className="inline-flex items-center justify-center gap-2 border border-charcoal-200 hover:bg-charcoal-50 text-charcoal-700 font-medium px-8 py-3.5 rounded-xl transition-colors text-sm">
+              Parcourir les prestataires
+            </Link>
           </div>
+          <p className="text-xs text-charcoal-400 mt-4">Aucune carte bancaire requise. Accès immédiat.</p>
         </div>
       </section>
 

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db';
-import { MessageSquare, Send, Heart, Search, Users, Store } from 'lucide-react';
+import { MessageSquare, Send, Heart, Search, Users, Store, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/storage';
 
 interface Conversation {
   id: string;
@@ -25,6 +26,7 @@ interface Msg {
   sender_role: string;
   sender_name?: string;
   content: string;
+  attachments?: Array<{ url: string; name?: string; type?: string }>;
   created_at?: string;
   sender_id?: string;
 }
@@ -38,6 +40,7 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -151,11 +154,65 @@ export default function MessagesPage() {
     }
   };
 
+  const sendAttachment = async (file: File) => {
+    if (!selected || !user) return;
+    setUploading(true);
+    const desc = newMessage.trim();
+    setNewMessage('');
+    try {
+      const url = await uploadFile(file, 'chat');
+      const msg: Msg = {
+        id: Date.now().toString(),
+        conversation_id: selected.id,
+        sender_id: user.uid,
+        sender_role: 'client',
+        sender_name: coupleName,
+        content: desc,
+        attachments: [{ url, name: file.name, type: file.type }],
+        created_at: new Date().toISOString(),
+      } as any;
+      await addDocument('messages', msg);
+      await updateDocument('conversations', selected.id, {
+        last_message: desc ? desc : `📎 ${file.name}`,
+        last_message_at: new Date().toISOString(),
+        unread_count_vendor: selected.type === 'vendor' ? 1 : 0,
+        unread_count_planner: selected.type !== 'vendor' ? 1 : 0,
+      });
+      setMessages(prev => [...prev, msg]);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch {
+      toast.error("Impossible d'envoyer le fichier");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const formatTime = (iso?: string) => {
     if (!iso) return '';
     try {
       return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     } catch { return ''; }
+  };
+
+  const dayKey = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const formatDayLabel = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const today = new Date();
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diffDays = Math.round((d0 - t0) / 86400000);
+    if (diffDays === 0) return 'Aujourd\'hui';
+    if (diffDays === -1) return 'Hier';
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const convLabel = (c: Conversation) =>
@@ -294,34 +351,63 @@ export default function MessagesPage() {
                     </div>
                   </div>
                 ) : (
-                  messages.map(msg => {
+                  messages.map((msg, idx) => {
                     const isMe = msg.sender_id === user?.uid || msg.sender_role === 'client';
                     const otherPhoto = selected.type === 'vendor' && selected.vendor_id ? vendorPhotos[selected.vendor_id] : '';
+                    const prev = messages[idx - 1];
+                    const showDay = dayKey(msg.created_at) !== dayKey(prev?.created_at);
+
                     return (
-                      <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                        {!isMe && (
-                          <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mb-0.5">
-                            {otherPhoto ? (
-                              <img src={otherPhoto} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full bg-champagne-100 flex items-center justify-center">
-                                <Store className="w-3.5 h-3.5 text-champagne-700" />
-                              </div>
-                            )}
+                      <div key={msg.id}>
+                        {showDay && msg.created_at && (
+                          <div className="flex justify-center my-3">
+                            <span className="text-[11px] font-semibold text-charcoal-500 bg-charcoal-50 border border-charcoal-100 px-3 py-1 rounded-full">
+                              {formatDayLabel(msg.created_at)}
+                            </span>
                           </div>
                         )}
-                        <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
-                          isMe ? 'bg-rose-600 text-white rounded-br-md' : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
-                        }`}>
-                          {!isMe && msg.sender_name && (
-                            <p className="text-xs font-semibold mb-1 text-charcoal-500">{msg.sender_name}</p>
+                        <div className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          {!isMe && (
+                            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mb-0.5">
+                              {otherPhoto ? (
+                                <img src={otherPhoto} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-champagne-100 flex items-center justify-center">
+                                  <Store className="w-3.5 h-3.5 text-champagne-700" />
+                                </div>
+                              )}
+                            </div>
                           )}
-                          <p>{msg.content}</p>
-                          {msg.created_at && (
-                            <p className={`text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-charcoal-400'}`}>
-                              {formatTime(msg.created_at)}
-                            </p>
-                          )}
+                          <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
+                            isMe ? 'bg-rose-600 text-white rounded-br-md' : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
+                          }`}>
+                            {!isMe && msg.sender_name && (
+                              <p className="text-xs font-semibold mb-1 text-charcoal-500">{msg.sender_name}</p>
+                            )}
+                            {msg.content && <p>{msg.content}</p>}
+                            {msg.attachments?.map((a, i) => {
+                              const type = (a.type || '').toLowerCase();
+                              const isImg = type.startsWith('image/');
+                              return (
+                                <div key={i} className="mt-2">
+                                  {isImg ? (
+                                    <a href={a.url} target="_blank" rel="noreferrer">
+                                      <img src={a.url} alt={a.name || 'Image'} className="max-h-56 rounded-xl border border-white/20 object-cover" />
+                                    </a>
+                                  ) : (
+                                    <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isMe ? 'text-rose-100' : 'text-rose-700'}`}>
+                                      📎 {a.name || 'Fichier'}
+                                    </a>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {msg.created_at && (
+                              <p className={`text-xs mt-1 ${isMe ? 'text-rose-200' : 'text-charcoal-400'}`}>
+                                {formatTime(msg.created_at)}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -331,6 +417,24 @@ export default function MessagesPage() {
               </div>
 
               <div className="px-4 py-3 border-t border-charcoal-100 flex items-center gap-2 flex-shrink-0">
+                <input
+                  type="file"
+                  id="client-chat-file"
+                  className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0];
+                    e.target.value = '';
+                    if (f) void sendAttachment(f);
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!selected || uploading}
+                  onClick={() => document.getElementById('client-chat-file')?.click()}
+                  className="p-2 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-50 rounded-xl transition-colors disabled:opacity-40"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
                 <input
                   type="text"
                   value={newMessage}

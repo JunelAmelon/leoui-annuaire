@@ -22,7 +22,7 @@ const NAV = [
   { href: '/espace-client/documents',    label: 'Documents',       icon: FileText },
   { href: '/espace-client/paiements',    label: 'Paiements',       icon: CreditCard },
   { href: '/espace-client/galerie',      label: 'Galerie',         icon: Image },
-  { href: '/espace-client/calculatrice', label: 'Calculatrice',    icon: Calculator },
+  { href: '/espace-client/calculatrice', label: 'Budget',          icon: Calculator },
 ];
 
 export default function ClientDashboardLayout({ children }: { children: React.ReactNode }) {

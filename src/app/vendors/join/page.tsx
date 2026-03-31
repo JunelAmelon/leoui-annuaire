@@ -89,7 +89,7 @@ export default function VendorJoinPage() {
           </div>
           <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
             Développez votre activité<br />
-            <span className="italic text-champagne-300">avec LeOui</span>
+            <span className="italic text-champagne-300">avec LeOui.net</span>
           </h1>
           <p className="text-white/70 mb-8 max-w-lg text-base leading-relaxed">
             Vitrine en ligne, gestion des devis, avis clients, statistiques — tout ce dont vous avez besoin pour toucher des milliers de couples chaque mois.
@@ -318,7 +318,7 @@ export default function VendorJoinPage() {
                 <div className="w-8 h-8 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
                   <Building2 className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white/70 text-sm font-medium">LeOui Pro</span>
+                <span className="text-white/70 text-sm font-medium">LeOui.net Pro</span>
               </div>
               <p className="font-display text-white leading-tight mb-3" style={{ fontSize: 'clamp(1.8rem, 2.5vw, 2.5rem)' }}>
                 Boostez votre activité<br />
