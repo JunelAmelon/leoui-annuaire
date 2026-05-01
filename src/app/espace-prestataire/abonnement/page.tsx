@@ -11,6 +11,7 @@ import { PAID_PLANS, TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import {
   Check, Crown, Loader2, Zap, AlertCircle, CheckCircle2, ExternalLink, RefreshCw,
+  Lock, RotateCcw, Bolt, Star,
 } from 'lucide-react';
 
 export default function AbonnementPage() {
@@ -179,42 +180,67 @@ export default function AbonnementPage() {
           {PAID_PLANS.map((plan) => {
             const isCurrent = currentTier === plan.id && isActive;
             const isPopular = plan.popular;
+            const headerGradient =
+              plan.id === 'pro'
+                ? 'from-rose-100 via-ivory-50 to-champagne-100'
+                : 'from-stone-100 via-stone-50 to-ivory-50';
+            const ctaClass = 'bg-charcoal-900 hover:bg-charcoal-800 text-white';
+            const badgeClasses =
+              plan.id === 'pro'
+                ? 'bg-rose-100 text-rose-700 border-rose-200'
+                : plan.id === 'elite'
+                  ? 'bg-stone-100 text-stone-700 border-stone-200'
+                  : plan.badgeClasses;
             return (
               <div
                 key={plan.id}
-                className={`relative bg-white rounded-2xl border-2 shadow-sm flex flex-col transition-all ${
-                  isPopular ? 'border-blue-500 shadow-blue-100' : isCurrent ? 'border-green-400' : plan.accentClass
+                className={`relative bg-white rounded-2xl border shadow-soft flex flex-col overflow-hidden transition-all hover:shadow-md ${
+                  isPopular ? 'border-rose-200' : isCurrent ? 'border-green-300' : 'border-charcoal-100'
                 }`}
               >
-                {isPopular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-500 text-white text-xs font-bold rounded-full tracking-wide shadow">
-                    ⭐ Le plus populaire
-                  </div>
-                )}
-                {isCurrent && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow">
-                    ✓ Plan actuel
-                  </div>
-                )}
-
-                <div className="p-6 flex-1">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-serif text-charcoal-900 text-xl font-medium">{plan.name}</h3>
-                    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${plan.badgeClasses}`}>
+                <div className={`relative p-6 pb-5 bg-gradient-to-br ${headerGradient}`}>
+                  <div className="absolute inset-0 opacity-[0.28]" style={{ backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(255,255,255,.9), transparent 52%), radial-gradient(circle at 80% 0%, rgba(255,255,255,.7), transparent 55%)' }} />
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-serif text-charcoal-900 text-xl font-medium leading-none">{plan.name}</h3>
+                        {isPopular && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/70 border border-white/80 text-[11px] font-semibold rounded-full text-rose-700">
+                            <Star className="w-3 h-3" /> Populaire
+                          </span>
+                        )}
+                        {isCurrent && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/70 border border-white/80 text-[11px] font-semibold rounded-full text-green-700">
+                            <Check className="w-3 h-3" /> Actuel
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-charcoal-600 text-xs mt-1">{plan.tagline}</p>
+                    </div>
+                    <span className={`text-[11px] px-2.5 py-1 rounded-full border font-semibold bg-white/70 ${badgeClasses}`}>
                       {plan.badgeLabel}
                     </span>
                   </div>
-                  <p className="text-charcoal-500 text-xs mb-4">{plan.tagline}</p>
 
-                  <div className="flex items-baseline gap-1 mb-5">
-                    <span className="font-serif text-charcoal-900 text-4xl font-light">{plan.price}€</span>
-                    <span className="text-charcoal-400 text-sm">/mois</span>
+                  <div className="relative mt-5 flex items-end justify-between">
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-serif text-charcoal-900" style={{ fontSize: '2.4rem', fontWeight: 300, lineHeight: 1 }}>
+                        {plan.price}€
+                      </span>
+                      <span className="text-charcoal-500 text-sm">/mois</span>
+                    </div>
+                    <span className="text-[11px] text-charcoal-500">Sans engagement</span>
                   </div>
+                </div>
 
-                  <ul className="space-y-2.5 mb-6">
+                <div className="p-6 pt-5 flex-1">
+                  <p className="text-xs font-semibold text-charcoal-700 mb-3">Inclus</p>
+                  <ul className="space-y-2.5">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2.5 text-sm text-charcoal-700">
-                        <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="mt-0.5 w-5 h-5 rounded-full bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-3.5 h-3.5 text-green-600" />
+                        </span>
                         <span>{f}</span>
                       </li>
                     ))}
@@ -235,13 +261,7 @@ export default function AbonnementPage() {
                     <button
                       onClick={() => handleSubscribe(plan.id)}
                       disabled={!!checkoutLoading}
-                      className={`w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 ${
-                        isPopular
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : plan.id === 'elite'
-                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                            : 'bg-charcoal-900 hover:bg-charcoal-800 text-white'
-                      }`}
+                      className={`w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 ${ctaClass}`}
                     >
                       {checkoutLoading === plan.id
                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Chargement…</>
@@ -258,12 +278,14 @@ export default function AbonnementPage() {
       {/* FAQ / reassurance */}
       <div className="bg-white rounded-2xl border border-charcoal-100 p-6 grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm">
         {[
-          { icon: '🔒', title: 'Paiement sécurisé', desc: 'Stripe gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' },
-          { icon: '🔄', title: 'Sans engagement', desc: 'Résiliez à tout moment depuis votre portail Stripe, sans frais ni pénalités.' },
-          { icon: '⚡', title: 'Activation immédiate', desc: 'Votre plan est activé dès la confirmation du paiement. Visibilité boostée instantanément.' },
-        ].map(({ icon, title, desc }) => (
+          { icon: Lock, title: 'Paiement sécurisé', desc: 'Stripe gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' },
+          { icon: RotateCcw, title: 'Sans engagement', desc: 'Résiliez à tout moment depuis votre portail Stripe, sans frais ni pénalités.' },
+          { icon: Bolt, title: 'Activation immédiate', desc: 'Votre plan est activé dès la confirmation du paiement. Visibilité boostée instantanément.' },
+        ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex gap-3">
-            <span className="text-2xl flex-shrink-0">{icon}</span>
+            <span className="w-9 h-9 rounded-xl bg-ivory-50 border border-charcoal-100 flex items-center justify-center flex-shrink-0">
+              <Icon className="w-4 h-4 text-charcoal-600" />
+            </span>
             <div>
               <p className="font-semibold text-charcoal-900 mb-1">{title}</p>
               <p className="text-charcoal-500 text-xs leading-relaxed">{desc}</p>

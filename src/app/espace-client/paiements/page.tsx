@@ -168,14 +168,14 @@ export default function PaiementsPage() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white text-sm font-medium rounded-xl hover:bg-rose-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 transition-colors shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" /> Ajouter une dépense
         </button>
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-charcoal-100 border border-charcoal-100">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-charcoal-100 border border-charcoal-100 rounded-2xl overflow-hidden shadow-soft">
         {[
           { label: 'Budget total',  value: totalBudgeted },
           { label: 'Déjà payé',     value: totalPaid },
@@ -193,7 +193,7 @@ export default function PaiementsPage() {
       </div>
 
       {/* Progress bar */}
-      <div className="bg-white border border-charcoal-100 px-6 py-5">
+      <div className="bg-white border border-charcoal-100 px-6 py-5 rounded-2xl shadow-soft">
         <div className="flex items-end justify-between mb-3">
           <p className="font-serif text-charcoal-900 text-sm font-light">Avancement des paiements</p>
           <p className="font-serif text-charcoal-900" style={{ fontSize: '1.5rem', fontWeight: 300, lineHeight: 1, letterSpacing: '-0.02em' }}>
@@ -210,7 +210,7 @@ export default function PaiementsPage() {
       </div>
 
       {/* Budget breakdown */}
-      <div className="bg-white border border-charcoal-100">
+      <div className="bg-white border border-charcoal-100 rounded-2xl shadow-soft overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100">
           <h2 className="font-serif text-charcoal-900 text-base font-light flex items-center gap-2">
             <Calculator className="w-4 h-4 text-charcoal-400" /> Détail par poste
@@ -265,16 +265,17 @@ export default function PaiementsPage() {
                       <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         {line.paid < line.budgeted && (
                           <button onClick={e => handleMarkPaid(line, e)}
-                            className="flex items-center gap-1 px-2 py-1 text-[0.65rem] font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors">
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.65rem] font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
+                          >
                             <CheckCircle className="w-3 h-3" /> Marquer payé
                           </button>
                         )}
                         <button onClick={() => { setEditingPaid(line.id); setEditPaidValue(String(line.paid)); }}
-                          className="flex items-center gap-1 px-2 py-1 text-[0.65rem] font-medium bg-charcoal-50 text-charcoal-600 border border-charcoal-200 hover:bg-charcoal-100 transition-colors">
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.65rem] font-semibold bg-charcoal-50 text-charcoal-700 border border-charcoal-200 hover:bg-charcoal-100 transition-colors">
                           <PenLine className="w-3 h-3" /> Modifier payé
                         </button>
                         <button onClick={e => handleDeleteLine(line, e)}
-                          className="flex items-center gap-1 px-2 py-1 text-[0.65rem] font-medium bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors">
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.65rem] font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
                           <Trash2 className="w-3 h-3" /> Supprimer
                         </button>
                       </div>
@@ -296,7 +297,7 @@ export default function PaiementsPage() {
 
       {/* Upcoming payments */}
       {upcoming.length > 0 && (
-        <div className="bg-white border border-charcoal-100">
+        <div className="bg-white border border-charcoal-100 rounded-2xl shadow-soft overflow-hidden">
           <div className="px-6 py-4 border-b border-charcoal-100">
             <h2 className="font-serif text-charcoal-900 text-base font-light flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-champagne-600" /> Prochains paiements
@@ -321,7 +322,7 @@ export default function PaiementsPage() {
 
       {/* Payment history */}
       {sorted.length > 0 && (
-        <div className="bg-white border border-charcoal-100">
+        <div className="bg-white border border-charcoal-100 rounded-2xl shadow-soft overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100">
             <h2 className="font-serif text-charcoal-900 text-base font-light">Historique</h2>
           </div>
@@ -344,12 +345,12 @@ export default function PaiementsPage() {
           {historyPages > 1 && (
             <div className="flex items-center justify-center gap-4 py-4 border-t border-charcoal-100">
               <button onClick={() => setHistoryPage(p => Math.max(1, p - 1))} disabled={historyPage === 1}
-                className="p-2 border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors">
+                className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors">
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="label-xs text-charcoal-500 tracking-[0.1em]">{historyPage} / {historyPages}</span>
               <button onClick={() => setHistoryPage(p => Math.min(historyPages, p + 1))} disabled={historyPage === historyPages}
-                className="p-2 border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors">
+                className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -359,8 +360,8 @@ export default function PaiementsPage() {
 
       {/* ── ADD EXPENSE MODAL ── */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-charcoal-900/50 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-charcoal-900/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-md bg-white shadow-2xl rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100">
               <h2 className="font-serif text-charcoal-900 text-base font-light">Ajouter une dépense</h2>
               <button onClick={() => setShowAddModal(false)} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 transition-colors">
@@ -371,13 +372,13 @@ export default function PaiementsPage() {
               <div>
                 <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Description *</label>
                 <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-charcoal-200 text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-colors"
                   placeholder="Nom du prestataire ou de la dépense" />
               </div>
               <div>
                 <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Catégorie</label>
                 <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors cursor-pointer">
+                  className="w-full px-4 py-2.5 rounded-xl border border-charcoal-200 text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-colors cursor-pointer">
                   {CATEGORIES.map(c => <option key={c.label} value={c.label}>{c.label}</option>)}
                 </select>
               </div>
@@ -385,13 +386,13 @@ export default function PaiementsPage() {
                 <div>
                   <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Budget prévu (€)</label>
                   <input type="number" value={form.budgeted} onChange={e => setForm(f => ({ ...f, budgeted: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-charcoal-200 text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-colors"
                     placeholder="0" min="0" />
                 </div>
                 <div>
                   <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Montant payé (€)</label>
                   <input type="number" value={form.paid} onChange={e => setForm(f => ({ ...f, paid: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-charcoal-200 text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-colors"
                     placeholder="0" min="0" />
                 </div>
               </div>
@@ -409,11 +410,11 @@ export default function PaiementsPage() {
               )}
             </div>
             <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 py-2.5 rounded-xl border border-charcoal-200 text-charcoal-700 text-sm font-medium hover:bg-charcoal-50 transition-colors">
                 Annuler
               </button>
               <button onClick={handleAddLine} disabled={saving}
-                className="flex-1 py-2.5 bg-charcoal-900 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 rounded-xl bg-charcoal-900 text-white text-sm font-semibold hover:bg-charcoal-800 disabled:opacity-50 transition-colors shadow-sm">
                 {saving ? 'Ajout…' : 'Ajouter'}
               </button>
             </div>

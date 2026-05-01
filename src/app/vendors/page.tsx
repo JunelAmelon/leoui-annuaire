@@ -7,19 +7,7 @@ import Footer from '@/components/Footer';
 import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
-import { getDocuments } from '@/lib/db';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
-
-const STATIC_VENDORS = [
-  { id: 'atelier-lumiere', name: 'Atelier Lumière', category: 'Photographes', location: 'Paris, Île-de-France', rating: 5.0, reviewCount: 127, imageUrl: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '2 500€', featured: true, hasPromo: true, description: 'Spécialiste du reportage photographique de mariage depuis 12 ans. Approche documentaire et artistique. Chaque image raconte une histoire.', responseTime: '24h' },
-  { id: 'maison-florale', name: 'Maison Florale', category: 'Fleuristes', location: 'Lyon, Auvergne-Rhône-Alpes', rating: 4.8, reviewCount: 98, imageUrl: 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '1 800€', featured: true, hasPromo: false, description: 'Créations florales de prestige. Bouquets de mariée, décorations de table, arches botaniques d\'exception.', responseTime: '48h' },
-  { id: 'saveurs-et-delices', name: 'Saveurs & Délices', category: 'Traiteurs', location: 'Provence, PACA', rating: 5.0, reviewCount: 156, imageUrl: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '85€/pers', featured: false, hasPromo: true, description: 'Cuisine gastronomique française avec produits locaux de saison. Menus personnalisés, service élégant.', responseTime: '24h' },
-  { id: 'harmonie-musicale', name: 'Harmonie Musicale', category: 'DJ & Musiciens', location: 'Bordeaux, Nouvelle-Aquitaine', rating: 4.9, reviewCount: 84, imageUrl: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '1 200€', featured: false, hasPromo: false, description: 'DJ et groupe de musiciens pour votre soirée. De la cérémonie au bal de nuit, ambiance parfaite.', responseTime: '12h' },
-  { id: 'vision-cine', name: 'Vision Ciné', category: 'Vidéastes', location: 'Paris, Île-de-France', rating: 4.9, reviewCount: 73, imageUrl: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '3 200€', featured: true, hasPromo: false, description: 'Films de mariage cinématographiques et émotionnels. Montage professionnel, musique originale.', responseTime: '48h' },
-  { id: 'elegance-deco', name: 'Élégance Déco', category: 'Décorateurs', location: 'Lyon, Auvergne-Rhône-Alpes', rating: 4.8, reviewCount: 91, imageUrl: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '3 500€', featured: false, hasPromo: true, description: 'Décoration haut de gamme. Tables, arches, luminaires — espaces élégants et personnalisés.', responseTime: '24h' },
-  { id: 'le-festin-royal', name: 'Le Festin Royal', category: 'Traiteurs', location: 'Paris, Île-de-France', rating: 4.9, reviewCount: 134, imageUrl: 'https://images.pexels.com/photos/1640772/pexels-photo-1640772.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '95€/pers', featured: true, hasPromo: false, description: 'Traiteur parisien pour mariages de prestige. Gastronomie française, sommelier, service blanc.', responseTime: '24h' },
-  { id: 'jardin-enchante', name: 'Le Jardin Enchanté', category: 'Fleuristes', location: 'Provence, PACA', rating: 4.7, reviewCount: 62, imageUrl: 'https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=600', startingPrice: '2 200€', featured: false, hasPromo: false, description: 'Compositions florales bohème et romantiques. Fleurs de saison, couronnes, charme champêtre.', responseTime: '48h' },
-];
 
 const PER_PAGE = 6;
 
@@ -56,10 +44,10 @@ export default function VendorsPage() {
         if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
         const vendors = Array.isArray(json.vendors) ? json.vendors : [];
         const cities = Array.isArray(json.cities) ? json.cities : [];
-        setAllVendors(vendors.length > 0 ? vendors : STATIC_VENDORS);
+        setAllVendors(vendors);
         if (cities.length > 0) setCities(cities);
       })
-      .catch(() => setAllVendors(STATIC_VENDORS))
+      .catch(() => setAllVendors([]))
       .finally(() => setVendorsLoading(false));
   }, []);
 
@@ -324,10 +312,14 @@ export default function VendorsPage() {
               </div>
             </div>
 
-            {/* LIST VIEW */}
-            {viewMode === 'list' && (
+            {!vendorsLoading && filteredVendors.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-charcoal-100 py-20 text-center">
+                <p className="text-charcoal-500 font-medium">Aucun prestataire trouvé</p>
+                <p className="text-sm text-charcoal-400 mt-1">Modifiez votre recherche ou vos filtres</p>
+              </div>
+            ) : viewMode === 'list' ? (
               <div className="space-y-4">
-                {pagedVendors.map(vendor => (
+                {pagedVendors.map((vendor: any) => (
                   <article key={vendor.id} className="bg-white rounded-2xl border border-charcoal-100 hover:shadow-soft-lg transition-all duration-300 overflow-hidden flex flex-col sm:flex-row">
                     {/* Image */}
                     <Link href={`/vendors/${vendor.id}`} className="sm:w-48 h-44 sm:h-auto flex-shrink-0 overflow-hidden relative">
@@ -346,6 +338,7 @@ export default function VendorsPage() {
                         ) : null;
                       })()}
                     </Link>
+
                     {/* Content */}
                     <div className="flex-1 p-5 flex flex-col justify-between">
                       <div>
@@ -404,24 +397,26 @@ export default function VendorsPage() {
                   </article>
                 ))}
               </div>
-            )}
-
-            {/* GRID VIEW */}
-            {viewMode === 'grid' && (
+            ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {pagedVendors.map(vendor => (
+                {pagedVendors.map((vendor: any) => (
                   <Link key={vendor.id} href={`/vendors/${vendor.id}`} className="group block">
                     <article className="relative h-64 rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300">
                       <img src={vendor.imageUrl} alt={vendor.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <div className="absolute bottom-0 p-4">
-                        <p className="text-xs text-white/70 mb-0.5">{vendor.category}</p>
-                        <h3 className="font-serif text-white font-medium">{vendor.name}</h3>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                          <span className="text-xs text-white/90">{vendor.rating}</span>
-                          <span className="text-xs text-white/60">· À partir de {vendor.startingPrice}</span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`w-3 h-3 ${i < Math.floor(vendor.rating) ? 'text-amber-400 fill-amber-400' : 'text-white/25'}`} />
+                            ))}
+                          </div>
+                          <span className="text-xs text-white/80 font-medium">{vendor.rating}</span>
                         </div>
+                        <p className="text-white font-semibold text-sm truncate">{vendor.name}</p>
+                        <p className="text-xs text-white/70 truncate flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3" /> {vendor.location}
+                        </p>
                       </div>
                     </article>
                   </Link>

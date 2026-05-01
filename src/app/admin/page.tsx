@@ -54,12 +54,59 @@ export default function AdminDashboard() {
     { icon: FileText,      label: 'Devis en attente',     value: pendingDevis,     href: '/admin/clients',       color: 'text-green-700' },
   ];
 
+  const quickActions = [
+    { href: '/admin/clients', label: 'Gérer les clients', icon: Users, desc: 'Suivi des couples et dossiers' },
+    { href: '/admin/prestataires', label: 'Gérer les prestataires', icon: Store, desc: 'Validation et qualité des annonces' },
+    { href: '/admin/messages', label: 'Voir les messages', icon: MessageSquare, desc: 'Répondre et suivre les conversations' },
+    { href: '/admin/cities', label: 'Gérer les villes', icon: MapPin, desc: 'Activer / désactiver les pages villes' },
+    { href: '/admin/articles', label: 'Gérer les articles', icon: FileText, desc: 'Contenu éditorial' },
+    { href: '/admin/factures', label: 'Factures', icon: Calendar, desc: 'Fonctionnalité à venir' },
+  ];
+
+  const quickActionBg: Record<string, string> = {
+    'Gérer les clients': 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'Gérer les prestataires': 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'Voir les messages': 'https://images.pexels.com/photos/7709086/pexels-photo-7709086.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'Gérer les villes': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'Gérer les articles': 'https://images.pexels.com/photos/6863183/pexels-photo-6863183.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    'Factures': 'https://images.pexels.com/photos/6863332/pexels-photo-6863332.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div>
         <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Administration</p>
         <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Tableau de bord</h1>
+      </div>
+
+      {/* Actions rapides */}
+      <div>
+        <h2 className="font-serif text-charcoal-900 text-base font-light mb-4">Actions rapides</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {quickActions.map((a) => (
+            <Link key={a.href} href={a.href} className="group relative rounded-2xl overflow-hidden shadow-soft hover:shadow-md transition-all min-h-[96px]">
+              {quickActionBg[a.label] && (
+                <img
+                  src={quickActionBg[a.label]}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/85 via-charcoal-900/45 to-charcoal-900/20" />
+              <div className="relative p-3.5 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/15 flex items-center justify-center flex-shrink-0 group-hover:bg-white/20 transition-colors">
+                  <a.icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-white group-hover:text-champagne-200 transition-colors">{a.label}</p>
+                  <p className="text-xs text-white/75 mt-0.5 truncate">{a.desc}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-white/60 group-hover:text-white transition-colors flex-shrink-0" />
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Stats */}

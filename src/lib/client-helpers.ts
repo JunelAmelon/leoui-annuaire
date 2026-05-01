@@ -43,6 +43,9 @@ export interface DevisData {
   date?: string;
   sent_at?: string;
   pdf_url?: string;
+  signed_pdf_url?: string;
+  signed_at?: string;
+  validated_at?: string;
   amount?: number;
   accepted_at?: string;
   rejected_at?: string;

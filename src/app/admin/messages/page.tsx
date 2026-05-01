@@ -127,7 +127,7 @@ export default function AdminMessagesPage() {
         created_at: new Date(),
       });
       await updateDocument('conversations', selectedConv.id, {
-        last_message: `📎 ${file.name}`,
+        last_message: `Fichier : ${file.name}`,
         last_message_at: new Date(),
         unread_count_client: 1,
       });
@@ -223,7 +223,10 @@ export default function AdminMessagesPage() {
                       {msg.attachments?.map((a, i) => (
                         <a key={i} href={a.url} target="_blank" rel="noreferrer"
                           className={`underline block text-xs mt-1 ${msg.isMe ? 'text-white/80' : 'text-rose-600'}`}>
-                          📎 {a.name || 'Fichier'}
+                          <span className="inline-flex items-center gap-1">
+                            <Paperclip className="w-3 h-3" />
+                            {a.name || 'Fichier'}
+                          </span>
                         </a>
                       ))}
                       <p className={`text-[0.6rem] mt-1 ${msg.isMe ? 'text-white/50' : 'text-charcoal-400'}`}>

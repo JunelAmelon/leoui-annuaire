@@ -74,34 +74,42 @@ export default function EspacePrestatairePage() {
 
   const quickActions = [
     { href: '/espace-prestataire/mon-annonce', label: 'Modifier mon annonce', icon: BadgeCheck, desc: 'Mettez à jour vos photos et infos' },
-    { href: user?.uid ? `/espace-prestataire/prestataires/${user.uid}` : '#', label: 'Prévisualiser mon annonce', icon: Eye, desc: 'Voir votre profil comme un client le voit' },
     { href: '/espace-prestataire/contacts', label: 'Voir les contacts', icon: MessageSquare, desc: 'Répondez aux demandes de clients' },
     { href: '/espace-prestataire/devis', label: 'Créer un devis', icon: FileText, desc: 'Envoyez une proposition tarifaire' },
     { href: '/espace-prestataire/planning', label: 'Mon planning', icon: CalendarDays, desc: 'Gérez vos disponibilités' },
   ];
 
+  const quickActionBg: Record<string, string> = {
+    'Modifier mon annonce': 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    'Voir les contacts': 'https://images.pexels.com/photos/7709086/pexels-photo-7709086.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    'Créer un devis': 'https://images.pexels.com/photos/6863183/pexels-photo-6863183.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    'Mon planning': 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  };
+
   return (
     <PrestataireDashboardLayout>
       {/* Upsell banner — visible si plan free */}
       {!loading && subscriptionTier === 'free' && (
-        <div className="mb-6 bg-gradient-to-r from-rose-600 to-rose-500 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Crown className="w-4 h-4 text-white" />
+        <div className="mb-6 rounded-2xl border border-stone-200 bg-stone-50 p-5 shadow-soft">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-stone-100 flex-shrink-0">
+                <Crown className="w-5 h-5 text-stone-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-charcoal-900 text-sm">Boostez votre visibilité</p>
+                <p className="text-charcoal-700 text-xs mt-0.5 leading-relaxed">
+                  Les prestataires <strong className="text-charcoal-900">Pro</strong> et <strong className="text-charcoal-900">Elite</strong> apparaissent en tête des résultats et reçoivent 3× plus de contacts.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-white text-sm">Boostez votre visibilité — passez au plan payant</p>
-              <p className="text-white/75 text-xs mt-0.5 leading-relaxed">
-                Les prestataires Pro et Elite apparaissent <strong className="text-white">en tête des résultats</strong> et reçoivent 3× plus de contacts.
-              </p>
-            </div>
+            <Link
+              href="/espace-prestataire/abonnement"
+              className="flex items-center gap-2 bg-charcoal-900 hover:bg-charcoal-800 text-blue-200 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex-shrink-0 whitespace-nowrap shadow-sm"
+            >
+              <Zap className="w-4 h-4" /> Voir les tarifs
+            </Link>
           </div>
-          <Link
-            href="/espace-prestataire/abonnement"
-            className="flex items-center gap-2 bg-white hover:bg-rose-50 text-rose-600 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex-shrink-0 whitespace-nowrap"
-          >
-            <Zap className="w-4 h-4" /> Voir les offres
-          </Link>
         </div>
       )}
 
@@ -138,16 +146,26 @@ export default function EspacePrestatairePage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="group bg-white rounded-2xl shadow-sm p-4 hover:shadow-md transition-all flex items-center gap-4"
+                className="group relative rounded-2xl shadow-soft hover:shadow-md transition-all overflow-hidden min-h-[200px] bg-charcoal-900"
               >
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors">
-                  <action.icon className="w-5 h-5 text-rose-600" />
+                {quickActionBg[action.label] && (
+                  <img
+                    src={quickActionBg[action.label]}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700"
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/60" />
+                <div className="relative p-4 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-colors">
+                    <action.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white transition-colors">{action.label}</p>
+                    <p className="text-xs text-white/70 mt-0.5">{action.desc}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/50 group-hover:text-white transition-colors flex-shrink-0" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-charcoal-900 group-hover:text-rose-700 transition-colors">{action.label}</p>
-                  <p className="text-xs text-charcoal-500 mt-0.5 truncate">{action.desc}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-charcoal-300 group-hover:text-rose-400 transition-colors flex-shrink-0" />
               </Link>
             ))}
           </div>

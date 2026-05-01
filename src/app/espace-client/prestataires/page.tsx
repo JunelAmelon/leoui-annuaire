@@ -33,36 +33,6 @@ const CATEGORIES = [
   'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception',
 ];
 
-const STATIC_VENDORS: Vendor[] = [
-  { id: 's1', name: 'Atelier Lumière', category: 'Photographes', location: 'Paris', rating: 5.0, reviewCount: 127,
-    imageUrl: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '2 500 €', description: 'Spécialiste du reportage photographique de mariage depuis 12 ans. Approche documentaire et artistique, chaque moment capturé avec sensibilité.' },
-  { id: 's2', name: 'Maison Florale', category: 'Fleuristes', location: 'Lyon', rating: 4.8, reviewCount: 98,
-    imageUrl: 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '1 800 €', description: 'Créations florales de prestige. Bouquets, décorations de table, arches botaniques sur mesure pour votre mariage.' },
-  { id: 's3', name: 'Saveurs & Délices', category: 'Traiteurs', location: 'Provence', rating: 5.0, reviewCount: 156,
-    imageUrl: 'https://images.pexels.com/photos/1640772/pexels-photo-1640772.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '85 €/pers', description: 'Cuisine gastronomique française avec des produits locaux de saison. Menus entièrement personnalisés selon vos souhaits.' },
-  { id: 's4', name: 'Harmonie Musicale', category: 'DJ & Musiciens', location: 'Bordeaux', rating: 4.9, reviewCount: 84,
-    imageUrl: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '1 200 €', description: 'DJ et groupe de musiciens pour animer votre soirée. De la cérémonie au bal de nuit, une ambiance sur-mesure.' },
-  { id: 's5', name: 'Vision Ciné', category: 'Vidéastes', location: 'Paris', rating: 4.9, reviewCount: 73,
-    imageUrl: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '3 200 €', description: 'Films de mariage cinématographiques et émotionnels. Montage professionnel, musique originale, souvenirs pour toujours.' },
-  { id: 's6', name: 'Élégance Déco', category: 'Décorateurs', location: 'Lyon', rating: 4.8, reviewCount: 91,
-    imageUrl: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '3 500 €', description: 'Décoration de mariage haut de gamme. Tables, arches, luminaires, textiles — une scénographie complète.' },
-  { id: 's7', name: 'Le Festin Royal', category: 'Traiteurs', location: 'Paris', rating: 4.9, reviewCount: 134,
-    imageUrl: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '95 €/pers', description: 'Traiteur parisien pour mariages de prestige. Cuisine gastronomique et service en salle blanc.' },
-  { id: 's8', name: 'Le Jardin Enchanté', category: 'Fleuristes', location: 'Provence', rating: 4.7, reviewCount: 62,
-    imageUrl: 'https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '2 200 €', description: 'Compositions florales bohème et romantiques. Fleurs de saison, couronnes, arches — le charme champêtre.' },
-  { id: 's9', name: 'Studio Blanc', category: 'Photographes', location: 'Marseille', rating: 4.8, reviewCount: 109,
-    imageUrl: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800',
-    startingPrice: '1 900 €', description: 'Photographe au style lumineux et naturel. Priorité aux émotions authentiques et aux moments spontanés.' },
-];
-
 const PRICE_OPTIONS = ['Moins de 500€', '500€ – 1 000€', '1 000€ – 2 000€', 'Plus de 2 000€'];
 const SERVICE_OPTIONS = ['Séance d’engagement', 'Après le mariage', 'Album photo', 'Photos HD', 'Blu-ray / DVD'];
 const PER_PAGE = 6;
@@ -99,11 +69,9 @@ export default function PrestatairesPage() {
   useEffect(() => {
     getDocuments('vendors', [])
       .then(docs => setVendors(
-        docs.length > 0
-          ? (docs as Vendor[]).map(v => ({ ...v, imageUrl: (v as any).images?.[0] || (v as any).imageUrl || '' }))
-          : STATIC_VENDORS
+        (docs as Vendor[]).map(v => ({ ...v, imageUrl: (v as any).images?.[0] || (v as any).imageUrl || '' }))
       ))
-      .catch(() => setVendors(STATIC_VENDORS))
+      .catch(() => setVendors([]))
       .finally(() => setLoading(false));
   }, []);
 
@@ -213,13 +181,15 @@ export default function PrestatairesPage() {
           <button
             onClick={() => { setShowSelectedOnly(p => !p); setPage(1); }}
             disabled={selectedVendorIds.size === 0}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-              showSelectedOnly ? 'bg-charcoal-900 text-white' : 'border border-charcoal-200 text-charcoal-600 hover:bg-stone-50'
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              showSelectedOnly
+                ? 'bg-charcoal-900 text-white hover:bg-charcoal-800'
+                : 'bg-rose-600 text-white hover:bg-rose-700'
             } ${selectedVendorIds.size === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
             title={selectedVendorIds.size === 0 ? 'Aucun prestataire sélectionné' : 'Afficher uniquement mes prestataires sélectionnés'}
           >
             <Users className="w-3.5 h-3.5" />
-            {showSelectedOnly ? 'Voir tous' : 'Filtrer mes prestataires'}
+            {showSelectedOnly ? 'Voir tous' : 'Voir mes prestataires'}
           </button>
         </div>
       </div>

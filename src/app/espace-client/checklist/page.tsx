@@ -14,7 +14,19 @@ interface ChecklistItem {
   category: string;
   priority: 'high' | 'medium' | 'low';
   client_confirmed?: boolean;
+  created_at?: any;
 }
+
+const createdAtMs = (v: any): number => {
+  if (!v) return 0;
+  try {
+    if (typeof v?.toDate === 'function') return v.toDate().getTime();
+    if (typeof v === 'string' || typeof v === 'number') return new Date(v).getTime();
+    return new Date(String(v)).getTime();
+  } catch {
+    return 0;
+  }
+};
 
 const priorityConfig = {
   high: { label: 'Urgent', cls: 'bg-rose-100 text-rose-700' },
@@ -42,7 +54,7 @@ export default function ChecklistPage() {
           : { field: 'client_id', operator: '==', value: clientId! };
         const tasks = await getDocuments('tasks', [filter as any]);
         const milestones = (tasks as any[]).filter((t) => t?.kind === 'milestone');
-        setItems(milestones.map((s) => ({
+        const mapped = milestones.map((s) => ({
           id: s.id,
           title: s.title,
           deadline: s.deadline,
@@ -50,7 +62,10 @@ export default function ChecklistPage() {
           category: 'Étapes',
           priority: s.priority || 'high',
           client_confirmed: s.client_confirmed,
-        })));
+          created_at: s.created_at,
+        }));
+        const sorted = mapped.sort((a, b) => createdAtMs(b.created_at) - createdAtMs(a.created_at));
+        setItems(sorted);
       } catch (e) {
         console.error(e);
       } finally {

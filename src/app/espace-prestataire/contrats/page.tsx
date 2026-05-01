@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, Clock, XCircle, X, Trash2, Sparkles, Minus, Euro, AlertCircle, MoreVertical, Save, Upload } from 'lucide-react';
+import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, CalendarDays, XCircle, X, Trash2, Sparkles, Minus, Euro, AlertCircle, MoreVertical, Save, Upload, Clock } from 'lucide-react';
 import { getDocuments, addDocument, updateDocument, deleteDocument, getDocument } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
@@ -459,7 +459,12 @@ export default function ContratsPage() {
                         <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
                           <Icon className="w-3 h-3" />{cfg.label}
                         </span>
-                        {c.event_date && <span className="text-xs text-charcoal-400">📅 {new Date(c.event_date).toLocaleDateString('fr-FR')}</span>}
+                        {c.event_date && (
+                          <span className="inline-flex items-center gap-1 text-xs text-charcoal-400">
+                            <CalendarDays className="w-3 h-3" />
+                            {new Date(c.event_date).toLocaleDateString('fr-FR')}
+                          </span>
+                        )}
                       </div>
                       <p className="font-semibold text-charcoal-900">{c.title}</p>
                       <p className="text-sm text-charcoal-500 mt-0.5">{c.client_name}{c.client_email ? ` · ${c.client_email}` : ''}</p>

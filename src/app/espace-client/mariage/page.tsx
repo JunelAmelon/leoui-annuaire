@@ -85,6 +85,8 @@ export default function MariagePage() {
   const eventDate = event?.event_date || (client as any)?.event_date || '';
   const venue = event?.venue || (client as any)?.venue || '';
   const receptionVenue = event?.reception_venue || (client as any)?.reception_venue || '';
+  const venueVendorId = String((event as any)?.venue_vendor_id || (client as any)?.venue_vendor_id || '');
+  const venueLocked = Boolean(venueVendorId);
   const guestCount = event?.guest_count || (client as any)?.guest_count || 0;
   const budget = event?.budget || (client as any)?.budget || 0;
   const themeStyle = event?.theme_style || (client as any)?.theme_style || '';
@@ -134,8 +136,6 @@ export default function MariagePage() {
       const data: any = {
         event_date: infoForm.event_date || null,
         ceremony_time: infoForm.ceremony_time || null,
-        venue: infoForm.venue || null,
-        reception_venue: infoForm.reception_venue || null,
         guest_count: Number(infoForm.guest_count) || 0,
         budget: Number(infoForm.budget) || 0,
       };
@@ -234,12 +234,14 @@ export default function MariagePage() {
               ) : (
                 <button onClick={openInfoEdit} className="text-rose-500 hover:underline text-xs italic">Ajouter la date du mariage →</button>
               )}
-              {venue && (
-                <>
-                  <span className="text-charcoal-300">,</span>
+              <>
+                <span className="text-charcoal-300">,</span>
+                {venue ? (
                   <span className="text-rose-600">{venue}</span>
-                </>
-              )}
+                ) : (
+                  <span className="text-charcoal-400 italic">Aucun lieu choisi</span>
+                )}
+              </>
             </div>
 
             {/* Circular stats */}
@@ -378,11 +380,11 @@ export default function MariagePage() {
           <div>
             <h2 className="font-semibold text-charcoal-900 text-sm">Votre lieu de mariage</h2>
             {venue ? <p className="text-xs text-rose-600 mt-0.5">Félicitations pour ce choix !</p>
-              : <p className="text-xs text-charcoal-400 mt-0.5">Aucun lieu sélectionné</p>}
+              : <p className="text-xs text-charcoal-400 mt-0.5">Aucun lieu choisi</p>}
           </div>
-          <button onClick={openInfoEdit} className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
-            <Pencil className="w-3 h-3" /> {venue ? 'Modifier' : 'Ajouter'}
-          </button>
+          <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
+            <Pencil className="w-3 h-3" /> {venue ? 'Remplacer' : 'Choisir'}
+          </Link>
         </div>
         {venue ? (
           <div className="flex items-center gap-4 p-5">
@@ -392,16 +394,16 @@ export default function MariagePage() {
             <div className="flex-1">
               <p className="font-semibold text-charcoal-900 text-sm">{venue}</p>
               {receptionVenue && <p className="text-xs text-charcoal-500 mt-0.5">{receptionVenue}</p>}
-              <Link href="/espace-client/prestataires" className="text-xs text-rose-600 hover:underline mt-1 block">Contacter l'établissement →</Link>
+              <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="text-xs text-rose-600 hover:underline mt-1 block">Remplacer le lieu →</Link>
             </div>
           </div>
         ) : (
           <div className="px-5 py-6 text-center">
             <MapPin className="w-8 h-8 text-charcoal-200 mx-auto mb-2" />
             <p className="text-xs text-charcoal-400 mb-3">Ajoutez votre lieu pour le voir apparaître ici</p>
-            <button onClick={openInfoEdit} className="text-xs text-white bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-xl font-medium transition-colors">
+            <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="inline-block text-xs text-white bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-xl font-medium transition-colors">
               Choisir un lieu
-            </button>
+            </Link>
           </div>
         )}
       </div>
@@ -540,11 +542,11 @@ export default function MariagePage() {
               </div>
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Lieu de la cérémonie</label>
-                <input type="text" value={infoForm.venue} onChange={e => setInfoForm(f => ({ ...f, venue: e.target.value }))} placeholder="Nom du lieu" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
+                <input type="text" value={infoForm.venue} onChange={e => setInfoForm(f => ({ ...f, venue: e.target.value }))} placeholder="Lieu du mariage" disabled className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50 disabled:opacity-60" />
               </div>
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Lieu de la réception</label>
-                <input type="text" value={infoForm.reception_venue} onChange={e => setInfoForm(f => ({ ...f, reception_venue: e.target.value }))} placeholder="Si différent du lieu de cérémonie" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
+                <input type="text" value={infoForm.reception_venue} onChange={e => setInfoForm(f => ({ ...f, reception_venue: e.target.value }))} placeholder="Si différent du lieu de cérémonie" disabled className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50 disabled:opacity-60" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

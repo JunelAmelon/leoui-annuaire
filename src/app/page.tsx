@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -5,6 +7,7 @@ import HomeSearchBar from '@/components/HomeSearchBar';
 import HomeFeaturedVendors from '@/components/HomeFeaturedVendors';
 import HomeRegions from '@/components/HomeRegions';
 import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, TrendingUp, Users, Award, Check, Store } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const MÉTIERS = [
   { n: '01', label: 'Photographie',   icon: Camera,   href: '/vendors?cat=Photographes', img: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600' },
@@ -21,6 +24,22 @@ const TESTIMONIALS = [
 ];
 
 export default function HomePage() {
+  const [stats, setStats] = useState<{ vendorsCount: number; citiesCount: number; weddingsCount: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/stats')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        setStats({
+          vendorsCount: Number(json.vendorsCount || 0),
+          citiesCount: Number(json.citiesCount || 0),
+          weddingsCount: Number(json.weddingsCount || 0),
+        });
+      })
+      .catch(() => setStats(null));
+  }, []);
+
   return (
     <div className="min-h-screen bg-ivory-50">
       <Header />
@@ -92,9 +111,9 @@ export default function HomePage() {
           {/* Minimal trust strip */}
           <div className="flex items-center gap-8 mt-14 border-t border-white/10 pt-6">
             {[
-              ['1 500+', 'Prestataires'],
-              ['12 000+', 'Mariages'],
-              ['85+', 'Villes'],
+              [stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—', 'Prestataires'],
+              [stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', 'Mariages'],
+              [stats ? stats.citiesCount.toLocaleString('fr-FR') : '—', 'Villes'],
             ].map(([n, l]) => (
               <div key={l}>
                 <p className="font-serif text-white text-xl font-light" style={{ letterSpacing: '-0.01em' }}>{n}</p>
@@ -290,11 +309,13 @@ export default function HomePage() {
             >
               Ce qu'ils disent
             </h2>
-            <div className="flex items-center justify-center gap-1.5 mt-4">
+            <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 text-champagne-500 fill-champagne-500" />
               ))}
-              <span className="text-charcoal-500 text-xs ml-2 font-medium">4.9 / 5 — 12 000+ couples</span>
+              <span className="text-charcoal-500 text-xs ml-2 font-medium">
+                4.9 / 5 — {stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—'} couples
+              </span>
             </div>
           </div>
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db';
-import { MessageSquare, Send, Heart, Search, Users, Store, Paperclip } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, Search, Users, Store, ChevronLeft, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/lib/storage';
 
@@ -173,7 +173,7 @@ export default function MessagesPage() {
       } as any;
       await addDocument('messages', msg);
       await updateDocument('conversations', selected.id, {
-        last_message: desc ? desc : `📎 ${file.name}`,
+        last_message: desc ? desc : `Fichier : ${file.name}`,
         last_message_at: new Date().toISOString(),
         unread_count_vendor: selected.type === 'vendor' ? 1 : 0,
         unread_count_planner: selected.type !== 'vendor' ? 1 : 0,
@@ -323,7 +323,7 @@ export default function MessagesPage() {
             <>
               <div className="px-4 py-3.5 border-b border-charcoal-100 flex items-center gap-3 flex-shrink-0">
                 <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-charcoal-50 transition-colors flex-shrink-0">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                   {selected.type === 'vendor' && selected.vendor_id && vendorPhotos[selected.vendor_id] ? (
@@ -396,7 +396,10 @@ export default function MessagesPage() {
                                     </a>
                                   ) : (
                                     <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isMe ? 'text-rose-100' : 'text-rose-700'}`}>
-                                      📎 {a.name || 'Fichier'}
+                                      <span className="inline-flex items-center gap-1">
+                                        <Paperclip className="w-3 h-3" />
+                                        {a.name || 'Fichier'}
+                                      </span>
                                     </a>
                                   )}
                                 </div>

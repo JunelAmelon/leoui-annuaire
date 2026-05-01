@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { MessageSquare, Send, Paperclip, Clock, Search, Heart, ChevronLeft } from 'lucide-react';
-import { getDocuments, getDocument, addDocument, updateDocument } from '@/lib/db';
-import { toast } from 'sonner';
+import { MessageSquare, Search, Send, Paperclip, X, Loader2, Clock, CheckCircle2, Heart, ChevronLeft } from 'lucide-react';
+import { getDocument, getDocuments, addDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
+import { toast } from 'sonner';
 
 interface Conversation {
   id: string;
@@ -103,7 +103,7 @@ export default function ContactsPage() {
     if (!selected?.client_id) return;
     if (clientPhotos[selected.client_id]) return;
     getDocument('clients', selected.client_id)
-      .then((cl) => {
+      .then((cl: any) => {
         const url = (cl as any)?.photoURL || (cl as any)?.photo || '';
         if (url) setClientPhotos((p) => ({ ...p, [selected.client_id!]: url }));
       })
@@ -155,7 +155,7 @@ export default function ContactsPage() {
       };
       await addDocument('messages', msg);
       await updateDocument('conversations', selected.id, {
-        last_message: desc ? desc : `📎 ${file.name}`,
+        last_message: desc ? desc : `Fichier : ${file.name}`,
         last_message_at: new Date().toISOString(),
       });
       setMessages(prev => [...prev, { id: Date.now().toString(), ...msg } as Message]);
@@ -345,7 +345,10 @@ export default function ContactsPage() {
                                       </a>
                                     ) : (
                                       <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isVendor ? 'text-rose-100' : 'text-rose-700'}`}>
-                                        📎 {a.name || 'Fichier'}
+                                        <span className="inline-flex items-center gap-1">
+                                          <Paperclip className="w-3 h-3" />
+                                          {a.name || 'Fichier'}
+                                        </span>
                                       </a>
                                     )}
                                   </div>

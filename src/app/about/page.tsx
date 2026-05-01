@@ -1,9 +1,28 @@
+"use client";
+
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Heart, Users, Award, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function AboutPage() {
+  const [stats, setStats] = useState<{ vendorsCount: number; citiesCount: number; weddingsCount: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/stats')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        setStats({
+          vendorsCount: Number(json.vendorsCount || 0),
+          citiesCount: Number(json.citiesCount || 0),
+          weddingsCount: Number(json.weddingsCount || 0),
+        });
+      })
+      .catch(() => setStats(null));
+  }, []);
+
   return (
     <div className="min-h-screen bg-ivory-50">
       <Header />
@@ -50,9 +69,9 @@ export default function AboutPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { icon: Users, value: '1 500+', label: 'Prestataires' },
-              { icon: Heart, value: '12 000+', label: 'Mariages célébrés' },
-              { icon: MapPin, value: '85+', label: 'Villes couvertes' },
+              { icon: Users, value: stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—', label: 'Prestataires' },
+              { icon: Heart, value: stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', label: 'Mariages célébrés' },
+              { icon: MapPin, value: stats ? stats.citiesCount.toLocaleString('fr-FR') : '—', label: 'Villes couvertes' },
               { icon: Award, value: '4.9/5', label: 'Note moyenne' },
             ].map(({ icon: Icon, value, label }) => (
               <div key={label}>

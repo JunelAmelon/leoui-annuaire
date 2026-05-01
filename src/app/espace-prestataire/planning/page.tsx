@@ -152,7 +152,7 @@ export default function PlanningPage() {
           created_at: new Date().toISOString(),
           source: 'vendor',
         });
-        toast.success(`Événement ajouté ✓ — Synchronisé dans l'agenda de ${form.client_name || 'votre client'}`);
+        toast.success(`Événement ajouté — Synchronisé dans l'agenda de ${form.client_name || 'votre client'}`);
       } else {
         toast.success('Événement ajouté');
       }
@@ -317,7 +317,7 @@ export default function PlanningPage() {
             <div className="space-y-4">
               {linkedClients.length > 0 && (
                 <div className="bg-rose-50 border border-rose-100 rounded-xl p-3">
-                  <label className="block text-sm font-semibold text-rose-700 mb-2">📅 Lier à un client (sync agenda)</label>
+                  <label className="block text-sm font-semibold text-rose-700 mb-2">Lier à un client (sync agenda)</label>
                   <select
                     value={form.client_id}
                     onChange={e => {
@@ -329,7 +329,7 @@ export default function PlanningPage() {
                     {linkedClients.map(c => <option key={c.id} value={c.id}>{c.name}{c.email ? ` (${c.email})` : ''}</option>)}
                   </select>
                   {form.client_id && (
-                    <p className="text-xs text-rose-600 mt-1.5">✓ Cet événement apparaitra dans l&apos;agenda de {form.client_name}</p>
+                    <p className="text-xs text-rose-600 mt-1.5">Cet événement apparaitra dans l&apos;agenda de {form.client_name}</p>
                   )}
                 </div>
               )}
@@ -374,7 +374,7 @@ export default function PlanningPage() {
               <button onClick={handleSave} disabled={saving || !form.title.trim() || !form.date}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {saving ? 'Sauvegarde…' : form.client_id ? '📅 Sauv. & synchroniser' : 'Enregistrer'}
+                {saving ? 'Sauvegarde…' : form.client_id ? 'Sauv. & synchroniser' : 'Enregistrer'}
               </button>
             </div>
           </div>

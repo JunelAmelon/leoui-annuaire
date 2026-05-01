@@ -1,0 +1,40 @@
+'use client';
+
+import Link from 'next/link';
+import { Receipt, ArrowLeft } from 'lucide-react';
+
+export default function AdminFacturesPage() {
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Administration</p>
+        <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>
+          Factures
+        </h1>
+      </div>
+
+      <div className="relative bg-white rounded-2xl border border-charcoal-100 shadow-soft overflow-hidden">
+        <div className="p-8 pointer-events-none select-none">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+              <Receipt className="w-6 h-6 text-charcoal-400" />
+            </div>
+            <div>
+              <p className="text-charcoal-900 font-semibold">Fonctionnalité à venir</p>
+              <p className="text-sm text-charcoal-500 mt-1">
+                La gestion des factures côté administration arrive prochainement.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute inset-0 bg-white/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-charcoal-50" />
+      </div>
+
+      <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-rose-600 hover:text-rose-700 font-medium">
+        <ArrowLeft className="w-4 h-4" /> Retour au tableau de bord
+      </Link>
+    </div>
+  );
+}

@@ -14,7 +14,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   const { id } = params;
   const router = useRouter();
   const { user } = useAuth();
-  const { client } = useClientData();
+  const { client, event, refresh } = useClientData();
 
   const [loading, setLoading] = useState(true);
   const [vendor, setVendor] = useState<any>(null);
@@ -25,6 +25,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   const [collab, setCollab] = useState<any>(null);
   const [collabLoading, setCollabLoading] = useState(false);
   const [existingClientReview, setExistingClientReview] = useState<{ rating: number; comment: string } | null>(null);
+  const [venueLoading, setVenueLoading] = useState(false);
 
   const coupleName = client
     ? (client.name || '') + (client.name && client.partner ? ' & ' : '') + (client.partner || '')
@@ -95,6 +96,37 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
     };
     load();
   }, [id, client?.id]);
+
+  const isVenueVendor = String(vendor?.category || '') === 'Lieux de réception';
+  const currentVenueVendorId = String((event as any)?.venue_vendor_id || (client as any)?.venue_vendor_id || '');
+  const isCurrentVenue = Boolean(isVenueVendor && resolvedVendorId && currentVenueVendorId && resolvedVendorId === currentVenueVendorId);
+
+  const handleSetVenue = async () => {
+    if (!user?.uid) { router.push('/login'); return; }
+    if (!resolvedVendorId) { toast.error('Prestataire introuvable'); return; }
+    setVenueLoading(true);
+    try {
+      const token = await (await import('@/lib/firebase')).auth.currentUser?.getIdToken();
+      if (!token) throw new Error('Unauthorized');
+
+      const res = await fetch('/api/client/venue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ vendorId: resolvedVendorId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Erreur');
+      await refresh();
+      toast.success(isCurrentVenue ? 'Lieu déjà sélectionné' : 'Lieu de réception enregistré');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur lors de la sélection du lieu');
+    } finally {
+      setVenueLoading(false);
+    }
+  };
 
   const handleToggleCollab = async () => {
     if (!client?.id || !vendor) return;
@@ -226,7 +258,20 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   return (
     <div>
       {/* Collaboration action banner */}
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-end gap-2 flex-wrap mb-4">
+        {isVenueVendor && (
+          <button
+            onClick={() => void handleSetVenue()}
+            disabled={venueLoading || isCurrentVenue}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
+              isCurrentVenue
+                ? 'bg-charcoal-900 text-white border-charcoal-900'
+                : 'bg-white text-charcoal-700 border-charcoal-200 hover:bg-stone-50'
+            } disabled:opacity-60`}
+          >
+            {venueLoading ? '…' : isCurrentVenue ? 'Lieu sélectionné' : 'Choisir comme lieu'}
+          </button>
+        )}
         <button
           onClick={handleToggleCollab}
           disabled={collabLoading}
@@ -237,7 +282,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
           } disabled:opacity-50`}
         >
           {collab ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-          {collabLoading ? '…' : collab ? 'Prestataire lié ✓' : 'Ajouter à mes prestataires'}
+          {collabLoading ? '…' : collab ? 'Prestataire lié' : 'Ajouter à mes prestataires'}
         </button>
       </div>
       <VendorProfileDetailView

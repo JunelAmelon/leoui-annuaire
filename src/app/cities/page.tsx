@@ -12,50 +12,50 @@ const REGIONS = [
     {
       name: 'Île-de-France',
       cities: [
-        { name: 'Paris', count: 450, imageUrl: 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Versailles', count: 87, imageUrl: 'https://images.pexels.com/photos/2664216/pexels-photo-2664216.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Fontainebleau', count: 54, imageUrl: 'https://images.pexels.com/photos/2901215/pexels-photo-2901215.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Paris', imageUrl: 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Versailles', imageUrl: 'https://images.pexels.com/photos/2664216/pexels-photo-2664216.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Fontainebleau', imageUrl: 'https://images.pexels.com/photos/2901215/pexels-photo-2901215.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
     {
       name: 'Auvergne-Rhône-Alpes',
       cities: [
-        { name: 'Lyon', count: 287, imageUrl: 'https://images.pexels.com/photos/1974596/pexels-photo-1974596.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Annecy', count: 123, imageUrl: 'https://images.pexels.com/photos/3214994/pexels-photo-3214994.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Chamonix', count: 76, imageUrl: 'https://images.pexels.com/photos/2422264/pexels-photo-2422264.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Lyon', imageUrl: 'https://images.pexels.com/photos/1974596/pexels-photo-1974596.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Annecy', imageUrl: 'https://images.pexels.com/photos/3214994/pexels-photo-3214994.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Chamonix', imageUrl: 'https://images.pexels.com/photos/2422264/pexels-photo-2422264.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
     {
       name: 'Provence-Alpes-Côte d\'Azur',
       cities: [
-        { name: 'Aix-en-Provence', count: 198, imageUrl: 'https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Nice', count: 165, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Marseille', count: 142, imageUrl: 'https://images.pexels.com/photos/1642125/pexels-photo-1642125.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Cannes', count: 134, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Aix-en-Provence', imageUrl: 'https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Nice', imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Marseille', imageUrl: 'https://images.pexels.com/photos/1642125/pexels-photo-1642125.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Cannes', imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
     {
       name: 'Nouvelle-Aquitaine',
       cities: [
-        { name: 'Bordeaux', count: 165, imageUrl: 'https://images.pexels.com/photos/1974594/pexels-photo-1974594.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Biarritz', count: 98, imageUrl: 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'La Rochelle', count: 89, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Bordeaux', imageUrl: 'https://images.pexels.com/photos/1974594/pexels-photo-1974594.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Biarritz', imageUrl: 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'La Rochelle', imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
     {
       name: 'Occitanie',
       cities: [
-        { name: 'Toulouse', count: 156, imageUrl: 'https://images.pexels.com/photos/1755683/pexels-photo-1755683.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Montpellier', count: 134, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Carcassonne', count: 67, imageUrl: 'https://images.pexels.com/photos/2362009/pexels-photo-2362009.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Toulouse', imageUrl: 'https://images.pexels.com/photos/1755683/pexels-photo-1755683.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Montpellier', imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Carcassonne', imageUrl: 'https://images.pexels.com/photos/2362009/pexels-photo-2362009.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
     {
       name: 'Bretagne',
       cities: [
-        { name: 'Rennes', count: 112, imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Saint-Malo', count: 87, imageUrl: 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { name: 'Vannes', count: 54, imageUrl: 'https://images.pexels.com/photos/2422264/pexels-photo-2422264.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Rennes', imageUrl: 'https://images.pexels.com/photos/2422265/pexels-photo-2422265.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Saint-Malo', imageUrl: 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=800' },
+        { name: 'Vannes', imageUrl: 'https://images.pexels.com/photos/2422264/pexels-photo-2422264.jpeg?auto=compress&cs=tinysrgb&w=800' },
       ],
     },
 ];
@@ -64,6 +64,10 @@ export default function CitiesPage() {
   const [citySearch, setCitySearch] = useState('');
   const [activeRegion, setActiveRegion] = useState('Toutes');
   const [vendorCounts, setVendorCounts] = useState<Record<string, number>>({});
+
+  const cityTotal = REGIONS.reduce((s, r) => s + r.cities.length, 0);
+  const regionTotal = REGIONS.length;
+  const vendorTotal = Object.values(vendorCounts).reduce((s, n) => s + (Number(n) || 0), 0);
 
   useEffect(() => {
     getDocuments('vendors', []).then(docs => {
@@ -129,15 +133,15 @@ export default function CitiesPage() {
         {/* Floating stat badges */}
         <div className="absolute top-1/4 right-8 hidden xl:flex flex-col gap-3">
           <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-white text-center">
-            <p className="font-display text-2xl font-bold">18</p>
+            <p className="font-display text-2xl font-bold">{regionTotal}</p>
             <p className="text-xs text-white/70">Régions</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-white text-center">
-            <p className="font-display text-2xl font-bold">85+</p>
+            <p className="font-display text-2xl font-bold">{cityTotal}</p>
             <p className="text-xs text-white/70">Villes</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-white text-center">
-            <p className="font-display text-2xl font-bold">3 500+</p>
+            <p className="font-display text-2xl font-bold">{vendorTotal.toLocaleString('fr-FR')}</p>
             <p className="text-xs text-white/70">Prestataires</p>
           </div>
         </div>

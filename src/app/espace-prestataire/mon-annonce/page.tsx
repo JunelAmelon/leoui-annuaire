@@ -739,7 +739,11 @@ export default function MonAnnoncePage() {
                           finally { setUploadingReportVideo(false); }
                         }} />
                       </label>
-                      {newReport.videoUrl && <span className="text-xs text-green-600 font-medium">✓ Vidéo prête</span>}
+                      {newReport.videoUrl && (
+                        <span className="inline-flex items-center gap-1 text-xs text-green-700 font-medium">
+                          <CheckCircle className="w-3.5 h-3.5" /> Vidéo prête
+                        </span>
+                      )}
                       <button onClick={addReportage} disabled={!newReport.title.trim()}
                         className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-sm rounded-xl transition-colors ml-auto">
                         <Plus className="w-3.5 h-3.5" /> Ajouter

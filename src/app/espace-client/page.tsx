@@ -75,7 +75,7 @@ export default function EspaceClientPage() {
     : null;
   const budget = event?.budget || (client as any)?.budget || 0;
   const totalGuests = event?.guest_count || (client as any)?.guest_count || 0;
-  const venue = event?.venue || (client as any)?.venue || 'Lieu à définir';
+  const venue = event?.venue || (client as any)?.venue || 'Aucun lieu choisi';
   const checkPct = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
   const fmtDate = eventDate
     ? new Date(eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -129,7 +129,7 @@ export default function EspaceClientPage() {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h2 className="font-serif text-charcoal-900 text-xl font-light">Votre mariage</h2>
-                <p className="text-xs text-charcoal-600 mt-0.5">{fmtDate}{venue !== 'Lieu à définir' ? ` · ${venue}` : ''}</p>
+                <p className="text-xs text-charcoal-600 mt-0.5">{fmtDate}{venue !== 'Aucun lieu choisi' ? ` · ${venue}` : ''}</p>
               </div>
               <div className="w-9 h-9 rounded-full bg-white/50 flex items-center justify-center">
                 <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
@@ -335,7 +335,7 @@ export default function EspaceClientPage() {
                       <p className="text-[0.65rem] text-charcoal-400">{v.category}</p>
                     </div>
                     <span className={`text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full ${ v.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-500'}`}>
-                      {v.status === 'confirmed' ? '✓' : '…'}
+                      {v.status === 'confirmed' ? 'Confirmé' : '…'}
                     </span>
                   </div>
                 );

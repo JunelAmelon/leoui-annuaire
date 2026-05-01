@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Eye, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { FileText, Eye, CheckCircle, XCircle, ChevronRight, Upload } from 'lucide-react';
 import { getClientDevis, DevisData } from '@/lib/client-helpers';
-import { updateDocument } from '@/lib/db';
+import { addDocument, updateDocument } from '@/lib/db';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { uploadFile } from '@/lib/storage';
 
 interface Props {
   clientId: string;
@@ -15,6 +16,8 @@ interface Props {
 const statusBadge: Record<string, { cls: string; label: string }> = {
   draft:    { cls: 'bg-charcoal-100 text-charcoal-600', label: 'Brouillon' },
   sent:     { cls: 'bg-charcoal-100 text-charcoal-700', label: 'Reçu' },
+  signed:   { cls: 'bg-champagne-100 text-champagne-800', label: 'Signé' },
+  validated:{ cls: 'bg-green-100 text-green-700', label: 'Validé' },
   accepted: { cls: 'bg-green-100 text-green-700', label: 'Accepté' },
   rejected: { cls: 'bg-rose-100 text-rose-700', label: 'Refusé' },
 };
@@ -23,6 +26,7 @@ export function ClientDevis({ clientId, clientEmail }: Props) {
   const [devis, setDevis] = useState<DevisData[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!clientId) return;
@@ -42,6 +46,37 @@ export function ClientDevis({ clientId, clientEmail }: Props) {
       toast.error('Erreur lors de la validation');
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const uploadSignedDevis = async (d: DevisData, file: File) => {
+    setUploadingId(d.id);
+    try {
+      const url = await uploadFile(file, 'devis-signed');
+      await updateDocument('devis', d.id, {
+        status: 'signed',
+        signed_pdf_url: url,
+        signed_at: new Date().toISOString(),
+      });
+      if (d.client_id) {
+        await addDocument('documents', {
+          client_id: d.client_id,
+          name: `Devis signé ${d.reference || ''}`.trim(),
+          type: 'devis_signed',
+          file_url: url,
+          file_type: file.type || 'application/pdf',
+          uploaded_by: 'client',
+          uploaded_at: new Date().toLocaleDateString('fr-FR'),
+          devis_id: d.id,
+          status: 'signed',
+        } as any);
+      }
+      setDevis((prev) => prev.map((x) => (x.id === d.id ? { ...x, status: 'signed', signed_pdf_url: url, signed_at: new Date().toISOString() } : x)));
+      toast.success('Devis signé envoyé');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur lors de l\'upload');
+    } finally {
+      setUploadingId(null);
     }
   };
 
@@ -77,6 +112,8 @@ export function ClientDevis({ clientId, clientEmail }: Props) {
           {devis.slice(0, 4).map((d) => {
             const cfg = statusBadge[d.status] || statusBadge.sent;
             const canDecide = d.status === 'sent';
+            const canUploadSigned = d.status === 'sent' || d.status === 'accepted';
+            const hasSigned = Boolean((d as any).signed_pdf_url);
             return (
               <div key={d.id} className="p-3 rounded-xl bg-ivory-50 border border-charcoal-100 hover:border-rose-200 transition-colors">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -91,6 +128,33 @@ export function ClientDevis({ clientId, clientEmail }: Props) {
                     <a href={d.pdf_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors">
                       <Eye className="w-3.5 h-3.5 text-charcoal-500" />
                     </a>
+                  )}
+                  {hasSigned && (d as any).signed_pdf_url && (
+                    <a href={(d as any).signed_pdf_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors" title="Voir le devis signé">
+                      <FileText className="w-3.5 h-3.5 text-champagne-700" />
+                    </a>
+                  )}
+                  {canUploadSigned && !hasSigned && (
+                    <>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        id={`signed-devis-${d.id}`}
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = '';
+                          if (f) void uploadSignedDevis(d, f);
+                        }}
+                      />
+                      <button
+                        onClick={() => document.getElementById(`signed-devis-${d.id}`)?.click()}
+                        disabled={uploadingId === d.id}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-champagne-600 text-white text-xs font-semibold rounded-lg hover:bg-champagne-700 disabled:opacity-50 transition-all"
+                      >
+                        <Upload className="w-3 h-3" />{uploadingId === d.id ? '…' : 'Uploader signé'}
+                      </button>
+                    </>
                   )}
                   {canDecide && (
                     <>

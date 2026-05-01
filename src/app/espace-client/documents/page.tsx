@@ -124,7 +124,7 @@ export default function DocumentsPage() {
         message: `La facture ${invoiceRef} de ${amountTTC.toLocaleString('fr-FR')} € est disponible dans vos paiements.`,
         link: '/espace-client/paiements',
       });
-      toast.success('Devis accepté ✓ — Une facture a été générée');
+      toast.success('Devis accepté — Une facture a été générée');
       await fetchDocs();
     } catch { toast.error('Erreur'); } finally { setValidating(null); }
   };
@@ -166,7 +166,7 @@ export default function DocumentsPage() {
           link: '/espace-prestataire/contrats',
         });
       }
-      toast.success('Contrat signé ✓');
+      toast.success('Contrat signé');
       await fetchDocs();
     } catch { toast.error('Erreur'); } finally { setValidating(null); }
   };

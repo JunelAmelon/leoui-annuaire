@@ -12,34 +12,30 @@ interface CityPageProps {
   params: { city: string };
 }
 
-const cityData: Record<string, { name: string; region: string; description: string; imageUrl: string; vendorCount: number }> = {
+const cityData: Record<string, { name: string; region: string; description: string; imageUrl: string }> = {
   paris: {
     name: 'Paris',
     region: 'Île-de-France',
     description: 'La ville lumière offre un cadre incomparable pour votre mariage. Châteaux, jardins haussmanniens, bords de Seine — chaque lieu raconte une histoire unique.',
     imageUrl: 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    vendorCount: 450,
   },
   lyon: {
     name: 'Lyon',
     region: 'Auvergne-Rhône-Alpes',
     description: 'Capitale gastronomique de la France, Lyon est idéale pour un mariage alliant élégance et art de vivre. Traboules, vignes et vieille ville classée UNESCO.',
     imageUrl: 'https://images.pexels.com/photos/2901215/pexels-photo-2901215.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    vendorCount: 287,
   },
   provence: {
     name: 'Provence',
     region: 'Provence-Alpes-Côte d\'Azur',
     description: 'Lavande, oliviers et lumière dorée : la Provence est le décor de mariage par excellence. Châteaux et domaines viticoles vous attendent pour une célébration inoubliable.',
     imageUrl: 'https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    vendorCount: 198,
   },
   bordeaux: {
     name: 'Bordeaux',
     region: 'Nouvelle-Aquitaine',
     description: 'Entre vignobles et architecture classique, Bordeaux offre un cadre romantique et raffiné pour votre mariage. Domaines viticoles et hôtels particuliers vous accueillent.',
     imageUrl: 'https://images.pexels.com/photos/1974596/pexels-photo-1974596.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    vendorCount: 165,
   },
 };
 
@@ -48,7 +44,6 @@ const defaultCity = {
   region: 'France',
   description: 'Découvrez les meilleurs prestataires de mariage dans cette ville.',
   imageUrl: 'https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=1920',
-  vendorCount: 80,
 };
 
 export default function CityPage({ params }: CityPageProps) {
@@ -137,7 +132,7 @@ export default function CityPage({ params }: CityPageProps) {
 
           <div className="inline-flex items-center px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full text-white font-medium">
             <MapPin className="w-5 h-5 mr-2 text-rose-400" />
-            {loading ? '…' : allVendors.length > 0 ? allVendors.length : city.vendorCount} prestataires disponibles
+            {loading ? '…' : allVendors.length} prestataires disponibles
           </div>
         </div>
       </section>

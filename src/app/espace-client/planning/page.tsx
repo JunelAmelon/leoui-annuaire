@@ -37,6 +37,17 @@ interface VendorEvent {
   notes?: string;
 }
 
+const createdAtMs = (v: any): number => {
+  if (!v) return 0;
+  try {
+    if (typeof v?.toDate === 'function') return v.toDate().getTime();
+    if (typeof v === 'string' || typeof v === 'number') return new Date(v).getTime();
+    return new Date(String(v)).getTime();
+  } catch {
+    return 0;
+  }
+};
+
 export default function PlanningPage() {
   const { client, event, loading: dataLoading } = useClientData();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -74,8 +85,14 @@ export default function PlanningPage() {
           clientId ? getDocuments('client_planning_events', [{ field: 'client_id', operator: '==', value: clientId }]) : Promise.resolve([]),
         ]);
         const allTasks = items as any[];
-        setSteps(allTasks.filter((t) => t?.kind === 'milestone'));
-        setAppointments(allTasks.filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv'));
+        const nextSteps = allTasks
+          .filter((t) => t?.kind === 'milestone')
+          .sort((a, b) => createdAtMs(b?.created_at) - createdAtMs(a?.created_at));
+        const nextAppointments = allTasks
+          .filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv')
+          .sort((a, b) => createdAtMs(b?.created_at) - createdAtMs(a?.created_at));
+        setSteps(nextSteps);
+        setAppointments(nextAppointments);
         const sorted = (vendorItems as VendorEvent[]).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         setVendorEvents(sorted);
       } catch (e) {

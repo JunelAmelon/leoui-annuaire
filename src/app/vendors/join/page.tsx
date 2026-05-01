@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
@@ -18,6 +18,20 @@ export default function VendorJoinPage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', businessName: '', category: '', city: '', email: '', phone: '', password: '', terms: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [stats, setStats] = useState<{ vendorsCount: number; weddingsCount: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/stats')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        setStats({
+          vendorsCount: Number(json.vendorsCount || 0),
+          weddingsCount: Number(json.weddingsCount || 0),
+        });
+      })
+      .catch(() => setStats(null));
+  }, []);
 
   const setField = (field: string, value: string | boolean) => setForm(p => ({ ...p, [field]: value }));
 
@@ -104,8 +118,8 @@ export default function VendorJoinPage() {
           </div>
           <div className="flex flex-wrap gap-6 mt-8">
             {[
-              { label: '1 500+', sub: 'Prestataires actifs' },
-              { label: '50 000+', sub: 'Couples / an' },
+              { label: stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—', sub: 'Prestataires actifs' },
+              { label: stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', sub: 'Couples' },
               { label: '4.8/5', sub: 'Note moyenne' },
             ].map((s, i) => (
               <div key={i}>
@@ -287,12 +301,12 @@ export default function VendorJoinPage() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: '50 000+', sub: 'Couples / an' },
-                  { label: '1 500+',  sub: 'Prestataires' },
+                  { label: stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', sub: 'Couples' },
+                  { label: stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—',  sub: 'Prestataires' },
                   { label: '4.8/5',   sub: 'Note moyenne' },
                 ].map((s, i) => (
                   <div key={i} className="bg-charcoal-900 rounded-xl p-3 text-center">
-                    <p className="font-display text-base font-bold text-champagne-400">{s.label}</p>
+                    <p className="text-white font-bold text-lg">{s.label}</p>
                     <p className="text-xs text-white/60 mt-0.5">{s.sub}</p>
                   </div>
                 ))}

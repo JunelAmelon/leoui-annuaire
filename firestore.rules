@@ -1,9 +1,31 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // All authenticated users can read/write their own data
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function hasAny(keys) {
+      return request.resource.data.diff(resource == null ? {} : resource.data).changedKeys().hasAny(keys);
+    }
+
+    match /clients/{clientId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
+    }
+
+    // Default fallback
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
   }
 }

@@ -21,19 +21,24 @@ interface Devis {
   amount?: number;
   items?: LineItem[];
   tva?: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  status: 'draft' | 'sent' | 'signed' | 'validated' | 'accepted' | 'rejected';
   description?: string;
   conditions?: string;
   date?: string;
   created_at?: string;
   sent_at?: string;
   pdf_url?: string;
+  signed_pdf_url?: string;
+  signed_at?: string;
+  validated_at?: string;
   vendor_name?: string;
 }
 
 const STATUS_CONFIG = {
   draft: { label: 'Brouillon', icon: Clock, color: 'text-charcoal-500', bg: 'bg-charcoal-100' },
   sent: { label: 'Envoyé', icon: Send, color: 'text-champagne-700', bg: 'bg-champagne-100' },
+  signed: { label: 'Signé', icon: Upload, color: 'text-champagne-800', bg: 'bg-champagne-100' },
+  validated: { label: 'Validé', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-100' },
   accepted: { label: 'Accepté', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-100' },
   rejected: { label: 'Refusé', icon: XCircle, color: 'text-rose-700', bg: 'bg-rose-100' },
 };
@@ -239,7 +244,7 @@ export default function DevisPage() {
           });
           convId = (newConv as any).id;
         }
-        const msgContent = `📋 Devis envoyé : ${ref}\nMontant : ${ttc.toFixed(2)} € TTC\n${pdf_url ? `Voir le devis : ${pdf_url}` : 'Disponible dans vos documents.'}`;
+        const msgContent = `Devis envoyé : ${ref}\nMontant : ${ttc.toFixed(2)} € TTC\n${pdf_url ? `Voir le devis : ${pdf_url}` : 'Disponible dans vos documents.'}`;
         await addDocument('messages', {
           conversation_id: convId,
           sender_id: user.uid,
@@ -291,7 +296,7 @@ export default function DevisPage() {
           const nc = await addDocument('conversations', { vendor_id: user.uid, client_id: resolvedClientId, vendor_name: vendorName, client_name: d.client_name || '', created_at: new Date().toISOString(), last_message: '', unread_vendor: 0, unread_client: 1 });
           convId = (nc as any).id;
         }
-        const msgContent = `📋 Devis (re-)envoyé : ${d.reference}\nMontant : ${(d.amount || 0).toFixed(2)} € TTC\n${pdf_url ? `Voir le devis : ${pdf_url}` : 'Disponible dans vos documents.'}`;
+        const msgContent = `Devis (re-)envoyé : ${d.reference}\nMontant : ${(d.amount || 0).toFixed(2)} € TTC\n${pdf_url ? `Voir le devis : ${pdf_url}` : 'Disponible dans vos documents.'}`;
         await addDocument('messages', {
           conversation_id: convId,
           sender_id: user.uid,
@@ -356,13 +361,24 @@ export default function DevisPage() {
         created_at: new Date().toISOString(), due_date: '',
         notes: `Facture générée automatiquement depuis le devis ${d.reference}`,
       });
-      toast.success('Devis accepté ✓ — Facture créée automatiquement dans Paiements');
+      toast.success('Devis accepté — Facture créée automatiquement dans Paiements');
       load();
     } catch { toast.error('Erreur'); }
   };
 
   const handleRejectDevis = async (id: string) => {
     try { await updateDocument('devis', id, { status: 'rejected' }); toast.success('Devis marqué comme refusé'); load(); } catch { toast.error('Erreur'); }
+  };
+
+  const handleValidateSigned = async (d: Devis) => {
+    if (!d?.signed_pdf_url) return;
+    try {
+      await updateDocument('devis', d.id, { status: 'validated', validated_at: new Date().toISOString() });
+      toast.success('Devis validé');
+      load();
+    } catch {
+      toast.error('Erreur');
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -455,6 +471,40 @@ export default function DevisPage() {
                       <MoreVertical className="w-4 h-4 text-charcoal-600" />
                     </button>
 
+                    {d.pdf_url && (
+                      <a
+                        href={d.pdf_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-charcoal-900 text-white hover:bg-charcoal-800 transition-colors"
+                        title="PDF avant signature"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Avant signature
+                      </a>
+                    )}
+
+                    {d.signed_pdf_url && (
+                      <a
+                        href={d.signed_pdf_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-champagne-600 text-white hover:bg-champagne-700 transition-colors"
+                        title="PDF après signature"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Après signature
+                      </a>
+                    )}
+
+                    {d.status === 'signed' && d.signed_pdf_url && (
+                      <button
+                        type="button"
+                        onClick={() => void handleValidateSigned(d)}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" /> Valider
+                      </button>
+                    )}
+
                     {openMenuId === d.id && (
                       <div className="absolute right-5 top-[calc(100%-14px)] z-30 w-56 bg-white border border-charcoal-100 rounded-xl shadow-soft overflow-hidden">
                         <div className="py-1">
@@ -485,6 +535,15 @@ export default function DevisPage() {
                             </>
                           )}
 
+                          {d.status === 'signed' && d.signed_pdf_url && (
+                            <button
+                              onClick={() => { setOpenMenuId(null); handleValidateSigned(d); }}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 text-green-700"
+                            >
+                              Valider le devis signé
+                            </button>
+                          )}
+
                           <div className="h-px bg-charcoal-100 my-1" />
 
                           <button
@@ -501,7 +560,19 @@ export default function DevisPage() {
                               onClick={() => setOpenMenuId(null)}
                               className="block px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
                             >
-                              Voir le PDF
+                              Voir le PDF (avant signature)
+                            </a>
+                          )}
+
+                          {d.signed_pdf_url && (
+                            <a
+                              href={d.signed_pdf_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => setOpenMenuId(null)}
+                              className="block px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
+                            >
+                              Voir le PDF (signé)
                             </a>
                           )}
 
@@ -526,7 +597,7 @@ export default function DevisPage() {
                   {d.status === 'accepted' && (
                     <div className="mt-3 flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
                       <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                      Devis accepté ✓ — Une facture a été générée automatiquement dans Paiements
+                      Devis accepté — Une facture a été générée automatiquement dans Paiements
                     </div>
                   )}
                 </div>
