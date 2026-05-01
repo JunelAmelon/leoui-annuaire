@@ -89,72 +89,60 @@ export default function VendorsPage() {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      {/* HERO — split layout */}
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '340px' }}>
-        {/* Mobile: full background image */}
-        <div className="absolute inset-0 lg:hidden">
+      {/* HERO — clean editorial */}
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+        <div className="absolute inset-0">
           <img
-            src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=900"
+            src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1400"
             alt="Prestataires de mariage"
-            className="w-full h-full object-cover object-center transition-transform scale-105"
-            style={{ transitionDuration: '5000ms' }}
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-charcoal-900/65" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
-        {/* Desktop: right photo */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:block overflow-hidden">
-          <img
-            src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1200"
-            alt="Photographes de mariage"
-            className="w-full h-full object-cover transition-transform hover:scale-105"
-            style={{ transitionDuration: '5000ms' }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/30 to-transparent" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-700/10 via-transparent to-champagne-400/10 animate-pulse pointer-events-none" />
-        {/* Left content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14 lg:w-1/2">
-          <div className="flex items-center gap-2 text-body-sm text-white/60 mb-4">
-            <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
-            <span>/</span>
-            <span className="text-white/90">{selectedCategory === 'Tous' ? 'Tous les prestataires' : selectedCategory}</span>
-          </div>
-          <h1 className="font-display text-display-md text-white mb-3">
-            {selectedCategory === 'Tous' ? 'Prestataires de mariage' : selectedCategory + ' de mariage'}
-          </h1>
-          <p className="text-body-md text-white/70 mb-7 max-w-lg">
-            Choisir le bon prestataire est essentiel pour capturer l'essence de votre union. Explorez notre sélection et trouvez celui qui saura mettre en lumière votre amour unique.
-          </p>
-          {/* Search bar */}
-          <div className="flex flex-col sm:flex-row gap-2 bg-white/10 backdrop-blur-sm rounded-2xl p-2 max-w-lg border border-white/10">
-            <VendorSearchAutocomplete
-              placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
-              value={searchQuery}
-              onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
-              className="flex-1"
-              inputClassName="flex items-center bg-white/10 rounded-xl"
-              showIcon
-            />
-            <div className="relative flex-1">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-              {cities.length > 0 ? (
-                <select
-                  value={cityFilter}
-                  onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white rounded-xl outline-none text-sm focus:bg-white/20 transition-all appearance-none"
-                >
-                  <option value="" className="text-charcoal-900">Toutes les villes</option>
-                  {cities.map(c => <option key={c} value={c} className="text-charcoal-900">{c}</option>)}
-                </select>
-              ) : (
-                <input type="text" value={cityFilter} onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
-                  placeholder="Où ?"
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all" />
-              )}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 text-body-sm text-white/60 mb-4">
+              <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
+              <span>/</span>
+              <span className="text-white/90">{selectedCategory === 'Tous' ? 'Tous les prestataires' : selectedCategory}</span>
             </div>
-            <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-              Rechercher
-            </button>
+            <h1 className="font-display text-display-md text-white mb-3">
+              {selectedCategory === 'Tous' ? 'Prestataires de mariage' : selectedCategory + ' de mariage'}
+            </h1>
+            <p className="text-body-md text-white/80 mb-7 max-w-lg">
+              Choisir le bon prestataire est essentiel pour capturer l'essence de votre union. Explorez notre sélection et trouvez celui qui saura mettre en lumière votre amour unique.
+            </p>
+            {/* Search bar */}
+            <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
+              <VendorSearchAutocomplete
+                placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
+                value={searchQuery}
+                onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+                className="flex-1"
+                inputClassName="flex items-center bg-white/10 rounded-xl"
+                showIcon
+              />
+              <div className="relative flex-1">
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                {cities.length > 0 ? (
+                  <select
+                    value={cityFilter}
+                    onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white rounded-xl outline-none text-sm focus:bg-white/20 transition-all appearance-none"
+                  >
+                    <option value="" className="text-charcoal-900">Toutes les villes</option>
+                    {cities.map(c => <option key={c} value={c} className="text-charcoal-900">{c}</option>)}
+                  </select>
+                ) : (
+                  <input type="text" value={cityFilter} onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
+                    placeholder="Où ?"
+                    className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all" />
+                )}
+              </div>
+              <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                Rechercher
+              </button>
+            </div>
           </div>
         </div>
       </section>

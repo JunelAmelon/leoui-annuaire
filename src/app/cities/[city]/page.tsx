@@ -101,42 +101,34 @@ export default function CityPage({ params }: CityPageProps) {
       <Header />
 
       <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
-        <div className="absolute inset-0 lg:hidden">
+        <div className="absolute inset-0">
           <img
             src={city.imageUrl}
             alt={city.name}
-            className="w-full h-full object-cover transition-transform scale-105"
-            style={{ transitionDuration: '5000ms' }}
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-charcoal-900/70" />
-        </div>
-        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
-          <img
-            src={city.imageUrl}
-            alt={city.name}
-            className="w-full h-full object-cover transition-transform hover:scale-105"
-            style={{ transitionDuration: '5000ms' }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:w-1/2">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
+          <div className="max-w-3xl">
           <Link
             href="/cities"
-            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors mb-5"
+            className="inline-flex items-center gap-2 text-body-sm text-white/60 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
             Toutes les villes
           </Link>
-          <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
+          <h1 className="font-display text-display-md text-white mb-3">
             Mariage à {city.name}
           </h1>
-          <p className="text-white/80 mb-7 max-w-xl text-base leading-relaxed">
+          <p className="text-body-md text-white/80 mb-7 max-w-lg">
             {city.description}
           </p>
           <p className="text-white/65 text-sm">
             {loading ? '...' : allVendors.length} prestataires disponibles dans cette zone.
           </p>
+          </div>
         </div>
       </section>
 

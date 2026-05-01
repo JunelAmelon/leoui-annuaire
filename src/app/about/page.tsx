@@ -28,16 +28,19 @@ export default function AboutPage() {
       <Header />
 
       {/* Hero */}
-      <section className="relative bg-charcoal-900 py-24 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
+      <section className="relative overflow-hidden py-24 bg-charcoal-900">
+        <div className="absolute inset-0">
           <img src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
-        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold text-rose-400 tracking-[0.14em] uppercase mb-4">— Notre histoire</p>
-          <h1 className="font-display text-display-lg text-white mb-6">À propos de LeOui</h1>
-          <p className="text-body-lg text-white/70 max-w-2xl mx-auto">
-            LeOui est née d'une conviction simple : chaque couple mérite les meilleurs prestataires pour le plus beau jour de leur vie.
-          </p>
+        <div className="relative z-10 max-w-4xl mx-auto px-6">
+          <div className="p-8 sm:p-10 text-center">
+            <p className="text-xs font-semibold text-rose-300 tracking-[0.14em] uppercase mb-4">— Notre histoire</p>
+            <h1 className="font-display text-display-lg text-white mb-6">À propos de LeOui</h1>
+            <p className="text-body-lg text-white/80 max-w-2xl mx-auto">
+              LeOui est née d'une conviction simple : chaque couple mérite les meilleurs prestataires pour le plus beau jour de leur vie.
+            </p>
+          </div>
         </div>
       </section>
 

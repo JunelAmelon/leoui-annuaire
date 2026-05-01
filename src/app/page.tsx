@@ -44,7 +44,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      {/* ── HERO — editorial, left-aligned ── */}
+      {/* ── HERO — clean editorial ── */}
       <section className="relative overflow-hidden" style={{ minHeight: '100svh' }}>
         <div className="absolute inset-0">
           <img
@@ -52,74 +52,52 @@ export default function HomePage() {
             alt="Mariage en France"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 overlay-full" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
 
-        {/* Content — left-aligned on a grid */}
-        <div
-          className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 flex flex-col justify-end pb-20 sm:pb-28 pt-20 sm:pt-24"
-          style={{ minHeight: '100svh' }}
-        >
-          {/* Label */}
-          <p className="label-xs text-white/50 mb-6 tracking-[0.14em]">
-            La maison du mariage en France
-          </p>
-
-          {/* Headline — Cormorant at weight 300 */}
-          <h1
-            className="font-serif text-white mb-7"
-            style={{
-              fontSize: 'clamp(3rem, 7vw, 6.5rem)',
-              lineHeight: '0.97',
-              fontWeight: 300,
-              letterSpacing: '-0.025em',
-              maxWidth: '14ch',
-            }}
-          >
-            L'art de célébrer<br />
-            <em style={{ fontStyle: 'italic', fontWeight: 300 }}>votre amour</em>
-          </h1>
-
-          <p
-            className="text-white/70 mb-10 font-sans font-light leading-relaxed"
-            style={{ fontSize: 'clamp(0.875rem, 1.4vw, 1.0625rem)', maxWidth: '44ch' }}
-          >
-            Photographes, traiteurs, fleuristes, lieux de réception —<br className="hidden sm:block" />
-            des professionnels d'exception, pour un mariage qui vous ressemble.
-          </p>
-
-          {/* Search bar */}
-          <HomeSearchBar />
-
-          {/* Secondary CTAs */}
-          <div className="flex items-center gap-6 mt-5">
-            <Link
-              href="/vendors"
-              className="inline-flex items-center gap-2 text-white/60 text-xs font-medium tracking-[0.07em] uppercase hover:text-white transition-colors duration-200"
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 py-20 sm:py-24 flex items-center" style={{ minHeight: '100svh' }}>
+          <div className="w-full max-w-3xl">
+            <p className="label-xs text-white/70 mb-5 tracking-[0.14em]">La maison du mariage en France</p>
+            <h1
+              className="font-serif text-white mb-6"
+              style={{
+                fontSize: 'clamp(2.8rem, 6vw, 5.8rem)',
+                lineHeight: '0.95',
+                fontWeight: 300,
+                letterSpacing: '-0.025em',
+                maxWidth: '13ch',
+              }}
             >
-              Voir tous les prestataires <ArrowRight className="w-3 h-3" />
-            </Link>
-            <span className="text-white/20">|</span>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 text-white/60 text-xs font-medium tracking-[0.07em] uppercase hover:text-white transition-colors duration-200"
-            >
-              <Heart className="w-3 h-3" /> Mon espace couple
-            </Link>
-          </div>
+              Imaginez votre<br />
+              <em style={{ fontStyle: 'italic', fontWeight: 300 }}>jour parfait</em>
+            </h1>
+            <p className="text-white/80 mb-9 font-sans font-light leading-relaxed" style={{ fontSize: 'clamp(0.95rem, 1.3vw, 1.15rem)', maxWidth: '44ch' }}>
+              Photographes, traiteurs, fleuristes, lieux de réception : une sélection haut de gamme pour créer un mariage qui vous ressemble.
+            </p>
 
-          {/* Minimal trust strip */}
-          <div className="flex items-center gap-8 mt-14 border-t border-white/10 pt-6">
-            {[
-              [stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—', 'Prestataires'],
-              [stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', 'Mariages'],
-              [stats ? stats.citiesCount.toLocaleString('fr-FR') : '—', 'Villes'],
-            ].map(([n, l]) => (
-              <div key={l}>
-                <p className="font-serif text-white text-xl font-light" style={{ letterSpacing: '-0.01em' }}>{n}</p>
-                <p className="text-white/45 text-[0.65rem] font-medium tracking-[0.1em] uppercase mt-0.5">{l}</p>
-              </div>
-            ))}
+            <HomeSearchBar />
+
+            <div className="flex flex-wrap items-center gap-5 mt-6">
+              <Link href="/vendors" className="inline-flex items-center gap-2 text-white/80 text-xs font-medium tracking-[0.08em] uppercase hover:text-white transition-colors duration-200">
+                Voir tous les prestataires <ArrowRight className="w-3 h-3" />
+              </Link>
+              <Link href="/login" className="inline-flex items-center gap-2 text-white/80 text-xs font-medium tracking-[0.08em] uppercase hover:text-white transition-colors duration-200">
+                <Heart className="w-3 h-3" /> Mon espace couple
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mt-10 pt-6 border-t border-white/20 max-w-xl">
+              {[
+                [stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—', 'Prestataires'],
+                [stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', 'Mariages'],
+                [stats ? stats.citiesCount.toLocaleString('fr-FR') : '—', 'Villes'],
+              ].map(([n, l]) => (
+                <div key={l}>
+                  <p className="font-serif text-white text-2xl font-light" style={{ letterSpacing: '-0.01em' }}>{n}</p>
+                  <p className="text-white/60 text-[0.65rem] font-medium tracking-[0.1em] uppercase mt-1">{l}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

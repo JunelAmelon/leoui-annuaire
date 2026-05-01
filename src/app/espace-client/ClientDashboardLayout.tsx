@@ -89,9 +89,11 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
 
           {/* Logo */}
           <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
-            <Link href="/"
-              className="w-10 h-10 flex-shrink-0 bg-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-700 transition-colors">
-              <Heart className="w-4 h-4 text-white fill-white" />
+            <Link
+              href="/"
+              className="w-10 h-10 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group"
+            >
+              <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors" />
             </Link>
             {!collapsed && (
               <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui.net</span>
@@ -237,10 +239,10 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
             {/* Header */}
             <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
-                <div className="w-8 h-8 bg-charcoal-900 rounded-xl flex items-center justify-center">
-                  <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                <div className="w-8 h-8 border border-rose-600 rounded-xl flex items-center justify-center">
+                  <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
                 </div>
-                <span className="font-serif text-lg text-charcoal-900">LeOui</span>
+                <span className="font-serif text-lg text-charcoal-900">LeOui.net</span>
               </Link>
               <button onClick={() => setMobileOpen(false)}
                 className="p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-stone-100">
@@ -310,7 +312,12 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
           <button onClick={() => setMobileOpen(true)} className="p-2 text-charcoal-600 rounded-xl hover:bg-stone-100">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-serif text-lg text-charcoal-900">LeOui</span>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 border border-rose-600 rounded-lg flex items-center justify-center">
+              <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+            </div>
+            <span className="font-serif text-lg text-charcoal-900">LeOui.net</span>
+          </Link>
           <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-champagne-400 to-rose-400 flex items-center justify-center">
             {client?.photo ? (
               <img src={client.photo} alt={coupleName} className="w-full h-full object-cover" />

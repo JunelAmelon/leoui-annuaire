@@ -7,9 +7,11 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center space-x-2 mb-6">
-              <Heart className="w-8 h-8 text-rose-500 fill-rose-500" />
-              <span className="font-display text-2xl">LeOui.net</span>
+            <Link href="/" className="flex items-center gap-2.5 mb-6 group">
+              <div className="w-8 h-8 border border-rose-500 flex items-center justify-center transition-colors duration-300 group-hover:bg-rose-600">
+                <Heart className="w-4 h-4 text-rose-500 fill-rose-500 group-hover:text-white group-hover:fill-white transition-colors duration-300" />
+              </div>
+              <span className="font-serif text-[1.5rem] leading-none tracking-wide">LeOui.net</span>
             </Link>
             <p className="text-body-md text-charcoal-300 mb-6 max-w-md">
               La plateforme premium pour organiser votre mariage de rêve en France.

@@ -95,63 +95,52 @@ export default function CitiesPage() {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      {/* HERO — unified split layout */}
+      {/* HERO — same style as vendors page */}
       <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
-        <div className="absolute inset-0 lg:hidden">
-          <img
-            src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1200"
-            alt="Régions mariage"
-            className="w-full h-full object-cover transition-transform scale-105"
-            style={{ transitionDuration: '5000ms' }}
-          />
-          <div className="absolute inset-0 bg-charcoal-900/70" />
-        </div>
-        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
+        <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1600"
             alt="Régions mariage"
-            className="w-full h-full object-cover transition-transform hover:scale-105"
-            style={{ transitionDuration: '5000ms' }}
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:w-1/2">
-          <div className="flex items-center gap-2 text-sm text-white/60 mb-4">
-            <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
-            <span>/</span>
-            <span className="text-white/90">Régions</span>
-          </div>
-          <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
-            Votre mariage,<br />
-            <span className="italic text-champagne-300">où vous le rêvez</span>
-          </h1>
-          <p className="text-white/70 mb-8 max-w-lg text-base leading-relaxed">
-            Des Alpes à la Côte d'Azur, de Paris à la Bretagne, trouvez les meilleurs prestataires dans toutes les régions.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-              <input
-                type="text"
-                value={citySearch}
-                onChange={e => setCitySearch(e.target.value)}
-                placeholder="Rechercher une ville (Paris, Lyon, Bordeaux...)"
-                className="w-full pl-12 pr-10 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 outline-none text-sm focus:bg-white/20 transition-all"
-              />
-              {citySearch && (
-                <button onClick={() => setCitySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="w-4 h-4 text-white/50 hover:text-white" />
-                </button>
-              )}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 text-body-sm text-white/60 mb-4">
+              <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
+              <span>/</span>
+              <span className="text-white/90">Régions</span>
             </div>
-            <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors text-sm whitespace-nowrap">
-              Trouver des prestataires
-            </button>
+            <h1 className="font-display text-display-md text-white mb-3">
+              Votre mariage,<br />
+              <span className="italic text-champagne-300">où vous le rêvez</span>
+            </h1>
+            <p className="text-body-md text-white/80 mb-7 max-w-lg">
+              Des Alpes à la Côte d'Azur, de Paris à la Bretagne, trouvez les meilleurs prestataires dans toutes les régions.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                <input
+                  type="text"
+                  value={citySearch}
+                  onChange={e => setCitySearch(e.target.value)}
+                  placeholder="Rechercher une ville (Paris, Lyon, Bordeaux...)"
+                  className="w-full pl-12 pr-10 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 outline-none text-sm focus:bg-white/20 transition-all"
+                />
+                {citySearch && (
+                  <button onClick={() => setCitySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="w-4 h-4 text-white/50 hover:text-white" />
+                  </button>
+                )}
+              </div>
+              <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors text-sm whitespace-nowrap">
+                Trouver des prestataires
+              </button>
+            </div>
           </div>
-          <p className="text-white/55 text-xs mt-4">
-            Explorez les villes et trouvez les meilleurs prestataires pour votre style de mariage.
-          </p>
         </div>
       </section>
 

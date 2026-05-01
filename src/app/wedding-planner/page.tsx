@@ -14,54 +14,42 @@ export default function WeddingPlannerPage() {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      {/* HERO — vendors-listing style */}
+      {/* HERO — same style as vendors page */}
       <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
-        {/* Mobile: full background image */}
-        <div className="absolute inset-0 lg:hidden">
-          <img
-            src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1200"
-            alt="Wedding Planner"
-            className="w-full h-full object-cover transition-transform scale-105"
-            style={{ transitionDuration: '5000ms' }}
-          />
-          <div className="absolute inset-0" style={{ background: 'rgba(10, 5, 15, 0.72)' }} />
-        </div>
-        {/* Desktop: image right half */}
-        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
+        <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1400"
             alt="Wedding Planner"
-            className="w-full h-full object-cover transition-transform hover:scale-105"
-            style={{ transitionDuration: '5000ms' }}
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-700/10 via-transparent to-champagne-400/10 animate-pulse pointer-events-none" />
-        {/* Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:w-1/2">
-          <div className="flex items-center gap-2 text-sm text-white/60 mb-4">
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 text-body-sm text-white/60 mb-4">
             <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
             <span>/</span>
             <span className="text-white/90">Wedding Planner</span>
+            </div>
+            <h1 className="font-display text-display-md text-white mb-3">
+              Organisez votre mariage
+              <br />
+              sereinement
+            </h1>
+            <p className="text-body-md text-white/80 mb-7 max-w-lg">
+              Votre espace couple numérique tout-en-un : planning, prestataires, budget, documents et paiements, centralisés en un seul endroit.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
+              <Link href="/signup" className="flex-1 inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                Organiser mon mariage
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <a href="#features" className="flex-1 inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-colors">
+                Découvrir l&apos;outil
+              </a>
+            </div>
           </div>
-          <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
-            Organisez votre mariage<br />
-            <span className="italic text-champagne-300">sereinement</span>
-          </h1>
-          <p className="text-white/70 mb-8 max-w-lg text-base leading-relaxed">
-            Votre espace couple numérique tout-en-un : planning, prestataires, budget, documents et paiements — centralisés en un seul endroit, accessibles partout.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/signup" className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm">
-              Organiser mon mariage maintenant <ArrowRight className="w-4 h-4" />
-            </Link>
-            <a href="#features" className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm">
-              Découvrir l&apos;outil
-            </a>
-          </div>
-          <p className="text-white/55 text-xs mt-4">
-            Une expérience claire et fluide pour piloter votre mariage de bout en bout.
-          </p>
         </div>
       </section>
 
