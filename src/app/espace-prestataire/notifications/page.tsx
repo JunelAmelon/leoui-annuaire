@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { getDocuments, updateDocument } from '@/lib/db';
-import { Bell, Check, MessageSquare, FileText, Euro, Calendar, Star } from 'lucide-react';
+import { deleteDocument, updateDocument } from '@/lib/db';
+import { Bell, Check, MessageSquare, FileText, Euro, Calendar, Star, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Notification {
   id: string;
@@ -35,17 +37,22 @@ export default function PrestaNotificationsPage() {
 
   useEffect(() => {
     if (!user?.uid) return;
-    getDocuments('notifications', [{ field: 'recipient_id', operator: '==', value: user.uid }])
-      .then((items) => {
-        const sorted = (items as any[]).sort((a, b) => {
+    const q = query(collection(db, 'notifications'), where('recipient_id', '==', user.uid));
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => ({ ...(d.data() as any), id: d.id }));
+        const sorted = items.sort((a, b) => {
           const da = a?.created_at?.toDate?.()?.getTime?.() || new Date(a?.created_at || 0).getTime();
-          const db = b?.created_at?.toDate?.()?.getTime?.() || new Date(b?.created_at || 0).getTime();
-          return db - da;
+          const dbv = b?.created_at?.toDate?.()?.getTime?.() || new Date(b?.created_at || 0).getTime();
+          return dbv - da;
         });
         setNotifications(sorted as Notification[]);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+    return () => unsub();
   }, [user?.uid]);
 
   const markRead = async (id: string) => {
@@ -58,10 +65,22 @@ export default function PrestaNotificationsPage() {
   };
 
   const markAllRead = async () => {
-    const unread = notifications.filter((n) => !n.read);
-    await Promise.all(unread.map((n) => updateDocument('notifications', n.id, { read: true })));
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    toast.success('Toutes les notifications marquées comme lues');
+    try {
+      const unread = notifications.filter((n) => !n.read);
+      await Promise.all(unread.map((n) => updateDocument('notifications', n.id, { read: true })));
+      toast.success('Toutes les notifications marquées comme lues');
+    } catch {
+      toast.error('Impossible de tout marquer comme lu');
+    }
+  };
+
+  const removeNotification = async (id: string) => {
+    try {
+      await deleteDocument('notifications', id);
+      toast.success('Notification supprimée');
+    } catch {
+      toast.error('Suppression impossible');
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -134,7 +153,13 @@ export default function PrestaNotificationsPage() {
                       {ts && <p className="text-xs text-charcoal-400 mt-1">{ts}</p>}
                       <div className="flex items-center gap-3 mt-2">
                         {notif.link && (
-                          <Link href={notif.link} className="text-xs font-medium text-rose-600 hover:text-rose-700">
+                          <Link
+                            href={notif.link}
+                            onClick={() => {
+                              if (!notif.read) markRead(notif.id);
+                            }}
+                            className="text-xs font-medium text-rose-600 hover:text-rose-700"
+                          >
                             Voir &rarr;
                           </Link>
                         )}
@@ -146,6 +171,12 @@ export default function PrestaNotificationsPage() {
                             <Check className="w-3 h-3" /> Marquer lu
                           </button>
                         )}
+                        <button
+                          onClick={() => removeNotification(notif.id)}
+                          className="flex items-center gap-1 text-xs text-charcoal-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" /> Supprimer
+                        </button>
                       </div>
                     </div>
                   </div>

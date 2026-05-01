@@ -55,14 +55,14 @@ export default function HomeFeaturedVendors() {
   }, []);
 
   if (loading) return (
-    <div className="space-y-0 divide-y divide-charcoal-100">
-      {[1,2,3,4].map(i => (
-        <div key={i} className="flex items-center gap-4 lg:gap-10 py-6 lg:py-7 px-2 animate-pulse">
-          <span className="hidden sm:block w-8 h-6 bg-charcoal-100 rounded" />
-          <div className="w-20 h-20 lg:w-28 lg:h-20 bg-charcoal-100 flex-shrink-0" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-20 bg-charcoal-100 rounded" />
-            <div className="h-5 w-48 bg-charcoal-100 rounded" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="rounded-2xl border border-charcoal-100 bg-white overflow-hidden animate-pulse">
+          <div className="h-52 bg-charcoal-100" />
+          <div className="p-4 space-y-2.5">
+            <div className="h-3 w-24 bg-charcoal-100 rounded" />
+            <div className="h-5 w-40 bg-charcoal-100 rounded" />
+            <div className="h-3 w-28 bg-charcoal-100 rounded" />
           </div>
         </div>
       ))}
@@ -74,52 +74,54 @@ export default function HomeFeaturedVendors() {
   );
 
   return (
-    <div className="space-y-0 divide-y divide-charcoal-100">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
       {vendors.map((v, i) => {
         const img = v.images?.[0] || v.imageUrl || '';
         return (
           <Link
             key={v.id}
             href={`/vendors/${v.id}`}
-            className="group flex items-center gap-4 lg:gap-10 py-6 lg:py-7 hover:bg-white/60 transition-colors duration-200 px-2"
+            className="group bg-white border border-charcoal-100 rounded-2xl overflow-hidden shadow-soft hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
           >
-            <span
-              className="hidden sm:block font-serif text-charcoal-200 text-3xl flex-shrink-0 w-8 text-right"
-              style={{ fontWeight: 300, fontStyle: 'italic', lineHeight: 1 }}
-            >
-              {String(i + 1).padStart(2, '0')}
-            </span>
-            <div className="w-20 h-20 lg:w-28 lg:h-20 flex-shrink-0 overflow-hidden bg-stone-100">
+            <div className="relative h-52 overflow-hidden bg-stone-100">
               {img && (
-                <img src={img} alt={v.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img
+                  src={img}
+                  alt={v.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               )}
+              <div className="absolute left-3 top-3 px-2.5 py-1 rounded-full text-[0.65rem] uppercase tracking-[0.1em] font-semibold bg-white/90 text-charcoal-600">
+                {String(i + 1).padStart(2, '0')}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[0.65rem] font-semibold text-charcoal-400 tracking-[0.1em] uppercase mb-1">{v.category}</p>
+
+            <div className="p-4">
+              <p className="text-[0.65rem] font-semibold text-charcoal-400 tracking-[0.1em] uppercase mb-1.5">{v.category}</p>
               <h3
                 className="font-serif text-charcoal-900 group-hover:text-rose-700 transition-colors duration-200"
-                style={{ fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', fontWeight: 400, letterSpacing: '-0.005em' }}
+                style={{ fontSize: 'clamp(1.05rem, 1.8vw, 1.25rem)', fontWeight: 500, letterSpacing: '-0.005em' }}
               >
                 {v.name}
               </h3>
               {v.location && (
-                <p className="text-charcoal-500 text-xs font-medium mt-0.5 flex items-center gap-1">
+                <p className="text-charcoal-500 text-xs font-medium mt-1 flex items-center gap-1">
                   <MapPin className="w-3 h-3" /> {v.location}
                 </p>
               )}
-            </div>
-            <div className="hidden md:flex flex-col items-end gap-1 flex-shrink-0">
+
+              <div className="mt-3 flex items-center justify-between">
               {v.rating && v.rating > 0 ? (
-                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5">
                   <Star className="w-3 h-3 text-champagne-500 fill-champagne-500" />
                   <span className="text-sm font-medium text-charcoal-900">{v.rating.toFixed(1)}</span>
                   {(v.reviewCount ?? 0) > 0 && <span className="text-xs text-charcoal-400">({v.reviewCount})</span>}
                 </div>
-              ) : null}
-              {v.startingPrice && <span className="text-xs text-charcoal-500 font-light">{v.startingPrice}</span>}
+                ) : <span />}
+                <ArrowRight className="w-4 h-4 text-charcoal-300 group-hover:text-rose-600 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
+              </div>
+              {v.startingPrice && <p className="text-xs text-charcoal-500 font-light mt-2">{v.startingPrice}</p>}
             </div>
-            <ArrowRight className="w-4 h-4 text-charcoal-300 group-hover:text-rose-600 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
           </Link>
         );
       })}

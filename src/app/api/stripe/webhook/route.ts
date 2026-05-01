@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { stripe, getTierFromPriceId, mapStripeStatusToLocal } from '@/lib/stripe';
+import { stripe } from '@/lib/stripe';
+import { syncVendorSubscriptionFromStripe } from '@/lib/stripe-sync';
 import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -32,17 +33,16 @@ export async function POST(req: Request) {
         if (!subId) break;
 
         const sub = await stripe.subscriptions.retrieve(subId);
-        const priceId = sub.items.data[0]?.price?.id || '';
-        const tier = getTierFromPriceId(priceId);
-        const status = mapStripeStatusToLocal(sub.status);
-        const periodEnd = new Date((sub as any).current_period_end * 1000).toISOString();
-
-        await adminDb.collection('vendors').doc(uid).set({
-          subscriptionTier: tier,
-          subscriptionStatus: status,
-          subscriptionCurrentPeriodEnd: periodEnd,
-          stripeSubscriptionId: subId,
+        await syncVendorSubscriptionFromStripe({
+          uid,
+          subscription: sub,
           stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id || '',
+          sessionMetadata: session.metadata as Record<string, string | null> | undefined,
+        });
+        await adminDb.collection('vendors').doc(uid).set({
+          paypalSubscriptionId: null,
+          pendingPaypalSubscriptionId: null,
+          pendingPaypalPlanId: null,
           updatedAt: new Date().toISOString(),
         }, { merge: true });
         break;
@@ -74,8 +74,20 @@ export async function POST(req: Request) {
             await adminDb.collection('vendors').doc(snap.docs[0].id).set({
               subscriptionTier: 'free',
               subscriptionStatus: 'canceled',
+              subscriptionEntitlements: {
+                canBeListed: true,
+                canReceiveLeads: true,
+                boostedRanking: false,
+                homepageHighlight: false,
+                prioritySupport: false,
+                analyticsLevel: 'none',
+              },
+              subscriptionCurrentPeriodStart: null,
               subscriptionCurrentPeriodEnd: null,
+              subscriptionCancelAt: null,
+              subscriptionCancelAtPeriodEnd: false,
               stripeSubscriptionId: null,
+              subscriptionProvider: 'stripe',
               updatedAt: new Date().toISOString(),
             }, { merge: true });
           }
@@ -84,8 +96,20 @@ export async function POST(req: Request) {
         await adminDb.collection('vendors').doc(uid).set({
           subscriptionTier: 'free',
           subscriptionStatus: 'canceled',
+          subscriptionEntitlements: {
+            canBeListed: true,
+            canReceiveLeads: true,
+            boostedRanking: false,
+            homepageHighlight: false,
+            prioritySupport: false,
+            analyticsLevel: 'none',
+          },
+          subscriptionCurrentPeriodStart: null,
           subscriptionCurrentPeriodEnd: null,
+          subscriptionCancelAt: null,
+          subscriptionCancelAtPeriodEnd: false,
           stripeSubscriptionId: null,
+          subscriptionProvider: 'stripe',
           updatedAt: new Date().toISOString(),
         }, { merge: true });
         break;
@@ -120,15 +144,8 @@ export async function POST(req: Request) {
 }
 
 async function updateVendorSubscription(uid: string, sub: Stripe.Subscription) {
-  const priceId = sub.items.data[0]?.price?.id || '';
-  const tier = getTierFromPriceId(priceId);
-  const status = mapStripeStatusToLocal(sub.status);
-  const periodEnd = new Date((sub as any).current_period_end * 1000).toISOString();
-  await adminDb.collection('vendors').doc(uid).set({
-    subscriptionTier: tier,
-    subscriptionStatus: status,
-    subscriptionCurrentPeriodEnd: periodEnd,
-    stripeSubscriptionId: sub.id,
-    updatedAt: new Date().toISOString(),
-  }, { merge: true });
+  await syncVendorSubscriptionFromStripe({
+    uid,
+    subscription: sub,
+  });
 }

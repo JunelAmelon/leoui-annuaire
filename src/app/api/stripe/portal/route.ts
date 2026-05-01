@@ -21,6 +21,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Aucun abonnement actif trouvé' }, { status: 400 });
     }
 
+    try {
+      await stripe.customers.retrieve(stripeCustomerId);
+    } catch {
+      return NextResponse.json(
+        { ok: false, error: 'Client Stripe introuvable. Relancez un abonnement pour régénérer votre profil de paiement.' },
+        { status: 400 }
+      );
+    }
+
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: `${APP_URL}/espace-prestataire/abonnement`,

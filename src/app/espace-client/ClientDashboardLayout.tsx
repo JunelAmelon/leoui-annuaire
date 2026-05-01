@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const NAV = [
   { href: '/espace-client',              label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
@@ -33,6 +35,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
   const [collapsed, setCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpDisabled, setHelpDisabled] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
     try {
@@ -42,6 +45,22 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
       setHelpDisabled(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setUnreadNotifCount(0);
+      return;
+    }
+    const q = query(collection(db, 'notifications'), where('recipient_id', '==', user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const unread = snapshot.docs.reduce((acc, d) => {
+        const data = d.data() as any;
+        return acc + (data?.read === false ? 1 : 0);
+      }, 0);
+      setUnreadNotifCount(unread);
+    });
+    return () => unsub();
+  }, [user?.uid]);
 
   const isActive = (item: typeof NAV[0]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -122,9 +141,18 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
                 className={`flex items-center gap-3 rounded-xl hover:bg-rose-50 transition-colors ${collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'}`}>
                 <div className="relative flex-shrink-0">
                   <Bell className="w-[17px] h-[17px] text-charcoal-400" />
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-rose-500 rounded-full" />
+                  {unreadNotifCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 bg-rose-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none">
+                      {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                    </span>
+                  )}
                 </div>
                 {!collapsed && <span className="text-sm font-medium text-charcoal-600">Notifications</span>}
+                {!collapsed && unreadNotifCount > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600">
+                    {unreadNotifCount}
+                  </span>
+                )}
               </Link>
               {collapsed && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-rose-700 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
@@ -255,6 +283,11 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
               <Link href="/espace-client/notifications" onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-charcoal-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors">
                 <Bell className="w-4 h-4 text-charcoal-400" /> Notifications
+                {unreadNotifCount > 0 && (
+                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600">
+                    {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                  </span>
+                )}
               </Link>
               <Link href="/espace-client/parametres" onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-charcoal-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors">

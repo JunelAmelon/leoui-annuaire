@@ -6,13 +6,14 @@ import { useSearchParams } from 'next/navigation';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDocument } from '@/lib/db';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { PAID_PLANS, TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import {
   Check, Crown, Loader2, Zap, AlertCircle, CheckCircle2, ExternalLink, RefreshCw,
-  Lock, RotateCcw, Bolt, Star,
+  Lock, RotateCcw, Bolt, Star, CreditCard,
 } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function AbonnementPage() {
   const { user } = useAuth();
@@ -21,7 +22,11 @@ export default function AbonnementPage() {
   const [loadingVendor, setLoadingVendor] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<'stripe' | 'paypal'>('stripe');
+  const [showUpgradePulse, setShowUpgradePulse] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [reconcileLoading, setReconcileLoading] = useState(false);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -37,12 +42,55 @@ export default function AbonnementPage() {
     finally { setLoadingVendor(false); }
   };
 
-  useEffect(() => { loadVendor(); }, [user?.uid]);
+  useEffect(() => {
+    if (!user?.uid) return;
+    const ref = doc(db, 'vendors', user.uid);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setVendor({ id: snap.id, ...(snap.data() as any) });
+      } else {
+        setVendor(null);
+      }
+      setLoadingVendor(false);
+    }, () => setLoadingVendor(false));
+    return () => unsub();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || !vendor || reconcileLoading) return;
+    const maybeNeedsReconcile = (vendor.subscriptionTier === 'free' || !vendor.subscriptionTier)
+      && !!vendor.stripeCustomerId;
+    if (!maybeNeedsReconcile) return;
+    setReconcileLoading(true);
+    getToken()
+      .then((token) => fetch('/api/stripe/reconcile', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }))
+      .finally(() => setReconcileLoading(false));
+  }, [user?.uid, vendor?.subscriptionTier, vendor?.stripeCustomerId]);
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      showToast('success', 'Paiement confirmé ! Votre abonnement est maintenant actif. Bienvenue 🎉');
+      const provider = searchParams.get('provider');
+      if (provider === 'paypal') {
+        showToast('success', 'Validation PayPal reçue. Activation en cours (quelques secondes via webhook).');
+      } else {
+        showToast('success', 'Paiement confirmé ! Votre abonnement est maintenant actif. Bienvenue 🎉');
+        const sessionId = searchParams.get('session_id');
+        if (sessionId) {
+          getToken()
+            .then((token) => fetch('/api/stripe/sync-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ sessionId }),
+            }))
+            .catch(() => null);
+        }
+      }
       setTimeout(() => loadVendor(), 3000);
+      setShowUpgradePulse(true);
+      setTimeout(() => setShowUpgradePulse(false), 8000);
     } else if (searchParams.get('canceled') === 'true') {
       showToast('error', 'Paiement annulé. Vous pouvez réessayer à tout moment.');
     }
@@ -58,13 +106,19 @@ export default function AbonnementPage() {
     setCheckoutLoading(planId);
     try {
       const token = await getToken();
-      const res = await fetch('/api/stripe/checkout', {
+      const endpoint = paymentProvider === 'paypal' ? '/api/paypal/checkout' : '/api/stripe/checkout';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ planId }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Erreur lors de la création du paiement');
+      if (data.changed) {
+        showToast('success', 'Formule mise à niveau avec succès. Vos droits premium sont actifs.');
+        setCheckoutLoading(null);
+        return;
+      }
       window.location.href = data.url;
     } catch (e: any) {
       showToast('error', e.message || 'Une erreur est survenue');
@@ -73,6 +127,16 @@ export default function AbonnementPage() {
   };
 
   const handlePortal = async () => {
+    if (vendor?.subscriptionProvider === 'paypal') {
+      const res = await fetch('/api/paypal/manage');
+      const data = await res.json();
+      if (res.ok && data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      showToast('error', 'Impossible d’ouvrir la gestion PayPal');
+      return;
+    }
     setPortalLoading(true);
     try {
       const token = await getToken();
@@ -89,11 +153,36 @@ export default function AbonnementPage() {
     }
   };
 
+  const handleCancelAtPeriodEnd = async () => {
+    if (vendor?.subscriptionProvider === 'paypal') {
+      await handlePortal();
+      return;
+    }
+    const ok = window.confirm('Confirmer la résiliation à la fin de la période en cours ?');
+    if (!ok) return;
+    setCancelLoading(true);
+    try {
+      const token = await getToken();
+      const res = await fetch('/api/stripe/cancel', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Résiliation impossible');
+      showToast('success', 'Résiliation programmée. Votre abonnement restera actif jusqu’à la fin du mois en cours.');
+    } catch (e: any) {
+      showToast('error', e.message || 'Une erreur est survenue');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   const currentTier: SubscriptionTier = vendor?.subscriptionTier || 'free';
   const subStatus: string = vendor?.subscriptionStatus || 'inactive';
   const isActive = subStatus === 'active';
   const isPastDue = subStatus === 'past_due';
   const periodEnd: string = vendor?.subscriptionCurrentPeriodEnd || '';
+  const cancelAtPeriodEnd: boolean = !!vendor?.subscriptionCancelAtPeriodEnd;
   const badge = TIER_BADGE[currentTier];
 
   return (
@@ -123,6 +212,36 @@ export default function AbonnementPage() {
         </p>
       </div>
 
+      <div className="mb-6 bg-white border border-charcoal-100 rounded-2xl p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-charcoal-500 mb-3">Moyen de paiement</p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => setPaymentProvider('stripe')}
+            className={`flex-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+              paymentProvider === 'stripe'
+                ? 'border-charcoal-900 bg-charcoal-50'
+                : 'border-charcoal-200 bg-white hover:bg-stone-50'
+            }`}
+          >
+            <p className="text-sm font-semibold text-charcoal-900 flex items-center gap-2">
+              <CreditCard className="w-4 h-4" /> Stripe (recommandé)
+            </p>
+            <p className="text-xs text-charcoal-500 mt-1">Carte bancaire, portail client pour annulation/changement.</p>
+          </button>
+          <button
+            onClick={() => setPaymentProvider('paypal')}
+            className={`flex-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+              paymentProvider === 'paypal'
+                ? 'border-charcoal-900 bg-charcoal-50'
+                : 'border-charcoal-200 bg-white hover:bg-stone-50'
+            }`}
+          >
+            <p className="text-sm font-semibold text-charcoal-900">PayPal</p>
+            <p className="text-xs text-charcoal-500 mt-1">Validation PayPal puis prélèvement mensuel automatique.</p>
+          </button>
+        </div>
+      </div>
+
       {/* Current plan banner */}
       {!loadingVendor && (
         <div className={`mb-8 rounded-2xl border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
@@ -149,7 +268,14 @@ export default function AbonnementPage() {
                 <p className="text-xs text-charcoal-500 mt-0.5">
                   {isPastDue
                     ? '⚠️ Paiement en échec — votre visibilité est réduite'
-                    : `Renouvellement le ${new Date(periodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                    : cancelAtPeriodEnd
+                      ? `Résiliation prévue le ${new Date(periodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                      : `Renouvellement le ${new Date(periodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                </p>
+              )}
+              {currentTier !== 'free' && vendor?.subscriptionProvider && (
+                <p className="text-xs text-charcoal-500 mt-0.5">
+                  Moyen de paiement: {vendor.subscriptionProvider === 'paypal' ? 'PayPal' : 'Stripe'}
                 </p>
               )}
               {currentTier === 'free' && (
@@ -158,15 +284,37 @@ export default function AbonnementPage() {
             </div>
           </div>
           {currentTier !== 'free' && (
-            <button
-              onClick={handlePortal}
-              disabled={portalLoading}
-              className="flex items-center gap-2 px-4 py-2.5 border border-charcoal-200 bg-white hover:bg-stone-50 text-charcoal-700 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-            >
-              {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-              Gérer mon abonnement
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={handlePortal}
+                disabled={portalLoading || cancelLoading}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-charcoal-200 bg-white hover:bg-stone-50 text-charcoal-700 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                Gérer
+              </button>
+              <button
+                onClick={handleCancelAtPeriodEnd}
+                disabled={cancelLoading || portalLoading}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                {cancelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                Résilier
+              </button>
+            </div>
           )}
+        </div>
+      )}
+
+      {!loadingVendor && currentTier !== 'free' && isActive && (
+        <div className={`mb-8 rounded-2xl border px-5 py-4 bg-gradient-to-r from-amber-50 via-white to-rose-50 border-amber-200 ${
+          showUpgradePulse ? 'animate-pulse' : ''
+        }`}>
+          <p className="text-xs uppercase tracking-[0.14em] text-amber-700 font-semibold">Nouveau cap franchi</p>
+          <p className="text-sm text-charcoal-800 mt-1">
+            Votre formule <span className="font-semibold capitalize">{currentTier}</span> est active.
+            Votre profil bénéficie maintenant d’une meilleure visibilité dans les résultats.
+          </p>
         </div>
       )}
 
@@ -265,7 +413,7 @@ export default function AbonnementPage() {
                     >
                       {checkoutLoading === plan.id
                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Chargement…</>
-                        : <><Zap className="w-4 h-4" /> {currentTier !== 'free' && !isCurrent ? 'Changer de plan' : 'Commencer maintenant'}</>}
+                        : <><Zap className="w-4 h-4" /> {currentTier !== 'free' && !isCurrent ? 'Changer de plan' : `Commencer avec ${paymentProvider === 'paypal' ? 'PayPal' : 'Stripe'}`}</>}
                     </button>
                   )}
                 </div>
@@ -278,8 +426,8 @@ export default function AbonnementPage() {
       {/* FAQ / reassurance */}
       <div className="bg-white rounded-2xl border border-charcoal-100 p-6 grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm">
         {[
-          { icon: Lock, title: 'Paiement sécurisé', desc: 'Stripe gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' },
-          { icon: RotateCcw, title: 'Sans engagement', desc: 'Résiliez à tout moment depuis votre portail Stripe, sans frais ni pénalités.' },
+          { icon: Lock, title: 'Paiement sécurisé', desc: paymentProvider === 'paypal' ? 'PayPal gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' : 'Stripe gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' },
+          { icon: RotateCcw, title: 'Sans engagement', desc: paymentProvider === 'paypal' ? 'Résiliez depuis votre espace PayPal, sans frais ni pénalités.' : 'Résiliez à tout moment depuis votre portail Stripe, sans frais ni pénalités.' },
           { icon: Bolt, title: 'Activation immédiate', desc: 'Votre plan est activé dès la confirmation du paiement. Visibilité boostée instantanément.' },
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex gap-3">

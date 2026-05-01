@@ -10,6 +10,8 @@ import {
 import Link from 'next/link';
 import { getDocuments, getDocument } from '@/lib/db';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 export default function EspacePrestatairePage() {
   const { user } = useAuth();
@@ -17,7 +19,9 @@ export default function EspacePrestatairePage() {
   const [recentContacts, setRecentContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('inactive');
   const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
+  const [stripeCustomerId, setStripeCustomerId] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -47,7 +51,7 @@ export default function EspacePrestatairePage() {
             if (!c?.client_id) return;
             try {
               const cl = await getDocument('clients', c.client_id);
-              const url = (cl as any)?.photoURL || '';
+              const url = (cl as any)?.photoURL || (cl as any)?.photo || (cl as any)?.avatar || (cl as any)?.profilePhoto || '';
               if (url) photos[c.client_id] = url;
             } catch {}
           }));
@@ -56,6 +60,8 @@ export default function EspacePrestatairePage() {
         const tier = (vendorDoc as any)?.subscriptionTier as SubscriptionTier || 'free';
         const status = (vendorDoc as any)?.subscriptionStatus || 'inactive';
         setSubscriptionTier(status === 'active' ? tier : 'free');
+        setSubscriptionStatus(status);
+        setStripeCustomerId((vendorDoc as any)?.stripeCustomerId || '');
       } catch {
         // silently fail
       } finally {
@@ -64,6 +70,32 @@ export default function EspacePrestatairePage() {
     };
     load();
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const ref = doc(db, 'vendors', user.uid);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      const tier = (data?.subscriptionTier as SubscriptionTier) || 'free';
+      const status = data?.subscriptionStatus || 'inactive';
+      setSubscriptionTier(status === 'active' ? tier : 'free');
+      setSubscriptionStatus(status);
+      setStripeCustomerId(data?.stripeCustomerId || '');
+    });
+    return () => unsub();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    if (subscriptionTier !== 'free' || !stripeCustomerId) return;
+    auth.currentUser?.getIdToken()
+      .then((token) => fetch('/api/stripe/reconcile', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }))
+      .catch(() => null);
+  }, [user?.uid, subscriptionTier, stripeCustomerId]);
 
   const statCards = [
     { label: 'Vues annonce', value: stats.views, icon: Eye, color: 'text-champagne-700', bg: 'bg-champagne-50', border: 'border-champagne-200' },
@@ -191,13 +223,11 @@ export default function EspacePrestatairePage() {
               <div className="divide-y divide-charcoal-50">
                 {recentContacts.map((c, i) => (
                   <div key={i} className="flex items-center gap-3 p-4 hover:bg-charcoal-50 transition-colors">
-                    {c?.client_id && clientPhotos[c.client_id] ? (
-                      <img src={clientPhotos[c.client_id]} alt={c.client_name || 'Client'} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0">
-                        {(c.client_name || 'C').charAt(0)}
-                      </div>
-                    )}
+                    <img
+                      src={(c?.client_id && clientPhotos[c.client_id]) || c?.client_photo || 'https://ui-avatars.com/api/?background=F5F5F4&color=57534E&name=Client'}
+                      alt={c.client_name || 'Client'}
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-charcoal-900 truncate">{c.client_name || 'Client'}</p>
                       <p className="text-xs text-charcoal-400 flex items-center gap-1 mt-0.5">
@@ -230,6 +260,15 @@ export default function EspacePrestatairePage() {
               </div>
             </div>
           </div>
+
+          {!loading && subscriptionTier !== 'free' && subscriptionStatus === 'active' && (
+            <div className="mt-4 bg-gradient-to-r from-amber-50 via-white to-rose-50 border border-amber-200 rounded-2xl p-4">
+              <p className="text-xs uppercase tracking-[0.12em] font-semibold text-amber-700">Cap franchi</p>
+              <p className="text-sm text-charcoal-800 mt-1">
+                Votre plan <span className="font-semibold capitalize">{subscriptionTier}</span> est actif. Vous avez debloque une meilleure mise en avant.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </PrestataireDashboardLayout>

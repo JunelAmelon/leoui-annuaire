@@ -18,6 +18,14 @@ export function getTierFromPriceId(priceId: string): SubscriptionTier {
   return 'free';
 }
 
+export function getTierFromStripeIdentifiers(priceId: string, productId: string): SubscriptionTier {
+  for (const [key, configured] of Object.entries(STRIPE_PRICE_IDS)) {
+    if (!configured) continue;
+    if (configured === priceId || configured === productId) return key as SubscriptionTier;
+  }
+  return 'free';
+}
+
 export function mapStripeStatusToLocal(
   stripeStatus: Stripe.Subscription.Status
 ): 'active' | 'past_due' | 'canceled' | 'inactive' {

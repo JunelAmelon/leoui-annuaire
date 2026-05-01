@@ -9,9 +9,11 @@ import {
   FileCheck2, Receipt, Tag, Star, Bell, Crown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDocument, getDocuments } from '@/lib/db';
+import { getDocument } from '@/lib/db';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const NAV = [
   { href: '/espace-prestataire',                    label: 'Tableau de bord',  icon: LayoutDashboard, exact: true },
@@ -35,11 +37,19 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
-    if (!user?.uid) return;
-    getDocuments('notifications', [
-      { field: 'recipient_id', operator: '==', value: user.uid },
-      { field: 'read', operator: '==', value: false },
-    ]).then(items => setUnreadNotifCount(items.length)).catch(() => {});
+    if (!user?.uid) {
+      setUnreadNotifCount(0);
+      return;
+    }
+    const q = query(collection(db, 'notifications'), where('recipient_id', '==', user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const unread = snapshot.docs.reduce((acc, d) => {
+        const data = d.data() as any;
+        return acc + (data?.read === false ? 1 : 0);
+      }, 0);
+      setUnreadNotifCount(unread);
+    });
+    return () => unsub();
   }, [user?.uid]);
   const [profilePhoto, setProfilePhoto] = useState('');
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
