@@ -100,40 +100,43 @@ export default function CityPage({ params }: CityPageProps) {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+        <div className="absolute inset-0 lg:hidden">
           <img
             src={city.imageUrl}
             alt={city.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform scale-105"
+            style={{ transitionDuration: '5000ms' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-charcoal-900/50 via-charcoal-900/30 to-charcoal-900/70" />
+          <div className="absolute inset-0 bg-charcoal-900/70" />
+        </div>
+        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
+          <img
+            src={city.imageUrl}
+            alt={city.name}
+            className="w-full h-full object-cover transition-transform hover:scale-105"
+            style={{ transitionDuration: '5000ms' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/40 to-transparent" />
         </div>
 
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:w-1/2">
           <Link
             href="/cities"
-            className="inline-flex items-center space-x-2 text-white/80 hover:text-white transition-colors mb-8"
+            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors mb-5"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Toutes les villes</span>
+            <ArrowLeft className="w-4 h-4" />
+            Toutes les villes
           </Link>
-
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <MapPin className="w-6 h-6 text-rose-400" />
-            <span className="text-body-md text-white/90">{city.region}</span>
-          </div>
-          <h1 className="font-display text-display-lg text-white mb-4">
+          <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
             Mariage à {city.name}
           </h1>
-          <p className="text-body-lg text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-white/80 mb-7 max-w-xl text-base leading-relaxed">
             {city.description}
           </p>
-
-          <div className="inline-flex items-center px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full text-white font-medium">
-            <MapPin className="w-5 h-5 mr-2 text-rose-400" />
-            {loading ? '…' : allVendors.length} prestataires disponibles
-          </div>
+          <p className="text-white/65 text-sm">
+            {loading ? '...' : allVendors.length} prestataires disponibles dans cette zone.
+          </p>
         </div>
       </section>
 

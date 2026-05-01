@@ -21,29 +21,28 @@ export default function WeddingPlannerPage() {
           <img
             src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1200"
             alt="Wedding Planner"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform scale-105"
+            style={{ transitionDuration: '5000ms' }}
           />
           <div className="absolute inset-0" style={{ background: 'rgba(10, 5, 15, 0.72)' }} />
         </div>
         {/* Desktop: image right half */}
-        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2">
+        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
           <img
             src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1400"
             alt="Wedding Planner"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform hover:scale-105"
+            style={{ transitionDuration: '5000ms' }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/40 to-transparent" />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-700/10 via-transparent to-champagne-400/10 animate-pulse pointer-events-none" />
         {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:w-1/2">
           <div className="flex items-center gap-2 text-sm text-white/60 mb-4">
             <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
             <span>/</span>
             <span className="text-white/90">Wedding Planner</span>
-          </div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="h-px w-8 bg-rose-400" />
-            <span className="text-rose-400 text-xs font-medium uppercase tracking-widest">Service premium pour les couples</span>
           </div>
           <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
             Organisez votre mariage<br />
@@ -60,18 +59,9 @@ export default function WeddingPlannerPage() {
               Découvrir l&apos;outil
             </a>
           </div>
-          <div className="flex flex-wrap gap-5 mt-8">
-            {[
-              { label: '500+', sub: 'Mariages organisés' },
-              { label: '4.9/5', sub: 'Note moyenne' },
-              { label: '100%', sub: 'Satisfaction garantie' },
-            ].map((s, i) => (
-              <div key={i}>
-                <p className="font-display text-xl text-white font-bold">{s.label}</p>
-                <p className="text-white/50 text-xs">{s.sub}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-white/55 text-xs mt-4">
+            Une expérience claire et fluide pour piloter votre mariage de bout en bout.
+          </p>
         </div>
       </section>
 

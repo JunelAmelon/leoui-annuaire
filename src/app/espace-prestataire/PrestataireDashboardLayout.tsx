@@ -29,6 +29,29 @@ const NAV = [
   { href: '/espace-prestataire/abonnement',         label: 'Mon abonnement',   icon: Crown },
 ];
 
+const AVATAR_TIER_STYLE: Record<SubscriptionTier, { ring: string; glow: string; badge: string }> = {
+  free: {
+    ring: 'ring-1 ring-stone-200',
+    glow: '',
+    badge: 'bg-stone-100 text-stone-600 border-stone-200',
+  },
+  starter: {
+    ring: 'ring-2 ring-stone-300',
+    glow: 'shadow-[0_0_0_3px_rgba(120,113,108,0.12)]',
+    badge: 'bg-stone-100 text-stone-700 border-stone-300',
+  },
+  pro: {
+    ring: 'ring-2 ring-blue-400',
+    glow: 'shadow-[0_0_0_3px_rgba(96,165,250,0.18)]',
+    badge: 'bg-blue-100 text-blue-700 border-blue-300',
+  },
+  elite: {
+    ring: 'ring-2 ring-amber-400',
+    glow: 'shadow-[0_0_0_4px_rgba(251,191,36,0.22)]',
+    badge: 'bg-amber-100 text-amber-700 border-amber-300',
+  },
+};
+
 export default function PrestataireDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
@@ -72,6 +95,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Mon espace';
   const initials = displayName.split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+  const avatarStyle = AVATAR_TIER_STYLE[subscriptionTier] || AVATAR_TIER_STYLE.free;
 
   const SW = collapsed ? 84 : 224;
 
@@ -164,13 +188,18 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
 
             {/* Avatar row */}
             <div className={`flex items-center gap-2.5 mt-1 ${collapsed ? 'justify-center' : 'px-3 py-1'}`}>
-              <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm flex-shrink-0">
+              <div className={`relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ${avatarStyle.ring} ${avatarStyle.glow}`}>
                 {profilePhoto ? (
                   <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
                     <span className="text-white text-[11px] font-bold leading-none">{initials}</span>
                   </div>
+                )}
+                {subscriptionTier !== 'free' && (
+                  <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border flex items-center justify-center ${avatarStyle.badge}`}>
+                    <Crown className="w-2.5 h-2.5" />
+                  </span>
                 )}
               </div>
               {!collapsed && (
@@ -234,13 +263,18 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
               </button>
             </div>
             <div className="px-5 py-4 border-b border-stone-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+              <div className={`relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ${avatarStyle.ring} ${avatarStyle.glow}`}>
                 {profilePhoto ? (
                   <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">{initials}</span>
                   </div>
+                )}
+                {subscriptionTier !== 'free' && (
+                  <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border flex items-center justify-center ${avatarStyle.badge}`}>
+                    <Crown className="w-2.5 h-2.5" />
+                  </span>
                 )}
               </div>
               <p className="font-serif text-charcoal-900 text-sm font-medium truncate">{displayName}</p>
@@ -281,13 +315,18 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
             <Menu className="w-5 h-5" />
           </button>
           <span className="font-serif text-lg text-charcoal-900">LeOui.net Pro</span>
-          <div className="w-9 h-9 rounded-full overflow-hidden">
+          <div className={`relative w-9 h-9 rounded-full overflow-hidden ${avatarStyle.ring} ${avatarStyle.glow}`}>
             {profilePhoto ? (
               <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-champagne-400 to-rose-500 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">{initials}</span>
               </div>
+            )}
+            {subscriptionTier !== 'free' && (
+              <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border flex items-center justify-center ${avatarStyle.badge}`}>
+                <Crown className="w-2.5 h-2.5" />
+              </span>
             )}
           </div>
         </header>

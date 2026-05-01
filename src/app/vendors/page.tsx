@@ -96,19 +96,22 @@ export default function VendorsPage() {
           <img
             src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=900"
             alt="Prestataires de mariage"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-center transition-transform scale-105"
+            style={{ transitionDuration: '5000ms' }}
           />
           <div className="absolute inset-0 bg-charcoal-900/65" />
         </div>
         {/* Desktop: right photo */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:block">
+        <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:block overflow-hidden">
           <img
             src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1200"
             alt="Photographes de mariage"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform hover:scale-105"
+            style={{ transitionDuration: '5000ms' }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/30 to-transparent" />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-700/10 via-transparent to-champagne-400/10 animate-pulse pointer-events-none" />
         {/* Left content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14 lg:w-1/2">
           <div className="flex items-center gap-2 text-body-sm text-white/60 mb-4">

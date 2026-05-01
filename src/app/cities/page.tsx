@@ -66,8 +66,6 @@ export default function CitiesPage() {
   const [vendorCounts, setVendorCounts] = useState<Record<string, number>>({});
 
   const cityTotal = REGIONS.reduce((s, r) => s + r.cities.length, 0);
-  const regionTotal = REGIONS.length;
-  const vendorTotal = Object.values(vendorCounts).reduce((s, n) => s + (Number(n) || 0), 0);
 
   useEffect(() => {
     getDocuments('vendors', []).then(docs => {
@@ -97,72 +95,40 @@ export default function CitiesPage() {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      {/* HERO — cinematic full-bleed with diagonal overlay + search */}
-      <section className="relative overflow-hidden" style={{ minHeight: '560px', height: 'clamp(560px, 88vh, 900px)' }}>
-        {/* Background: full image on mobile */}
-        <div className="absolute inset-0 sm:hidden">
+      {/* HERO — unified split layout */}
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+        <div className="absolute inset-0 lg:hidden">
           <img
             src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1200"
-            alt="Paris"
-            className="w-full h-full object-cover scale-105"
+            alt="Régions mariage"
+            className="w-full h-full object-cover transition-transform scale-105"
+            style={{ transitionDuration: '5000ms' }}
           />
+          <div className="absolute inset-0 bg-charcoal-900/70" />
         </div>
-        {/* Background mosaic: multiple images — sm+ only */}
-        <div className="absolute inset-0 hidden sm:grid grid-cols-3 grid-rows-1">
-          <div className="col-span-2 relative overflow-hidden">
-            <img
-              src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1920"
-              alt="Paris"
-              className="w-full h-full object-cover scale-105"
-            />
-          </div>
-          <div className="grid grid-rows-2 overflow-hidden">
-            <div className="overflow-hidden">
-              <img src="https://images.pexels.com/photos/208637/pexels-photo-208637.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Provence" className="w-full h-full object-cover scale-105" />
-            </div>
-            <div className="overflow-hidden">
-              <img src="https://images.pexels.com/photos/1974596/pexels-photo-1974596.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Lyon" className="w-full h-full object-cover scale-105" />
-            </div>
-          </div>
+        <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
+          <img
+            src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1600"
+            alt="Régions mariage"
+            className="w-full h-full object-cover transition-transform hover:scale-105"
+            style={{ transitionDuration: '5000ms' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/40 to-transparent" />
         </div>
 
-        {/* Layered gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-900/60 to-charcoal-900/20" style={{ background: 'linear-gradient(to top, rgba(15,10,20,0.97) 0%, rgba(15,10,20,0.65) 35%, rgba(15,10,20,0.2) 70%, transparent 100%)' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(15,10,20,0.85) 0%, transparent 60%)' }} />
-
-        {/* Floating stat badges */}
-        <div className="absolute top-1/4 right-8 hidden xl:flex flex-col gap-3">
-          <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-white text-center">
-            <p className="font-display text-2xl font-bold">{regionTotal}</p>
-            <p className="text-xs text-white/70">Régions</p>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:w-1/2">
+          <div className="flex items-center gap-2 text-sm text-white/60 mb-4">
+            <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
+            <span>/</span>
+            <span className="text-white/90">Régions</span>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-white text-center">
-            <p className="font-display text-2xl font-bold">{cityTotal}</p>
-            <p className="text-xs text-white/70">Villes</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-white text-center">
-            <p className="font-display text-2xl font-bold">{vendorTotal.toLocaleString('fr-FR')}</p>
-            <p className="text-xs text-white/70">Prestataires</p>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 h-full flex flex-col justify-end pb-16 px-4 sm:px-8 max-w-5xl mx-auto">
-          {/* Label */}
-          <div className="flex items-center gap-2 mb-5">
-            <span className="h-px w-10 bg-rose-500" />
-            <span className="text-rose-400 text-sm font-medium uppercase tracking-widest">France entière</span>
-          </div>
-
-          <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', lineHeight: '1.08' }}>
+          <h1 className="font-display text-white mb-4" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', lineHeight: '1.1' }}>
             Votre mariage,<br />
             <span className="italic text-champagne-300">où vous le rêvez</span>
           </h1>
-          <p className="text-white/70 text-lg mb-8 max-w-xl">
-            Des Alpes à la Côte d'Azur, de Paris à la Bretagne — trouvez les meilleurs prestataires de mariage dans toutes les régions de France.
+          <p className="text-white/70 mb-8 max-w-lg text-base leading-relaxed">
+            Des Alpes à la Côte d'Azur, de Paris à la Bretagne, trouvez les meilleurs prestataires dans toutes les régions.
           </p>
-
-          {/* Search box */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
@@ -170,8 +136,8 @@ export default function CitiesPage() {
                 type="text"
                 value={citySearch}
                 onChange={e => setCitySearch(e.target.value)}
-                placeholder="Rechercher une ville (Paris, Lyon, Bordeaux…)"
-                className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl text-white placeholder-white/40 outline-none text-sm focus:bg-white/20 focus:border-white/30 transition-all"
+                placeholder="Rechercher une ville (Paris, Lyon, Bordeaux...)"
+                className="w-full pl-12 pr-10 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 outline-none text-sm focus:bg-white/20 transition-all"
               />
               {citySearch && (
                 <button onClick={() => setCitySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -179,23 +145,13 @@ export default function CitiesPage() {
                 </button>
               )}
             </div>
-            <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-sm whitespace-nowrap">
+            <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors text-sm whitespace-nowrap">
               Trouver des prestataires
             </button>
           </div>
-
-          {/* Quick city pills */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            {['Paris', 'Lyon', 'Aix-en-Provence', 'Bordeaux', 'Toulouse', 'Nice'].map(city => (
-              <button
-                key={city}
-                onClick={() => setCitySearch(city)}
-                className="px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/15 text-white/80 hover:text-white hover:bg-white/20 rounded-full text-sm transition-all flex items-center gap-1.5"
-              >
-                <MapPin className="w-3 h-3" /> {city}
-              </button>
-            ))}
-          </div>
+          <p className="text-white/55 text-xs mt-4">
+            Explorez les villes et trouvez les meilleurs prestataires pour votre style de mariage.
+          </p>
         </div>
       </section>
 
