@@ -88,10 +88,6 @@ export default function VendorJoinPage() {
             <span>/</span>
             <span className="text-white/90">Espace prestataire</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="h-px w-8 bg-champagne-400" />
-            <span className="text-champagne-400 text-xs font-medium uppercase tracking-widest">Portail prestataires</span>
-          </div>
           <h1 className="font-display text-display-md text-white mb-3">
             Développez votre activité<br />
             <span className="italic text-champagne-300">avec LeOui.net</span>
@@ -309,7 +305,7 @@ export default function VendorJoinPage() {
       </section>
 
       {/* REGISTRATION FORM */}
-      <section id="register" className="bg-ivory-50">
+      <section id="register" className="bg-ivory-50" style={{ marginBottom: '4cm' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2" style={{ minHeight: '620px' }}>
           {/* Left: photo with overlay */}
           <div className="relative hidden lg:block">

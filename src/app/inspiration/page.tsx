@@ -41,25 +41,17 @@ export default function InspirationPage() {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      <section className="relative overflow-hidden py-16 px-4 bg-charcoal-900">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1800"
-            alt="Inspiration mariage"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/92 via-charcoal-900/72 to-charcoal-900/48" />
-        </div>
+      <section className="py-16 px-4 bg-ivory-50">
         <div className="max-w-7xl mx-auto">
-          <div className="relative z-10 text-center mb-12 p-8 sm:p-10">
-            <h1 className="font-display text-display-lg text-white mb-4">Inspiration Mariage</h1>
-            <p className="text-body-lg text-white/80 max-w-2xl mx-auto">
+          <div className="text-center mb-12 p-8 sm:p-10">
+            <h1 className="font-display text-display-lg text-charcoal-900 mb-4">Inspiration Mariage</h1>
+            <p className="text-body-lg text-charcoal-600 max-w-2xl mx-auto">
               Idées, tendances et vrais mariages pour imaginer le vôtre
             </p>
           </div>
 
           {/* Category filters */}
-          <div className="relative z-10 flex flex-wrap justify-center gap-3 mb-12">
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
             {catCounts.map(({ name, count }) => (
               <button
                 key={name}
@@ -67,10 +59,10 @@ export default function InspirationPage() {
                 className={`px-6 py-2.5 rounded-full font-medium text-body-sm transition-all duration-200 ${
                   activeCategory === name
                     ? 'bg-rose-600 text-white shadow-soft'
-                    : 'bg-black/20 text-white hover:bg-black/30 border border-white/20'
+                    : 'bg-white text-charcoal-700 hover:bg-stone-100 border border-charcoal-200'
                 }`}
               >
-                {name} {count > 0 && <span className={activeCategory === name ? 'text-white/70' : 'text-white/60'}>({count})</span>}
+                {name} {count > 0 && <span className={activeCategory === name ? 'text-white/70' : 'text-charcoal-500'}>({count})</span>}
               </button>
             ))}
           </div>

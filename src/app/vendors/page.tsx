@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown, ArrowRight } from 'lucide-react';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
@@ -93,7 +93,7 @@ export default function VendorsPage() {
       <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
         <div className="absolute inset-0">
           <img
-            src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1400"
+            src="https://images.pexels.com/photos/32291227/pexels-photo-32291227.jpeg"
             alt="Prestataires de mariage"
             className="w-full h-full object-cover object-center"
           />
@@ -311,7 +311,7 @@ export default function VendorsPage() {
             ) : viewMode === 'list' ? (
               <div className="space-y-4">
                 {pagedVendors.map((vendor: any) => (
-                  <article key={vendor.id} className="bg-white rounded-2xl border border-charcoal-100 hover:shadow-soft-lg transition-all duration-300 overflow-hidden flex flex-col sm:flex-row">
+                  <article key={vendor.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col sm:flex-row border-0 sm:border sm:border-charcoal-100">
                     {/* Image */}
                     <Link href={`/vendors/${vendor.id}`} className="sm:w-48 h-44 sm:h-auto flex-shrink-0 overflow-hidden relative">
                       <img
@@ -373,14 +373,14 @@ export default function VendorsPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-charcoal-500 flex items-center gap-1">
+                          <span className="hidden sm:flex text-xs text-charcoal-500 items-center gap-1">
                             <Zap className="w-3 h-3 text-amber-500" /> Réponse en {vendor.responseTime}
                           </span>
                           <Link
                             href={`/vendors/${vendor.id}`}
-                            className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
+                            className="inline-flex items-center gap-1.5 border border-charcoal-900 text-charcoal-900 hover:bg-charcoal-900 hover:text-white font-medium px-4 py-2 rounded-lg text-sm transition-all duration-200"
                           >
-                            Nous contacter
+                            Contacter <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
                       </div>

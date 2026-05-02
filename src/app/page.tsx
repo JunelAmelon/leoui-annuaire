@@ -48,7 +48,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden" style={{ minHeight: '100svh' }}>
         <div className="absolute inset-0">
           <img
-            src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1920"
+            src="mariage (1).jpg"
             alt="Mariage en France"
             className="w-full h-full object-cover object-center"
           />

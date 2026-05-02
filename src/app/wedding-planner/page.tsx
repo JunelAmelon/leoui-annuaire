@@ -33,9 +33,8 @@ export default function WeddingPlannerPage() {
             <span className="text-white/90">Wedding Planner</span>
             </div>
             <h1 className="font-display text-display-md text-white mb-3">
-              Organisez votre mariage
-              <br />
-              sereinement
+              Organisez votre mariage<br />
+              <span className="italic text-champagne-300">sereinement</span>
             </h1>
             <p className="text-body-md text-white/80 mb-7 max-w-lg">
               Votre espace couple numérique tout-en-un : planning, prestataires, budget, documents et paiements, centralisés en un seul endroit.

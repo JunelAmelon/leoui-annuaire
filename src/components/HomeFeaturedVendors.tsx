@@ -57,7 +57,7 @@ export default function HomeFeaturedVendors() {
   if (loading) return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="rounded-2xl border border-charcoal-100 bg-white overflow-hidden animate-pulse">
+        <div key={i} className="border border-charcoal-100 bg-white overflow-hidden animate-pulse">
           <div className="h-52 bg-charcoal-100" />
           <div className="p-4 space-y-2.5">
             <div className="h-3 w-24 bg-charcoal-100 rounded" />
@@ -81,7 +81,7 @@ export default function HomeFeaturedVendors() {
           <Link
             key={v.id}
             href={`/vendors/${v.id}`}
-            className="group bg-white border border-charcoal-100 rounded-2xl overflow-hidden shadow-soft hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+            className="group bg-white border border-charcoal-100 overflow-hidden shadow-soft hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
           >
             <div className="relative h-52 overflow-hidden bg-stone-100">
               {img && (
@@ -91,7 +91,7 @@ export default function HomeFeaturedVendors() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
               )}
-              <div className="absolute left-3 top-3 px-2.5 py-1 rounded-full text-[0.65rem] uppercase tracking-[0.1em] font-semibold bg-white/90 text-charcoal-600">
+              <div className="absolute left-3 top-3 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.1em] font-semibold bg-white/90 text-charcoal-600">
                 {String(i + 1).padStart(2, '0')}
               </div>
             </div>
