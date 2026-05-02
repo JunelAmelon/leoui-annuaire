@@ -378,9 +378,12 @@ export default function VendorsPage() {
                           </span>
                           <Link
                             href={`/vendors/${vendor.id}`}
-                            className="inline-flex items-center gap-1.5 border border-charcoal-900 text-charcoal-900 hover:bg-charcoal-900 hover:text-white font-medium px-4 py-2 rounded-lg text-sm transition-all duration-200"
+                            className="group inline-flex items-center gap-2 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md"
                           >
-                            Contacter <ArrowRight className="w-3.5 h-3.5" />
+                            Voir le profil
+                            <span className="flex items-center justify-center w-6 h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200">
+                              <ChevronRight className="w-4 h-4 text-rose-500 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200" />
+                            </span>
                           </Link>
                         </div>
                       </div>
