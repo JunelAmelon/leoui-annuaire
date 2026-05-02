@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import HomeSearchBar from '@/components/HomeSearchBar';
 import HomeFeaturedVendors from '@/components/HomeFeaturedVendors';
 import HomeRegions from '@/components/HomeRegions';
-import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, TrendingUp, Users, Award, Check, Store } from 'lucide-react';
+import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, TrendingUp, Users, Award, Check, Store, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const MÉTIERS = [
@@ -25,6 +25,8 @@ const TESTIMONIALS = [
 
 export default function HomePage() {
   const [stats, setStats] = useState<{ vendorsCount: number; citiesCount: number; weddingsCount: number } | null>(null);
+  const [showFloatingCta, setShowFloatingCta] = useState(false);
+  const [ctaDismissed, setCtaDismissed] = useState(false);
 
   useEffect(() => {
     fetch('/api/public/stats')
@@ -39,6 +41,25 @@ export default function HomePage() {
       })
       .catch(() => setStats(null));
   }, []);
+
+  // Show floating CTA when scrolling to recommendations section on mobile
+  useEffect(() => {
+    const handleScroll = () => {
+      if (ctaDismissed) return;
+      // Find the recommendations section
+      const recSection = document.getElementById('recommandations');
+      if (recSection) {
+        const rect = recSection.getBoundingClientRect();
+        // Show when section is in view (top of section reaches middle of viewport)
+        const shouldShow = rect.top < window.innerHeight * 0.6 && rect.bottom > 0;
+        setShowFloatingCta(shouldShow);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check initial position
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [ctaDismissed]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -56,7 +77,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 py-20 sm:py-24 flex items-center" style={{ minHeight: '100svh' }}>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 pt-16 pb-20 sm:pt-20 sm:pb-24 flex items-center" style={{ minHeight: '100svh' }}>
           <div className="w-full max-w-3xl">
             <p className="label-xs text-white/70 mb-5 tracking-[0.14em]">La maison du mariage en France</p>
             <h1
@@ -191,7 +212,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SÉLECTION — magazine list layout ── */}
-      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
+      <section id="recommandations" className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
           <div className="flex items-end justify-between mb-10">
@@ -298,16 +319,16 @@ export default function HomePage() {
       </section>
 
       {/* ── REGIONS — dark section ── */}
-      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
+      <section className="py-24 bg-charcoal-900">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
+              <p className="text-sm font-medium text-rose-400 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
                 <span className="w-8 h-px bg-rose-400"></span>
                 Par région
               </p>
               <h2
-                className="font-serif text-charcoal-900"
+                className="font-serif text-white"
                 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.01em' }}
               >
                 Trouvez vos prestataires locaux
@@ -408,6 +429,421 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── SEO LINKS SECTION — Entreprises par secteur et département ── */}
+      <section className="py-16 bg-charcoal-50 border-t border-charcoal-100">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10">
+          {/* Section 1: Par secteur */}
+          <div className="mb-12">
+            <h3 className="font-serif text-charcoal-900 text-lg mb-6" style={{ fontWeight: 500 }}>
+              Entreprises spécialisées dans les mariages par secteur
+            </h3>
+
+            {/* Réception */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Réception</h4>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {[
+                  { label: 'Domaine mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Auberge mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Hôtel mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Restaurant mariage', href: '/vendors?cat=Traiteurs' },
+                  { label: 'Salle mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Château mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Mariages à la plage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Bateau mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                ].map((link, i) => (
+                  <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Prestataires */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Prestataires</h4>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {[
+                  { label: 'Traiteur mariage', href: '/vendors?cat=Traiteurs' },
+                  { label: 'Faire part mariage', href: '/vendors?cat=Faire-part' },
+                  { label: 'Cadeaux invités mariage', href: '/vendors?cat=Cadeaux+invit%C3%A9s' },
+                  { label: 'Photo mariage', href: '/vendors?cat=Photographes' },
+                  { label: 'Vidéo mariage', href: '/vendors?cat=Vid%C3%A9astes' },
+                  { label: 'Musique mariage', href: '/vendors?cat=DJ+%26+Musiciens' },
+                  { label: 'Voiture mariage', href: '/vendors?cat=Transport' },
+                  { label: 'Bus mariage', href: '/vendors?cat=Transport' },
+                  { label: 'Décoration mariage', href: '/vendors?cat=Fleuristes' },
+                  { label: 'Chapiteau mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Animation mariage', href: '/vendors?cat=Animations' },
+                  { label: 'Fleurs mariage', href: '/vendors?cat=Fleuristes' },
+                  { label: 'Liste de mariage', href: '/vendors?cat=Liste+de+mariage' },
+                  { label: 'Organisation mariage', href: '/planifier-votre-mariage' },
+                  { label: 'Lune de miel', href: '/vendors?cat=Agences+de+voyage' },
+                  { label: 'Wedding cake', href: '/vendors?cat=P%C3%A2tissiers' },
+                  { label: 'Food Truck', href: '/vendors?cat=Food+Truck' },
+                  { label: 'Mariements', href: '/vendors' },
+                  { label: 'DJ mariage', href: '/vendors?cat=DJ+%26+Musiciens' },
+                ].map((link, i) => (
+                  <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Mariée */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Mariée</h4>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {[
+                  { label: 'Robe de mariée', href: '/vendors?cat=Boutiques+de+robes' },
+                  { label: 'Accessoires mariage', href: '/vendors?cat=Accessoires' },
+                  { label: 'Bijoux mariage', href: '/vendors?cat=Bijoux' },
+                  { label: 'Esthétique coiffure mariage', href: '/vendors?cat=Coiffeurs+%26+Maquilleurs' },
+                  { label: 'Robe de cocktail', href: '/vendors?cat=Boutiques+de+robes' },
+                ].map((link, i) => (
+                  <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Marié */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Marié</h4>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {[
+                  { label: 'Costumes mariage', href: '/vendors?cat=Costumes' },
+                  { label: 'Accessoires marié', href: '/vendors?cat=Accessoires' },
+                  { label: 'Soins beauté', href: '/vendors?cat=Coiffeurs+%26+Maquilleurs' },
+                ].map((link, i) => (
+                  <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-charcoal-200 my-8" />
+
+          {/* Section 2: Par département */}
+          <div>
+            <h3 className="font-serif text-charcoal-900 text-lg mb-6" style={{ fontWeight: 500 }}>
+              Entreprises spécialisées dans les réceptions par département
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Île-de-France */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Île-de-France</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Seine-et-Marne', city: 'Seine-et-Marne' },
+                    { label: 'Réception Paris', city: 'Paris' },
+                    { label: 'Réception Yvelines', city: 'Yvelines' },
+                    { label: 'Réception Val-d\'Oise', city: 'Val-d\'Oise' },
+                    { label: 'Réception Essonne', city: 'Essonne' },
+                    { label: 'Réception Val-de-Marne', city: 'Val-de-Marne' },
+                    { label: 'Réception Seine-Saint-Denis', city: 'Seine-Saint-Denis' },
+                    { label: 'Réception Hauts-de-Seine', city: 'Hauts-de-Seine' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Provence-Alpes-Côte d'Azur */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Provence - Alpes - Côte d'Azur</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Var', city: 'Var' },
+                    { label: 'Réception Bouches-du-Rhône', city: 'Bouches-du-Rhône' },
+                    { label: 'Réception Alpes-Maritimes', city: 'Alpes-Maritimes' },
+                    { label: 'Réception Alpes-de-Haute-Provence', city: 'Alpes-de-Haute-Provence' },
+                    { label: 'Réception Hautes-Alpes', city: 'Hautes-Alpes' },
+                    { label: 'Réception Vaucluse', city: 'Vaucluse' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rhône-Alpes */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Rhône - Alpes</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Rhône', city: 'Rhône' },
+                    { label: 'Réception Isère', city: 'Isère' },
+                    { label: 'Réception Haute-Savoie', city: 'Haute-Savoie' },
+                    { label: 'Réception Savoie', city: 'Savoie' },
+                    { label: 'Réception Ardèche', city: 'Ardèche' },
+                    { label: 'Réception Drôme', city: 'Drôme' },
+                    { label: 'Réception Loire', city: 'Loire' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Languedoc-Roussillon */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Languedoc - Roussillon</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Hérault', city: 'Hérault' },
+                    { label: 'Réception Gard', city: 'Gard' },
+                    { label: 'Réception Aude', city: 'Aude' },
+                    { label: 'Réception Pyrénées-Orientales', city: 'Pyrénées-Orientales' },
+                    { label: 'Réception Lozère', city: 'Lozère' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pays de la Loire */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Pays de la Loire</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Loire-Atlantique', city: 'Loire-Atlantique' },
+                    { label: 'Réception Maine et Loire', city: 'Maine-et-Loire' },
+                    { label: 'Réception Vendée', city: 'Vendée' },
+                    { label: 'Réception Sarthe', city: 'Sarthe' },
+                    { label: 'Réception Mayenne', city: 'Mayenne' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Midi-Pyrénées */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Midi - Pyrénées</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Haute-Garonne', city: 'Haute-Garonne' },
+                    { label: 'Réception Tarn', city: 'Tarn' },
+                    { label: 'Réception Gers', city: 'Gers' },
+                    { label: 'Réception Tarn-et-Garonne', city: 'Tarn-et-Garonne' },
+                    { label: 'Réception Ariège', city: 'Ariège' },
+                    { label: 'Réception Lot', city: 'Lot' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Centre */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Centre</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Indre-et-Loire', city: 'Indre-et-Loire' },
+                    { label: 'Réception Loiret', city: 'Loiret' },
+                    { label: 'Réception Eure-et-Loir', city: 'Eure-et-Loir' },
+                    { label: 'Réception Loir-et-Cher', city: 'Loir-et-Cher' },
+                    { label: 'Réception Cher', city: 'Cher' },
+                    { label: 'Réception Indre', city: 'Indre' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nord Pas-de-Calais */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Nord Pas-de-Calais</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Nord', city: 'Nord' },
+                    { label: 'Réception Pas-de-Calais', city: 'Pas-de-Calais' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Poitou-Charentes */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Poitou - Charentes</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Charente Maritime', city: 'Charente-Maritime' },
+                    { label: 'Réception Vienne', city: 'Vienne' },
+                    { label: 'Réception Charente', city: 'Charente' },
+                    { label: 'Réception Deux-Sèvres', city: 'Deux-Sèvres' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bourgogne */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Bourgogne</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Yonne', city: 'Yonne' },
+                    { label: 'Réception Côte d\'Or', city: 'Côte-d\'Or' },
+                    { label: 'Réception Saône et Loire', city: 'Saône-et-Loire' },
+                    { label: 'Réception Nièvre', city: 'Nièvre' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Haute-Normandie */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Haute - Normandie</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Eure', city: 'Eure' },
+                    { label: 'Réception Seine-Maritime', city: 'Seine-Maritime' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Basse-Normandie */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Basse - Normandie</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Calvados', city: 'Calvados' },
+                    { label: 'Réception Orne', city: 'Orne' },
+                    { label: 'Réception Manche', city: 'Manche' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Alsace */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Alsace</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Bas Rhin', city: 'Bas-Rhin' },
+                    { label: 'Réception Haut Rhin', city: 'Haut-Rhin' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Suisse */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Suisse</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Genève', city: 'Genève' },
+                    { label: 'Réception Vaud', city: 'Vaud' },
+                    { label: 'Réception Valais', city: 'Valais' },
+                    { label: 'Réception Fribourg', city: 'Fribourg' },
+                    { label: 'Réception Neuchâtel', city: 'Neuchâtel' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Picardie */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Picardie</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Oise', city: 'Oise' },
+                    { label: 'Réception Aisne', city: 'Aisne' },
+                    { label: 'Réception Somme', city: 'Somme' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bretagne */}
+              <div>
+                <h4 className="text-sm font-semibold text-charcoal-700 mb-3">Bretagne</h4>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: 'Réception Finistère', city: 'Finistère' },
+                    { label: 'Réception Morbihan', city: 'Morbihan' },
+                    { label: 'Réception Côtes-d\'Armor', city: 'Côtes-d\'Armor' },
+                    { label: 'Réception Ille-et-Vilaine', city: 'Ille-et-Vilaine' },
+                  ].map((link, i) => (
+                    <Link key={i} href={`/vendors?city=${encodeURIComponent(link.city)}`} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Floating CTA Button - Mobile only */}
+      {showFloatingCta && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl p-3 border border-charcoal-100 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex-1">
+              <p className="text-xs text-charcoal-500">Trouvez votre prestataire idéal</p>
+              <p className="text-sm font-semibold text-charcoal-900">Je m&apos;inscris gratuitement</p>
+            </div>
+            <Link
+              href="/signup"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap"
+            >
+              Commencer
+            </Link>
+            <button
+              onClick={() => setCtaDismissed(true)}
+              className="w-8 h-8 flex items-center justify-center text-charcoal-400 hover:text-charcoal-600"
+              aria-label="Fermer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

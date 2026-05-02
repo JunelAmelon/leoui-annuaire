@@ -69,6 +69,14 @@ function VendorsPageContent() {
     }
   }, [searchParams]);
 
+  // Update city filter when URL changes
+  useEffect(() => {
+    const city = searchParams.get('city');
+    if (city) {
+      setCityFilter(city);
+    }
+  }, [searchParams]);
+
   const categories = ['Tous', 'Photographes', 'Vidéastes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception'];
   const priceOptions = ['Moins de 500€', '500€ - 1 000€', '1 000€ - 1 500€', 'Plus de 1 500€'];
   const serviceOptions = ['Séance d\'engagement', 'Après le mariage', 'Album photo', 'Album digital', 'Photos haute résolution', 'Blu-ray / DVD'];

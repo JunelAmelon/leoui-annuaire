@@ -51,7 +51,7 @@ export default function HomeRegions() {
             <h3 className="font-serif text-white text-xl font-light" style={{ letterSpacing: '-0.005em' }}>
               {city.name}
             </h3>
-            <p className="text-white/40 text-[0.65rem] tracking-[0.1em] uppercase font-medium mt-0.5">
+            <p className="text-white/60 text-[0.65rem] tracking-[0.1em] uppercase font-medium mt-0.5">
               {loaded
                 ? counts[city.key] > 0
                   ? `${counts[city.key]} prestataire${counts[city.key] > 1 ? 's' : ''}`
