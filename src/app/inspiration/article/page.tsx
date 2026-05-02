@@ -5,7 +5,7 @@ import { Clock, Calendar, User, Share2, Bookmark, ArrowLeft } from 'lucide-react
 
 export default function ArticlePage() {
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       <article className="py-12 px-4">

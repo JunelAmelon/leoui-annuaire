@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${dmSans.variable} ${cormorant.variable}`}>
-      <body className="font-sans antialiased bg-ivory-50 text-charcoal-900">
+      <body className="font-sans antialiased bg-white text-charcoal-900">
         <Providers>
           {children}
         </Providers>

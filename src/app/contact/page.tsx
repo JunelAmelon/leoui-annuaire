@@ -5,7 +5,7 @@ import { Mail, Phone, MapPin, MessageSquare } from 'lucide-react';
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       <section className="bg-charcoal-900 py-20 text-center px-6">
@@ -57,20 +57,20 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Prénom</label>
-                  <input type="text" placeholder="Sophie" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-ivory-50" />
+                  <input type="text" placeholder="Sophie" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Nom</label>
-                  <input type="text" placeholder="Dupont" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-ivory-50" />
+                  <input type="text" placeholder="Dupont" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Email</label>
-                <input type="email" placeholder="sophie@email.fr" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-ivory-50" />
+                <input type="email" placeholder="sophie@email.fr" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Sujet</label>
-                <select className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-ivory-50">
+                <select className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white">
                   <option>Question générale</option>
                   <option>Problème technique</option>
                   <option>Partenariat prestataire</option>
@@ -79,7 +79,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Message</label>
-                <textarea rows={5} placeholder="Votre message…" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-ivory-50 resize-none" />
+                <textarea rows={5} placeholder="Votre message…" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white resize-none" />
               </div>
               <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
                 Envoyer le message

@@ -49,7 +49,7 @@ export default function VendorProfilePage() {
   }, [id]);
 
   if (loading) return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 space-y-6 animate-pulse">
         <div className="h-[460px] bg-stone-200 rounded-2xl" />
@@ -60,7 +60,7 @@ export default function VendorProfilePage() {
   );
 
   if (!vendor) return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-32 text-center">
         <p className="font-serif text-2xl text-charcoal-600">Prestataire introuvable</p>
@@ -91,7 +91,7 @@ export default function VendorProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
       <VendorProfileDetailView
         vendorId={resolvedVendorId || id}

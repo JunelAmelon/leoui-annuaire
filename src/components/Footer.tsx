@@ -45,7 +45,7 @@ export default function Footer() {
             <h3 className="font-sans font-semibold text-heading-sm mb-4">Ressources</h3>
             <ul className="space-y-3">
               <li><Link href="/inspiration" className="text-charcoal-300 hover:text-rose-400 transition-colors">Inspiration</Link></li>
-              <li><Link href="/wedding-planner" className="text-charcoal-300 hover:text-rose-400 transition-colors">Planifier mon mariage</Link></li>
+              <li><Link href="/planifier-votre-mariage" className="text-charcoal-300 hover:text-rose-400 transition-colors">Planifier mon mariage</Link></li>
               <li><Link href="/cities" className="text-charcoal-300 hover:text-rose-400 transition-colors">Régions</Link></li>
               <li><Link href="/guide" className="text-charcoal-300 hover:text-rose-400 transition-colors">Guide du mariage</Link></li>
             </ul>

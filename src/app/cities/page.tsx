@@ -92,11 +92,11 @@ export default function CitiesPage() {
     .filter(r => r.cities.length > 0);
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       {/* HERO — same style as vendors page */}
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+      <section className="relative overflow-hidden bg-white" style={{ minHeight: '420px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1600"

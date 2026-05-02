@@ -38,10 +38,10 @@ export default function InspirationPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
-      <section className="py-16 px-4 bg-ivory-50">
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 p-8 sm:p-10">
             <h1 className="font-display text-display-lg text-charcoal-900 mb-4">Inspiration Mariage</h1>

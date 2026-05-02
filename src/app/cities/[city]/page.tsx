@@ -182,7 +182,7 @@ export default function CityPage({ params }: CityPageProps) {
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-charcoal-900 text-white'
-                    : 'bg-charcoal-50 text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
+                    : 'bg-white text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
                 }`}
               >
                 {cat}
@@ -260,7 +260,7 @@ export default function CityPage({ params }: CityPageProps) {
                 value={searchQuery}
                 onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
                 className="flex-1"
-                inputClassName="flex items-center bg-charcoal-50 rounded-lg"
+                inputClassName="flex items-center bg-white rounded-lg"
                 showIcon
               />
               <div className="relative flex-1">
@@ -269,7 +269,7 @@ export default function CityPage({ params }: CityPageProps) {
                   <select
                     value={cityFilter}
                     onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
-                    className="w-full pl-10 pr-3 py-2.5 bg-charcoal-50 text-charcoal-800 rounded-lg outline-none text-sm focus:bg-white transition-all appearance-none"
+                    className="w-full pl-10 pr-3 py-2.5 bg-white text-charcoal-800 rounded-lg outline-none text-sm focus:bg-white transition-all appearance-none"
                   >
                     <option value="">Toutes les villes</option>
                     {cities.map(c => <option key={c} value={c}>{c}</option>)}
@@ -277,7 +277,7 @@ export default function CityPage({ params }: CityPageProps) {
                 ) : (
                   <input type="text" value={cityFilter} onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
                     placeholder="Où ?"
-                    className="w-full pl-10 pr-3 py-2.5 bg-charcoal-50 text-charcoal-800 placeholder-charcoal-400 rounded-lg outline-none text-sm focus:bg-white transition-all" />
+                    className="w-full pl-10 pr-3 py-2.5 bg-white text-charcoal-800 placeholder-charcoal-400 rounded-lg outline-none text-sm focus:bg-white transition-all" />
                 )}
               </div>
               <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
@@ -419,7 +419,7 @@ export default function CityPage({ params }: CityPageProps) {
             Laissez-les vous guider vers les meilleures adresses.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/wedding-planner" className="btn-primary inline-flex items-center space-x-2">
+            <Link href="/planifier-votre-mariage" className="btn-primary inline-flex items-center space-x-2">
               <span>Contacter un wedding planner</span>
             </Link>
             <Link href="/vendors" className="btn-secondary inline-flex items-center space-x-2">

@@ -55,7 +55,7 @@ export default function ArticleDetailPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
       <div className="flex justify-center items-center min-h-[50vh]">
         <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
@@ -64,7 +64,7 @@ export default function ArticleDetailPage() {
   );
 
   if (!article) return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <p className="text-charcoal-500">Article introuvable.</p>
@@ -79,7 +79,7 @@ export default function ArticleDetailPage() {
   const paragraphs = article.content.split('\n\n').filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       <article className="py-12 px-4">

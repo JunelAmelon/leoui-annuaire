@@ -10,7 +10,7 @@ export default function Header() {
   const navLinks = [
     { href: '/vendors',         label: 'Prestataires' },
     { href: '/inspiration',     label: 'Inspiration' },
-    { href: '/wedding-planner', label: 'Planifier' },
+    { href: '/planifier-votre-mariage', label: 'Planifier' },
     { href: '/cities',          label: 'Régions' },
   ];
 

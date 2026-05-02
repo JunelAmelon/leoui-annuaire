@@ -57,7 +57,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-ivory-50">
+    <div className="min-h-screen flex bg-white">
 
       {/* LEFT — editorial photo panel */}
       <div className="hidden lg:block lg:w-[48%] relative overflow-hidden flex-shrink-0">

@@ -24,7 +24,7 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       {/* Hero */}
@@ -68,7 +68,7 @@ export default function AboutPage() {
       </section>
 
       {/* Stats */}
-      <section className="py-16 bg-ivory-50">
+      <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -100,7 +100,7 @@ export default function AboutPage() {
               { title: 'Confiance', text: 'Avis authentiques, profils détaillés, communication directe — tout pour décider sereinement.' },
               { title: 'Passion', text: 'Nous aimons les mariages autant que vous. Chaque détail compte pour nous.' },
             ].map(({ title, text }) => (
-              <div key={title} className="bg-ivory-50 rounded-2xl p-7">
+              <div key={title} className="bg-white rounded-2xl p-7">
                 <h3 className="font-serif text-heading-xl text-charcoal-900 mb-3" style={{ fontWeight: 400 }}>{title}</h3>
                 <p className="text-body-md text-charcoal-600 leading-relaxed">{text}</p>
               </div>

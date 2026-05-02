@@ -111,7 +111,7 @@ export default function DashboardPage() {
   const budgetPercent = Math.round((couple.budgetSpent / couple.budget) * 100);
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 py-8">

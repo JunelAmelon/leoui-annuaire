@@ -67,7 +67,7 @@ export default function VendorJoinPage() {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       {/* HERO — same style as vendors page */}
@@ -305,7 +305,7 @@ export default function VendorJoinPage() {
       </section>
 
       {/* REGISTRATION FORM */}
-      <section id="register" className="bg-ivory-50" style={{ marginBottom: '4cm' }}>
+      <section id="register" className="bg-white" style={{ marginBottom: '4cm' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2" style={{ minHeight: '620px' }}>
           {/* Left: photo with overlay */}
           <div className="relative hidden lg:block">

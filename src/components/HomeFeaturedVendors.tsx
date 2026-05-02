@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Star, MapPin, ArrowRight, Crown } from 'lucide-react';
+import { Star, MapPin, Heart, Zap, Tag, Banknote } from 'lucide-react';
 
 interface Vendor {
   id: string;
@@ -15,6 +15,9 @@ interface Vendor {
   imageUrl?: string;
   startingPrice?: string;
   subscriptionTier?: string;
+  description?: string;
+  hasPromo?: boolean;
+  responseTime?: string;
 }
 
 const STATIC_FALLBACK = [
@@ -55,6 +58,9 @@ export default function HomeFeaturedVendors() {
             imageUrl: d.images?.[0] || d.imageUrl || '',
             startingPrice: d.startingPrice ? `À partir de ${d.startingPrice}` : '',
             subscriptionTier: d.subscriptionTier || 'free',
+            description: d.description || d.shortDescription || '',
+            hasPromo: d.hasPromo || d.promotions?.length > 0 || false,
+            responseTime: d.responseTime || '24h',
           }));
         setVendors(mapped.length > 0 ? mapped : STATIC_FALLBACK);
       })
@@ -63,7 +69,7 @@ export default function HomeFeaturedVendors() {
   }, []);
 
   if (loading) return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       {[1, 2, 3, 4].map((i) => (
         <div key={i} className="border border-charcoal-100 bg-white overflow-hidden animate-pulse">
           <div className="h-52 bg-charcoal-100" />
@@ -82,57 +88,91 @@ export default function HomeFeaturedVendors() {
   );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-      {vendors.map((v, i) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {vendors.slice(0, 4).map((v) => {
         const img = v.images?.[0] || v.imageUrl || '';
+        const displayPrice = v.startingPrice?.replace('À partir de ', '') || '';
         return (
-          <Link
+          <div
             key={v.id}
-            href={`/vendors/${v.id}`}
-            className="group bg-white border border-charcoal-100 overflow-hidden shadow-soft hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+            className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100"
           >
-            <div className="relative h-52 overflow-hidden bg-stone-100">
+            {/* Image */}
+            <div className="relative h-48 overflow-hidden">
               {img && (
                 <img
                   src={img}
                   alt={v.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover"
                 />
               )}
-              {v.subscriptionTier === 'premium' && (
-                <div className="absolute left-3 top-3 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.1em] font-semibold bg-gradient-to-r from-amber-400 to-amber-500 text-white flex items-center gap-1">
-                  <Crown className="w-3 h-3" /> PREMIUM
-                </div>
-              )}
+              {/* Heart favorite */}
+              <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors">
+                <Heart className="w-4 h-4 text-gray-400" />
+              </button>
+              {/* Dots indicator (single image = 1 dot) */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-white"></span>
+              </div>
             </div>
 
+            {/* Content */}
             <div className="p-4">
-              <p className="text-[0.65rem] font-semibold text-charcoal-400 tracking-[0.1em] uppercase mb-1.5">{v.category}</p>
-              <h3
-                className="font-serif text-charcoal-900 group-hover:text-rose-700 transition-colors duration-200"
-                style={{ fontSize: 'clamp(1.05rem, 1.8vw, 1.25rem)', fontWeight: 500, letterSpacing: '-0.005em' }}
-              >
+              {/* Title */}
+              <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-1">
                 {v.name}
               </h3>
-              {v.location && (
-                <p className="text-charcoal-500 text-xs font-medium mt-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {v.location}
-                </p>
-              )}
 
-              <div className="mt-3 flex items-center justify-between">
-              {v.rating && v.rating > 0 ? (
-                  <div className="flex items-center gap-1.5">
-                  <Star className="w-3 h-3 text-champagne-500 fill-champagne-500" />
-                  <span className="text-sm font-medium text-charcoal-900">{v.rating.toFixed(1)}</span>
-                  {(v.reviewCount ?? 0) > 0 && <span className="text-xs text-charcoal-400">({v.reviewCount})</span>}
-                </div>
-                ) : <span />}
-                <ArrowRight className="w-4 h-4 text-charcoal-300 group-hover:text-rose-600 group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" />
+              {/* Rating & Location */}
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                {v.rating && v.rating > 0 && (
+                  <>
+                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    <span className="font-semibold text-gray-900">{v.rating.toFixed(1)}</span>
+                    {(v.reviewCount ?? 0) > 0 && <span>({v.reviewCount})</span>}
+                    <span className="text-gray-300">·</span>
+                  </>
+                )}
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> {v.location || 'France'}
+                </span>
               </div>
-              {v.startingPrice && <p className="text-xs text-charcoal-500 font-light mt-2">{v.startingPrice}</p>}
+
+              {/* Description */}
+              <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                {v.description || `Photographe professionnel spécialisé dans les mariages. Capture avec précision les moments et les émotions de votre journée.`}
+              </p>
+
+              {/* Price & Promo */}
+              <div className="flex items-center gap-3 mb-4">
+                {displayPrice && (
+                  <span className="flex items-center gap-1 text-sm text-gray-700">
+                    <Banknote className="w-4 h-4 text-gray-500" />
+                    À partir de {displayPrice}
+                  </span>
+                )}
+                {v.hasPromo && (
+                  <span className="flex items-center gap-1 text-sm text-rose-600">
+                    <Tag className="w-4 h-4" /> 1 promotion
+                  </span>
+                )}
+              </div>
+
+              {/* CTA Button */}
+              <Link
+                href={`/vendors/${v.id}`}
+                className="block w-full bg-rose-500 hover:bg-rose-600 text-white text-center font-medium py-3 rounded-lg transition-colors"
+              >
+                Plus d'informations
+              </Link>
+
+              {/* Response time */}
+              <div className="flex items-center justify-center gap-1 mt-3 text-xs text-gray-500">
+                <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                Réponse en {v.responseTime || '24 heures'}
+              </div>
             </div>
-          </Link>
+          </div>
         );
       })}
     </div>

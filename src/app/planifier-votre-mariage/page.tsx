@@ -6,12 +6,12 @@ import Footer from '@/components/Footer';
 import {
   Check, ArrowRight, Calendar, Users, Sparkles, CreditCard,
   MessageCircle, Image, ClipboardList, LayoutDashboard, CalendarDays,
-  FileText,
+  FileText, Star
 } from 'lucide-react';
 
 export default function WeddingPlannerPage() {
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       {/* HERO — same style as vendors page */}

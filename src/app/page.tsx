@@ -136,7 +136,7 @@ export default function HomePage() {
       </section>
 
       {/* ── NOS MÉTIERS — numbered horizontal strip ── */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
           <div className="flex items-end justify-between mb-12">
@@ -191,15 +191,18 @@ export default function HomePage() {
       </section>
 
       {/* ── SÉLECTION — magazine list layout ── */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
           <div className="flex items-end justify-between mb-10">
             <div>
-              <p className="label-xs text-champagne-600 mb-3 tracking-[0.12em]">— Sélection</p>
+              <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
+                <span className="w-8 h-px bg-rose-400"></span>
+                Sélection
+              </p>
               <h2
                 className="font-serif text-charcoal-900"
-                style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', fontWeight: 300, lineHeight: 1.05, letterSpacing: '-0.02em' }}
+                style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.01em' }}
               >
                 Nos recommandations
               </h2>
@@ -225,13 +228,16 @@ export default function HomePage() {
       </section>
 
       {/* ── GALERIE — asymmetric editorial grid ── */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="mb-12">
-            <p className="label-xs text-champagne-600 mb-3 tracking-[0.12em]">— Inspiration</p>
+            <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
+              <span className="w-8 h-px bg-rose-400"></span>
+              Inspiration
+            </p>
             <h2
               className="font-serif text-charcoal-900"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', fontWeight: 300, lineHeight: 1.05, letterSpacing: '-0.02em', maxWidth: '18ch' }}
+              style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.01em', maxWidth: '18ch' }}
             >
               Des mariages qui nous inspirent
             </h2>
@@ -292,16 +298,19 @@ export default function HomePage() {
       </section>
 
       {/* ── REGIONS — dark section ── */}
-      <section className="py-24 bg-charcoal-900">
+      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <p className="label-xs text-champagne-500 mb-3 tracking-[0.12em]">— Par région</p>
+              <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
+                <span className="w-8 h-px bg-rose-400"></span>
+                Par région
+              </p>
               <h2
-                className="font-serif text-white"
-                style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', fontWeight: 300, lineHeight: 1.05, letterSpacing: '-0.02em' }}
+                className="font-serif text-charcoal-900"
+                style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.01em' }}
               >
-                Trouvez vos<br />prestataires locaux
+                Trouvez vos prestataires locaux
               </h2>
             </div>
           </div>
@@ -310,13 +319,16 @@ export default function HomePage() {
       </section>
 
       {/* ── TÉMOIGNAGES — pull quotes ── */}
-      <section className="py-28 bg-ivory-100">
+      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-6xl mx-auto px-6 lg:px-10">
           <div className="text-center mb-16">
-            <p className="label-xs text-champagne-600 mb-4 tracking-[0.12em]">— Témoignages</p>
+            <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
+              <span className="w-8 h-px bg-rose-400"></span>
+              Témoignages
+            </p>
             <h2
               className="font-serif text-charcoal-900"
-              style={{ fontSize: 'clamp(1.8rem, 3.5vw, 3rem)', fontWeight: 300, lineHeight: 1.1, letterSpacing: '-0.02em' }}
+              style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.01em' }}
             >
               Ce qu'ils disent
             </h2>

@@ -3,7 +3,7 @@ import Footer from '@/components/Footer';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
       <section className="bg-charcoal-900 py-16 text-center px-6">
         <h1 className="font-display text-display-md text-white mb-3">Politique de confidentialité</h1>

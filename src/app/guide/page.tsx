@@ -51,7 +51,7 @@ const CHECKLIST = [
 
 export default function GuidePage() {
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       {/* Hero */}
@@ -95,7 +95,7 @@ export default function GuidePage() {
       </section>
 
       {/* Checklist */}
-      <section className="py-20 bg-ivory-50">
+      <section className="py-20 bg-white">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <p className="label-xs text-champagne-600 mb-3 tracking-[0.12em]">— Planning</p>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown, ArrowRight } from 'lucide-react';
@@ -18,8 +19,10 @@ const bounceXKeyframes = `
 
 const PER_PAGE = 6;
 
-export default function VendorsPage() {
-  const [selectedCategory, setSelectedCategory] = useState('Tous');
+function VendorsPageContent() {
+  const searchParams = useSearchParams();
+  const catFromUrl = searchParams.get('cat');
+  const [selectedCategory, setSelectedCategory] = useState(catFromUrl || 'Tous');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [priceFilters, setPriceFilters] = useState<string[]>([]);
   const [serviceFilters, setServiceFilters] = useState<string[]>([]);
@@ -58,13 +61,35 @@ export default function VendorsPage() {
       .finally(() => setVendorsLoading(false));
   }, []);
 
+  // Update selected category when URL changes
+  useEffect(() => {
+    const cat = searchParams.get('cat');
+    if (cat) {
+      setSelectedCategory(cat);
+    }
+  }, [searchParams]);
+
   const categories = ['Tous', 'Photographes', 'Vidéastes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception'];
   const priceOptions = ['Moins de 500€', '500€ - 1 000€', '1 000€ - 1 500€', 'Plus de 1 500€'];
   const serviceOptions = ['Séance d\'engagement', 'Après le mariage', 'Album photo', 'Album digital', 'Photos haute résolution', 'Blu-ray / DVD'];
 
+  const categoryMapping: Record<string, string[]> = {
+    'Photographes': ['Photographie', 'Photographe'],
+    'Vidéastes': ['Vidéo', 'Vidéaste'],
+    'Traiteurs': ['Traiteur', 'Catering'],
+    'Fleuristes': ['Fleuriste', 'Fleurs'],
+    'DJ & Musiciens': ['DJ & Musique', 'DJ', 'Musique', 'Musicien'],
+    'Décorateurs': ['Décoration', 'Décorateur'],
+    'Wedding Planners': ['Wedding Planner', 'Organisateur'],
+    'Lieux de réception': ['Lieu de réception', 'Salle', 'Domaine'],
+  };
+
   const filteredVendors = allVendors
     .filter(v => {
-      const matchCategory = selectedCategory === 'Tous' || v.category === selectedCategory;
+      const possibleMatches = categoryMapping[selectedCategory] || [selectedCategory];
+      const matchCategory = selectedCategory === 'Tous' || possibleMatches.some(cat => 
+        v.category?.toLowerCase().includes(cat.toLowerCase())
+      );
       const matchPromo = !hasPromo || v.hasPromo;
       const matchAward = !hasAward || (v as any).weddingAward || (v as any).award;
       const matchSearch = !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -93,11 +118,11 @@ export default function VendorsPage() {
   const pagedVendors = filteredVendors.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <style>{bounceXKeyframes}</style>
       <Header />
 
-      {/* HERO — clean editorial */}
+      {/* HERO — same style as wedding planner page */}
       <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
         <div className="absolute inset-0">
           <img
@@ -107,6 +132,7 @@ export default function VendorsPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
+
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 text-body-sm text-white/60 mb-4">
@@ -120,7 +146,7 @@ export default function VendorsPage() {
             <p className="text-body-md text-white/80 mb-7 max-w-lg">
               Choisir le bon prestataire est essentiel pour capturer l'essence de votre union. Explorez notre sélection et trouvez celui qui saura mettre en lumière votre amour unique.
             </p>
-            {/* Search bar */}
+            {/* Search bar matching wedding planner style */}
             <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
               <VendorSearchAutocomplete
                 placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
@@ -463,5 +489,18 @@ export default function VendorsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Wrapper component with Suspense
+export default function VendorsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+      </div>
+    }>
+      <VendorsPageContent />
+    </Suspense>
   );
 }
