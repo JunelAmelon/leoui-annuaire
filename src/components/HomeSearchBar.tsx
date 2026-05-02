@@ -145,9 +145,9 @@ export default function HomeSearchBar() {
 
       {/* Button */}
       <button onClick={handleSearch}
-        className="px-8 py-4 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold tracking-[0.06em] uppercase transition-colors duration-200 flex-shrink-0 flex items-center gap-2">
+        className="px-4 sm:px-8 py-4 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-semibold tracking-[0.06em] uppercase transition-colors duration-200 flex-shrink-0 flex items-center gap-2 whitespace-nowrap">
         <Search className="w-4 h-4" />
-        <span className="hidden sm:inline">Rechercher</span>
+        <span>Rechercher</span>
       </button>
     </div>
   );

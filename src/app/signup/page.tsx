@@ -87,62 +87,48 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex">
 
-      {/* LEFT — photo + benefits panel */}
-      <div className="hidden lg:flex lg:w-[48%] relative overflow-hidden flex-col">
+      {/* LEFT — editorial photo panel */}
+      <div className="hidden lg:block lg:w-[48%] relative overflow-hidden flex-shrink-0">
         <img
-          src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1920"
-          alt="Mariage de rêve"
-          className="absolute inset-0 w-full h-full object-cover"
+          src="https://images.pexels.com/photos/32795181/pexels-photo-32795181.jpeg"
+          alt="Mariage"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,5,20,0.5) 0%, rgba(10,5,20,0.75) 60%, rgba(10,5,20,0.92) 100%)' }} />
+        <div className="absolute inset-0 overlay-full" />
 
-        <div className="relative z-10 flex flex-col h-full p-12">
+        {/* Content layer */}
+        <div className="absolute inset-0 flex flex-col justify-between p-12">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 w-fit">
-            <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/15">
-              <Heart className="w-5 h-5 text-white fill-white" />
+          <Link href="/" className="flex items-center gap-2.5 w-fit group">
+            <div className="w-7 h-7 border border-white/50 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+              <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <span className="font-display text-2xl text-white">LeOui.net</span>
+            <span className="font-serif text-[1.3rem] tracking-wide text-white">LeOui.net</span>
           </Link>
 
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Benefits */}
+          {/* Quote */}
           <div>
-            <div className="flex items-center gap-2 mb-5">
-              <span className="h-px w-8 bg-rose-400" />
-              <span className="text-rose-400 text-sm font-medium uppercase tracking-widest">Pourquoi LeOui.net ?</span>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="h-px w-8 bg-champagne-400/60" />
+              <span className="label-xs text-white/40 tracking-[0.14em]">Témoignage</span>
             </div>
-            <h2 className="font-display text-3xl text-white leading-snug mb-7">
-              Tout ce qu'il vous faut<br />
-              <span className="italic text-champagne-300">en un seul endroit</span>
-            </h2>
-            <ul className="space-y-3">
-              {benefits.map((b, i) => (
-                <li key={i} className="flex items-center gap-3.5">
-                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-sm flex-shrink-0">
-                    <b.icon className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-white/85 text-sm">{b.text}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Social proof */}
-            <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {[
-                  'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=60',
-                  'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=60',
-                  'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=60',
-                ].map((src, i) => (
-                  <img key={i} src={src} className="w-8 h-8 rounded-full border-2 border-white/20 object-cover" alt="" />
-                ))}
+            <blockquote
+              className="font-serif text-white mb-7 leading-snug"
+              style={{ fontSize: 'clamp(1.25rem, 2.2vw, 1.625rem)', fontWeight: 300, fontStyle: 'italic', maxWidth: '28ch' }}
+            >
+              « LeOui.net a transformé l'organisation de notre mariage. Chaque prestataire était exceptionnel. »
+            </blockquote>
+            <div className="flex items-center gap-3">
+              <img
+                src="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=120"
+                alt="Sophie"
+                className="w-10 h-10 object-cover border border-white/20"
+                style={{ borderRadius: 0 }}
+              />
+              <div>
+                <p className="text-white text-sm font-medium font-sans">Sophie & Thomas</p>
+                <p className="text-white/50 text-xs font-sans font-light mt-0.5">Mariés en juin 2025, Paris</p>
               </div>
-              <p className="text-white/70 text-sm">
-                <span className="text-white font-medium">{stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—'}</span> couples nous font déjà confiance
-              </p>
             </div>
           </div>
         </div>

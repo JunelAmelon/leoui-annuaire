@@ -10,10 +10,10 @@ import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, Tren
 import { useEffect, useState } from 'react';
 
 const MÉTIERS = [
-  { n: '01', label: 'Photographie',   icon: Camera,   href: '/vendors?cat=Photographes', img: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { n: '02', label: 'Fleurs & Décor', icon: Flower2,   href: '/vendors?cat=Fleuristes',   img: 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { n: '03', label: 'Gastronomie',    icon: Utensils,  href: '/vendors?cat=Traiteurs',    img: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { n: '04', label: 'Musique & Son',  icon: Music,     href: '/vendors?cat=DJ+%26+Musiciens', img: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { n: '01', label: 'Photographie',   icon: Camera,   href: '/vendors?cat=Photographes', img: 'https://images.pexels.com/photos/33996615/pexels-photo-33996615.jpeg' },
+  { n: '02', label: 'Fleurs & Décor', icon: Flower2,   href: '/vendors?cat=Fleuristes',   img: 'https://images.pexels.com/photos/5789240/pexels-photo-5789240.jpeg' },
+  { n: '03', label: 'Gastronomie',    icon: Utensils,  href: '/vendors?cat=Traiteurs',    img: 'https://images.pexels.com/photos/17906675/pexels-photo-17906675.jpeg' },
+  { n: '04', label: 'Musique & Son',  icon: Music,     href: '/vendors?cat=DJ+%26+Musiciens', img: 'https://images.pexels.com/photos/15865408/pexels-photo-15865408.jpeg' },
 ];
 
 
@@ -48,9 +48,10 @@ export default function HomePage() {
       <section className="relative overflow-hidden" style={{ minHeight: '100svh' }}>
         <div className="absolute inset-0">
           <img
-            src="mariage (1).jpg"
+            src="https://images.pexels.com/photos/13434415/pexels-photo-13434415.jpeg"
             alt="Mariage en France"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-center sm:object-center"
+            style={{ objectPosition: 'center top' }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
@@ -76,28 +77,6 @@ export default function HomePage() {
             </p>
 
             <HomeSearchBar />
-
-            <div className="flex flex-wrap items-center gap-5 mt-6">
-              <Link href="/vendors" className="inline-flex items-center gap-2 text-white/80 text-xs font-medium tracking-[0.08em] uppercase hover:text-white transition-colors duration-200">
-                Voir tous les prestataires <ArrowRight className="w-3 h-3" />
-              </Link>
-              <Link href="/login" className="inline-flex items-center gap-2 text-white/80 text-xs font-medium tracking-[0.08em] uppercase hover:text-white transition-colors duration-200">
-                <Heart className="w-3 h-3" /> Mon espace couple
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 mt-10 pt-6 border-t border-white/20 max-w-xl">
-              {[
-                [stats ? stats.vendorsCount.toLocaleString('fr-FR') : '—', 'Prestataires'],
-                [stats ? stats.weddingsCount.toLocaleString('fr-FR') : '—', 'Mariages'],
-                [stats ? stats.citiesCount.toLocaleString('fr-FR') : '—', 'Villes'],
-              ].map(([n, l]) => (
-                <div key={l}>
-                  <p className="font-serif text-white text-2xl font-light" style={{ letterSpacing: '-0.01em' }}>{n}</p>
-                  <p className="text-white/60 text-[0.65rem] font-medium tracking-[0.1em] uppercase mt-1">{l}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

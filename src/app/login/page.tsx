@@ -62,7 +62,7 @@ export default function LoginPage() {
       {/* LEFT — editorial photo panel */}
       <div className="hidden lg:block lg:w-[48%] relative overflow-hidden flex-shrink-0">
         <img
-          src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          src="https://images.pexels.com/photos/32795181/pexels-photo-32795181.jpeg"
           alt="Mariage"
           className="w-full h-full object-cover"
         />

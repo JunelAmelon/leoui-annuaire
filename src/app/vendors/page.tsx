@@ -369,28 +369,29 @@ export default function VendorsPage() {
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-charcoal-100">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-charcoal-100 gap-2">
+                        <div className="flex items-center gap-3 flex-shrink-0">
                           <span className="text-sm text-charcoal-700 flex items-center gap-1.5 font-medium">
                             À partir de <span className="text-charcoal-900 font-semibold">{vendor.startingPrice}</span>
                           </span>
                           {vendor.hasPromo && (
-                            <span className="text-xs text-rose-600 flex items-center gap-1">
+                            <span className="hidden sm:flex text-xs text-rose-600 items-center gap-1">
                               <Tag className="w-3 h-3" /> 1 promotion
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-end gap-2 flex-shrink-0">
                           <span className="hidden sm:flex text-xs text-charcoal-500 items-center gap-1">
                             <Zap className="w-3 h-3 text-amber-500" /> Réponse en {vendor.responseTime}
                           </span>
                           <Link
                             href={`/vendors/${vendor.id}`}
-                            className="group inline-flex items-center gap-2 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="group inline-flex items-center justify-center gap-1.5 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-3 sm:px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-shrink-0"
                           >
-                            Voir le profil
-                            <span className="flex items-center justify-center w-6 h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200">
-                              <ChevronRight className="w-4 h-4 text-rose-500 group-hover:text-white animate-[bounce-x_1s_ease-in-out_infinite]" />
+                            <span className="hidden sm:inline">Voir le profil</span>
+                            <span className="sm:hidden text-xs">Voir profil</span>
+                            <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200 flex-shrink-0">
+                              <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-rose-500 group-hover:text-white animate-[bounce-x_1s_ease-in-out_infinite]" />
                             </span>
                           </Link>
                         </div>
