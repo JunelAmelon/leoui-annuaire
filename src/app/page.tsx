@@ -200,8 +200,8 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <div className="lg:col-span-2 flex flex-col gap-3 lg:gap-4">
-              <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: 'clamp(200px, 25vw, 260px)' }}>
+            <div className="lg:col-span-2 flex flex-col gap-3 lg:gap-4" style={{ height: 'clamp(280px, 50vw, 540px)' }}>
+              <Link href="/inspiration" className="group relative overflow-hidden block flex-1 min-h-0">
                 <img
                   src="https://images.pexels.com/photos/33642063/pexels-photo-33642063.jpeg"
                   alt="Élégance Parisienne"
@@ -213,9 +213,9 @@ export default function HomePage() {
                   <h3 className="font-serif text-white text-lg font-light">Élégance au château</h3>
                 </div>
               </Link>
-              <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: 'clamp(200px, 25vw, 260px)' }}>
+              <Link href="/inspiration" className="group relative overflow-hidden block flex-1 min-h-0">
                 <img
-                  src="https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=700"
+                  src="https://images.pexels.com/photos/26972546/pexels-photo-26972546.jpeg"
                   alt="Romantisme bord de mer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
@@ -228,12 +228,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex justify-end">
             <Link href="/inspiration" className="inline-flex items-center gap-2 text-[0.75rem] font-medium tracking-[0.08em] uppercase text-charcoal-500 hover:text-charcoal-900 transition-colors group">
               Explorer la galerie
               <span className="h-px w-6 bg-charcoal-400 group-hover:w-10 transition-all duration-300" />
             </Link>
-          </div> */}
+          </div>
         </div>
       </section>
 
