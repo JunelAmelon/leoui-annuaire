@@ -9,6 +9,13 @@ import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 
+const bounceXKeyframes = `
+@keyframes bounce-x {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+`;
+
 const PER_PAGE = 6;
 
 export default function VendorsPage() {
@@ -87,6 +94,7 @@ export default function VendorsPage() {
 
   return (
     <div className="min-h-screen bg-ivory-50">
+      <style>{bounceXKeyframes}</style>
       <Header />
 
       {/* HERO — clean editorial */}
@@ -382,7 +390,7 @@ export default function VendorsPage() {
                           >
                             Voir le profil
                             <span className="flex items-center justify-center w-6 h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200">
-                              <ChevronRight className="w-4 h-4 text-rose-500 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200" />
+                              <ChevronRight className="w-4 h-4 text-rose-500 group-hover:text-white animate-[bounce-x_1s_ease-in-out_infinite]" />
                             </span>
                           </Link>
                         </div>
