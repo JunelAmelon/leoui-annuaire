@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Star, MapPin, ArrowRight } from 'lucide-react';
+import { Star, MapPin, ArrowRight, Crown } from 'lucide-react';
 
 interface Vendor {
   id: string;
@@ -14,13 +14,14 @@ interface Vendor {
   images?: string[];
   imageUrl?: string;
   startingPrice?: string;
+  subscriptionTier?: string;
 }
 
 const STATIC_FALLBACK = [
-  { id: 'atelier-lumiere', name: 'Atelier Lumière', category: 'Photographie', location: 'Paris', rating: 4.9, reviewCount: 127, startingPrice: 'À partir de 2 500 €', images: ['https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=500'] },
-  { id: 'maison-florale', name: 'Maison Florale', category: 'Fleuriste', location: 'Lyon', rating: 4.8, reviewCount: 98, startingPrice: 'À partir de 1 800 €', images: ['https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=500'] },
-  { id: 'saveurs-et-delices', name: 'Saveurs & Délices', category: 'Traiteur', location: 'Provence', rating: 5.0, reviewCount: 156, startingPrice: 'À partir de 85 €/pers', images: ['https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=500'] },
-  { id: 'harmonie-musicale', name: 'Harmonie Musicale', category: 'DJ & Musique', location: 'Bordeaux', rating: 4.9, reviewCount: 84, startingPrice: 'À partir de 1 200 €', images: ['https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=500'] },
+  { id: 'atelier-lumiere', name: 'Atelier Lumière', category: 'Photographie', location: 'Paris', rating: 4.9, reviewCount: 127, startingPrice: 'À partir de 2 500 €', images: ['https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=500'], subscriptionTier: 'premium' },
+  { id: 'maison-florale', name: 'Maison Florale', category: 'Fleuriste', location: 'Lyon', rating: 4.8, reviewCount: 98, startingPrice: 'À partir de 1 800 €', images: ['https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=500'], subscriptionTier: 'standard' },
+  { id: 'saveurs-et-delices', name: 'Saveurs & Délices', category: 'Traiteur', location: 'Provence', rating: 5.0, reviewCount: 156, startingPrice: 'À partir de 85 €/pers', images: ['https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=500'], subscriptionTier: 'premium' },
+  { id: 'harmonie-musicale', name: 'Harmonie Musicale', category: 'DJ & Musique', location: 'Bordeaux', rating: 4.9, reviewCount: 84, startingPrice: 'À partir de 1 200 €', images: ['https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=500'], subscriptionTier: 'standard' },
 ];
 
 export default function HomeFeaturedVendors() {
@@ -33,9 +34,15 @@ export default function HomeFeaturedVendors() {
         const json = await r.json();
         if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
         const docs = Array.isArray(json.vendors) ? json.vendors : [];
+        const tierOrder: Record<string, number> = { premium: 3, standard: 2, free: 1 };
         const mapped = (docs as any[])
           .filter(d => d.name && d.status !== 'inactive')
-          .sort((a, b) => ((b.rating || 0) - (a.rating || 0)))
+          .sort((a, b) => {
+            const tierA = tierOrder[a.subscriptionTier || 'free'] || 0;
+            const tierB = tierOrder[b.subscriptionTier || 'free'] || 0;
+            if (tierA !== tierB) return tierB - tierA;
+            return (b.rating || 0) - (a.rating || 0);
+          })
           .slice(0, 4)
           .map(d => ({
             id: d.id,
@@ -47,6 +54,7 @@ export default function HomeFeaturedVendors() {
             images: d.images || [],
             imageUrl: d.images?.[0] || d.imageUrl || '',
             startingPrice: d.startingPrice ? `À partir de ${d.startingPrice}` : '',
+            subscriptionTier: d.subscriptionTier || 'free',
           }));
         setVendors(mapped.length > 0 ? mapped : STATIC_FALLBACK);
       })
@@ -91,9 +99,11 @@ export default function HomeFeaturedVendors() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
               )}
-              <div className="absolute left-3 top-3 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.1em] font-semibold bg-white/90 text-charcoal-600">
-                {String(i + 1).padStart(2, '0')}
-              </div>
+              {v.subscriptionTier === 'premium' && (
+                <div className="absolute left-3 top-3 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.1em] font-semibold bg-gradient-to-r from-amber-400 to-amber-500 text-white flex items-center gap-1">
+                  <Crown className="w-3 h-3" /> PREMIUM
+                </div>
+              )}
             </div>
 
             <div className="p-4">

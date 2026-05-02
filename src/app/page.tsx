@@ -41,7 +41,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ivory-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
       {/* ── HERO — clean editorial ── */}
@@ -78,6 +78,60 @@ export default function HomePage() {
 
             <HomeSearchBar />
           </div>
+        </div>
+
+        {/* Animated cloud wave effect at bottom - full height to hide border */}
+        <div className="absolute bottom-0 left-0 right-0 z-20" style={{ height: '140px' }}>
+          <svg
+            viewBox="0 0 1440 180"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0 180L48 165C96 150 192 120 288 110C384 100 480 115 576 125C672 135 768 135 864 125C960 115 1056 100 1152 100C1248 100 1344 115 1392 125L1440 135V180H1392C1344 180 1248 180 1152 180C1056 180 960 180 864 180C768 180 672 180 576 180C480 180 384 180 288 180C192 180 96 180 48 180H0Z"
+              fill="white"
+            >
+              <animate
+                attributeName="d"
+                dur="8s"
+                repeatCount="indefinite"
+                values="
+                  M0 180L48 165C96 150 192 120 288 110C384 100 480 115 576 125C672 135 768 135 864 125C960 115 1056 100 1152 100C1248 100 1344 115 1392 125L1440 135V180H1392C1344 180 1248 180 1152 180C1056 180 960 180 864 180C768 180 672 180 576 180C480 180 384 180 288 180C192 180 96 180 48 180H0Z;
+                  M0 180L48 170C96 160 192 135 288 125C384 115 480 125 576 132C672 140 768 138 864 130C960 122 1056 110 1152 108C1248 106 1344 115 1392 120L1440 125V180H1392C1344 180 1248 180 1152 180C1056 180 960 180 864 180C768 180 672 180 576 180C480 180 384 180 288 180C192 180 96 180 48 180H0Z;
+                  M0 180L48 160C96 140 192 105 288 95C384 85 480 100 576 115C672 130 768 128 864 118C960 108 1056 95 1152 92C1248 89 1344 100 1392 108L1440 115V180H1392C1344 180 1248 180 1152 180C1056 180 960 180 864 180C768 180 672 180 576 180C480 180 384 180 288 180C192 180 96 180 48 180H0Z;
+                  M0 180L48 165C96 150 192 120 288 110C384 100 480 115 576 125C672 135 768 135 864 125C960 115 1056 100 1152 100C1248 100 1344 115 1392 125L1440 135V180H1392C1344 180 1248 180 1152 180C1056 180 960 180 864 180C768 180 672 180 576 180C480 180 384 180 288 180C192 180 96 180 48 180H0Z
+                "
+              />
+            </path>
+          </svg>
+          {/* Second wave layer for depth */}
+          <svg
+            viewBox="0 0 1440 120"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-70"
+            style={{ height: '120px' }}
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0 120L60 105C120 90 240 60 360 52C480 44 600 65 720 75C840 85 960 78 1080 67C1200 56 1320 48 1380 45L1440 42V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
+              fill="white"
+            >
+              <animate
+                attributeName="d"
+                dur="12s"
+                repeatCount="indefinite"
+                values="
+                  M0 120L60 105C120 90 240 60 360 52C480 44 600 65 720 75C840 85 960 78 1080 67C1200 56 1320 48 1380 45L1440 42V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z;
+                  M0 120L60 112C120 104 240 80 360 72C480 64 600 78 720 85C840 92 960 85 1080 75C1200 65 1320 55 1380 52L1440 48V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z;
+                  M0 120L60 98C120 76 240 45 360 40C480 35 600 55 720 65C840 75 960 68 1080 58C1200 48 1320 38 1380 35L1440 32V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z;
+                  M0 120L60 105C120 90 240 60 360 52C480 44 600 65 720 75C840 85 960 78 1080 67C1200 56 1320 48 1380 45L1440 42V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z
+                "
+              />
+            </path>
+          </svg>
         </div>
       </section>
 
@@ -137,7 +191,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SÉLECTION — magazine list layout ── */}
-      <section className="py-24 bg-ivory-50">
+      <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
           <div className="flex items-end justify-between mb-10">

@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import VendorCard from '@/components/VendorCard';
-import { MapPin, ArrowLeft, Search, SlidersHorizontal } from 'lucide-react';
+import { MapPin, ArrowLeft, Search, SlidersHorizontal, Star, Heart, Crown, Zap, Tag, ChevronRight, ChevronDown } from 'lucide-react';
 import { getDocuments } from '@/lib/db';
+import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
+import { TIER_BADGE } from '@/lib/subscription-plans';
+import type { SubscriptionTier } from '@/lib/subscription-plans';
 
 interface CityPageProps {
   params: { city: string };
@@ -52,49 +54,86 @@ export default function CityPage({ params }: CityPageProps) {
 
   const [allVendors, setAllVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [sortBy, setSortBy] = useState('recommandés');
+  const [cities, setCities] = useState<string[]>([]);
+  const [cityFilter, setCityFilter] = useState('');
+  const [hasPromo, setHasPromo] = useState(false);
+  const [hasAward, setHasAward] = useState(false);
+  const [priceFilters, setPriceFilters] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PER_PAGE = 6;
 
   useEffect(() => {
-    getDocuments('vendors', [])
-      .then(docs => {
-        const cityLower = city.name.toLowerCase();
-        const filtered = (docs as any[]).filter(d =>
-          (d.location || '').toLowerCase().includes(cityLower)
-        ).map(d => ({
-          id: d.id,
-          name: d.name || '',
-          category: d.category || 'Autres',
-          location: d.location || '',
-          rating: d.rating || 0,
-          reviewCount: d.reviewCount || 0,
-          imageUrl: d.images?.[0] || d.imageUrl || '',
-          startingPrice: d.startingPrice || '',
-          featured: d.featured || false,
-        }));
-        setAllVendors(filtered);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getDocuments('vendors', []),
+      getDocuments('cities', [{ field: 'active', operator: '==', value: true }]),
+    ]).then(([docs, cityDocs]) => {
+      const cityLower = city.name.toLowerCase();
+      const filtered = (docs as any[]).filter(d =>
+        (d.location || '').toLowerCase().includes(cityLower)
+      ).map(d => ({
+        id: d.id,
+        name: d.name || '',
+        category: d.category || 'Autres',
+        location: d.location || '',
+        rating: d.rating || 0,
+        reviewCount: d.reviewCount || 0,
+        imageUrl: d.images?.[0] || d.imageUrl || '',
+        startingPrice: d.startingPrice || '',
+        featured: d.featured || false,
+        subscriptionTier: d.subscriptionTier || 'free',
+        hasPromo: d.hasPromo || false,
+        hasAward: d.hasAward || false,
+        responseTime: d.responseTime || '24h',
+        description: d.description || '',
+      }));
+      setAllVendors(filtered);
+      
+      const dbCities = (cityDocs as any[]).map((c: any) => c.name).sort();
+      if (dbCities.length > 0) setCities(dbCities);
+    })
+    .catch(() => {})
+    .finally(() => setLoading(false));
   }, [city.name]);
 
   const categories = ['Tous', 'Photographes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Vidéastes'];
 
-  const vendors = allVendors
+  const togglePrice = (opt: string) => {
+    setPriceFilters(prev => prev.includes(opt) ? prev.filter(p => p !== opt) : [...prev, opt]);
+  };
+
+  const filteredVendors = allVendors
     .filter(v => {
       const matchCat = selectedCategory === 'Tous' || v.category === selectedCategory;
-      const matchSearch = !search || v.name.toLowerCase().includes(search.toLowerCase());
-      return matchCat && matchSearch;
+      const matchSearch = !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchPromo = !hasPromo || v.hasPromo;
+      const matchAward = !hasAward || v.hasAward;
+      const matchPrice = priceFilters.length === 0 || priceFilters.some(opt => {
+        if (opt === '€') return (parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0) < 1000;
+        if (opt === '€€') { const p = parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0; return p >= 1000 && p < 3000; }
+        if (opt === '€€€') return (parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0) >= 3000;
+        return true;
+      });
+      return matchCat && matchSearch && matchPromo && matchAward && matchPrice;
     })
     .sort((a, b) => {
       if (sortBy === 'note') return (b.rating || 0) - (a.rating || 0);
       if (sortBy === 'prix-asc') return (parseInt((a.startingPrice || '0').replace(/\D/g, '')) || 0) - (parseInt((b.startingPrice || '0').replace(/\D/g, '')) || 0);
       if (sortBy === 'prix-desc') return (parseInt((b.startingPrice || '0').replace(/\D/g, '')) || 0) - (parseInt((a.startingPrice || '0').replace(/\D/g, '')) || 0);
+      const tierOrder = { premium: 3, standard: 2, free: 1 };
+      const tierA = tierOrder[(a.subscriptionTier as keyof typeof tierOrder) || 'free'];
+      const tierB = tierOrder[(b.subscriptionTier as keyof typeof tierOrder) || 'free'];
+      if (tierA !== tierB) return tierB - tierA;
       if (a.featured && !b.featured) return -1;
       if (!a.featured && b.featured) return 1;
       return (b.rating || 0) - (a.rating || 0);
     });
+
+  const totalPages = Math.max(1, Math.ceil(filteredVendors.length / PER_PAGE));
+  const pagedVendors = filteredVendors.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
     <div className="min-h-screen bg-ivory-50">
@@ -132,87 +171,243 @@ export default function CityPage({ params }: CityPageProps) {
         </div>
       </section>
 
-      <section className="py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="flex-1">
-              <div className="bg-white rounded-xl border border-charcoal-200 p-2 flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal-400" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder={`Rechercher un prestataire à ${city.name}...`}
-                    className="w-full pl-12 pr-4 py-3 bg-charcoal-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-rose-200 transition-all outline-none"
-                  />
-                </div>
-                <button className="btn-primary px-6">
-                  Rechercher
-                </button>
-              </div>
-            </div>
-            <button className="btn-secondary flex items-center justify-center space-x-2 md:w-auto">
-              <SlidersHorizontal className="w-5 h-5" />
-              <span>Filtres</span>
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-3 overflow-x-auto pb-2 mb-8">
-            {categories.map((cat) => (
+      {/* Category pills */}
+      <div className="bg-white border-b border-charcoal-100 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center gap-2 overflow-x-auto py-3">
+            {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2.5 rounded-full font-medium text-body-sm whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                   selectedCategory === cat
-                    ? 'bg-rose-600 text-white shadow-soft'
-                    : 'bg-white text-charcoal-700 hover:bg-charcoal-50 border border-charcoal-200'
+                    ? 'bg-charcoal-900 text-white'
+                    : 'bg-charcoal-50 text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
                 }`}
               >
                 {cat}
               </button>
             ))}
           </div>
-
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-body-md text-charcoal-600">
-              {loading ? (
-                <span className="animate-pulse bg-charcoal-100 rounded w-24 h-5 inline-block" />
-              ) : (
-                <><span className="font-semibold text-charcoal-900">{vendors.length}</span> prestataires à {city.name}</>
-              )}
-            </p>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="input-field w-auto py-2"
-            >
-              <option value="recommandés">Trier par : Recommandés</option>
-              <option value="note">Note (décroissante)</option>
-              <option value="prix-asc">Prix (croissant)</option>
-              <option value="prix-desc">Prix (décroissant)</option>
-            </select>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1,2,3,4,5,6].map(i => <div key={i} className="h-72 bg-charcoal-100 rounded-2xl animate-pulse" />)}
-            </div>
-          ) : vendors.length === 0 ? (
-            <div className="text-center py-20">
-              <MapPin className="w-10 h-10 text-charcoal-200 mx-auto mb-3" />
-              <p className="text-charcoal-500">Aucun prestataire trouvé à {city.name}</p>
-              <Link href="/vendors" className="mt-4 inline-block text-rose-600 hover:underline text-sm">Voir tous les prestataires</Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vendors.map((vendor) => (
-                <VendorCard key={vendor.id} {...vendor} />
-              ))}
-            </div>
-          )}
         </div>
-      </section>
+      </div>
+
+      {/* Main content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="flex gap-8 items-start">
+
+          {/* LEFT SIDEBAR */}
+          <aside className="w-56 flex-shrink-0 hidden lg:block">
+            {/* Filtres spéciaux */}
+            <div className="mb-6">
+              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+                <span>Filtres spéciaux</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="space-y-3">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-sm text-charcoal-700 flex items-center gap-2">
+                    <Tag className="w-3.5 h-3.5 text-rose-500" /> Promotions
+                  </span>
+                  <div
+                    onClick={() => setHasPromo(p => !p)}
+                    className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${hasPromo ? 'bg-rose-600' : 'bg-charcoal-200'}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${hasPromo ? 'left-5' : 'left-0.5'}`} />
+                  </div>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-sm text-charcoal-700 flex items-center gap-2">
+                    <Star className="w-3.5 h-3.5 text-amber-400" /> Gagnants Wedding Awards
+                  </span>
+                  <div
+                    onClick={() => setHasAward(p => !p)}
+                    className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${hasAward ? 'bg-rose-600' : 'bg-charcoal-200'}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${hasAward ? 'left-5' : 'left-0.5'}`} />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="border-t border-charcoal-100 pt-5 mb-5">
+              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+                <span>Prix</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="space-y-2">
+                {['€', '€€', '€€€'].map(opt => (
+                  <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={priceFilters.includes(opt)}
+                      onChange={() => togglePrice(opt)}
+                      className="w-4 h-4 rounded border-charcoal-300 text-rose-600 focus:ring-rose-200"
+                    />
+                    <span className="text-sm text-charcoal-700">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* RIGHT CONTENT */}
+          <div className="flex-1 min-w-0">
+            {/* Search bar */}
+            <div className="bg-white rounded-xl border border-charcoal-200 p-2 flex gap-2 mb-6">
+              <VendorSearchAutocomplete
+                placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
+                value={searchQuery}
+                onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+                className="flex-1"
+                inputClassName="flex items-center bg-charcoal-50 rounded-lg"
+                showIcon
+              />
+              <div className="relative flex-1">
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+                {cities.length > 0 ? (
+                  <select
+                    value={cityFilter}
+                    onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-10 pr-3 py-2.5 bg-charcoal-50 text-charcoal-800 rounded-lg outline-none text-sm focus:bg-white transition-all appearance-none"
+                  >
+                    <option value="">Toutes les villes</option>
+                    {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                ) : (
+                  <input type="text" value={cityFilter} onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
+                    placeholder="Où ?"
+                    className="w-full pl-10 pr-3 py-2.5 bg-charcoal-50 text-charcoal-800 placeholder-charcoal-400 rounded-lg outline-none text-sm focus:bg-white transition-all" />
+                )}
+              </div>
+              <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                Rechercher
+              </button>
+            </div>
+
+            {/* Results header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-charcoal-600">
+                  {loading ? (
+                    <span className="animate-pulse bg-charcoal-100 rounded w-24 h-5 inline-block" />
+                  ) : (
+                    <><span className="font-semibold text-charcoal-900">{filteredVendors.length}</span> prestataires à {city.name}</>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="border border-charcoal-200 rounded-lg px-3 py-2 text-sm text-charcoal-700 bg-white outline-none focus:ring-2 focus:ring-rose-200"
+                >
+                  <option value="recommandés">Recommandés</option>
+                  <option value="note">Note (décroissante)</option>
+                  <option value="prix-asc">Prix (croissant)</option>
+                  <option value="prix-desc">Prix (décroissant)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Vendor list */}
+            {!loading && filteredVendors.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-charcoal-100 py-20 text-center">
+                <p className="text-charcoal-500 font-medium">Aucun prestataire trouvé</p>
+                <p className="text-sm text-charcoal-400 mt-1">Modifiez votre recherche ou vos filtres</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(loading ? [1,2,3] : pagedVendors).map((vendor: any, i: number) => (
+                  loading ? (
+                    <div key={i} className="h-40 bg-charcoal-100 rounded-2xl animate-pulse" />
+                  ) : (
+                    <article key={vendor.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col sm:flex-row border-0 sm:border sm:border-charcoal-100">
+                      {/* Image */}
+                      <Link href={`/vendors/${vendor.id}`} className="sm:w-48 h-44 sm:h-auto flex-shrink-0 overflow-hidden relative">
+                        <img
+                          src={vendor.imageUrl}
+                          alt={vendor.name}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        />
+                        {(() => {
+                          const tier = (vendor.subscriptionTier || 'free') as SubscriptionTier;
+                          const badge = TIER_BADGE[tier];
+                          return badge ? (
+                            <span className={`absolute top-2 left-2 px-2 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1 ${badge.classes}`}>
+                              <Crown className="w-2.5 h-2.5" />{badge.label}
+                            </span>
+                          ) : null;
+                        })()}
+                      </Link>
+
+                      {/* Content */}
+                      <div className="flex-1 p-5 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between mb-1">
+                            <Link href={`/vendors/${vendor.id}`}>
+                              <h3 className="font-serif text-heading-md text-charcoal-900 hover:text-rose-600 transition-colors">
+                                {vendor.name}
+                              </h3>
+                            </Link>
+                            <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-rose-50 transition-colors ml-2 flex-shrink-0">
+                              <Heart className="w-4 h-4 text-charcoal-400 hover:text-rose-500" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(vendor.rating) ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`} />
+                              ))}
+                            </div>
+                            <span className="text-sm font-semibold text-charcoal-900">{vendor.rating}</span>
+                            <span className="text-sm text-charcoal-500">({vendor.reviewCount})</span>
+                            <span className="text-charcoal-300">·</span>
+                            <span className="text-sm text-charcoal-500 flex items-center gap-1">
+                              <MapPin className="w-3 h-3" /> {vendor.location}
+                            </span>
+                          </div>
+                          <p className="text-sm text-charcoal-600 line-clamp-2 leading-relaxed">
+                            {vendor.description}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-charcoal-100 gap-2">
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className="text-sm text-charcoal-700 flex items-center gap-1.5 font-medium">
+                              À partir de <span className="text-charcoal-900 font-semibold">{vendor.startingPrice}</span>
+                            </span>
+                            {vendor.hasPromo && (
+                              <span className="hidden sm:flex text-xs text-rose-600 items-center gap-1">
+                                <Tag className="w-3 h-3" /> 1 promotion
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-end gap-2 flex-shrink-0">
+                            <span className="hidden sm:flex text-xs text-charcoal-500 items-center gap-1">
+                              <Zap className="w-3 h-3 text-amber-500" /> Réponse en {vendor.responseTime}
+                            </span>
+                            <Link
+                              href={`/vendors/${vendor.id}`}
+                              className="group inline-flex items-center justify-center gap-1.5 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-3 sm:px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-shrink-0"
+                            >
+                              <span className="hidden sm:inline">Voir le profil</span>
+                              <span className="sm:hidden text-xs">Voir profil</span>
+                              <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200 flex-shrink-0">
+                                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-rose-500 group-hover:text-white animate-bounce" />
+                              </span>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <section className="py-16 px-4 bg-white">
         <div className="max-w-4xl mx-auto text-center">
