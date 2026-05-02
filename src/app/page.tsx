@@ -187,7 +187,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 lg:gap-4" style={{ height: 'auto' }}>
             <Link href="/inspiration" className="group lg:col-span-3 relative overflow-hidden block" style={{ height: 'clamp(280px, 50vw, 540px)' }}>
               <img
-                src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=900"
+                src="https://images.pexels.com/photos/574011/pexels-photo-574011.jpeg"
                 alt="Mariage Champêtre en Provence"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
@@ -203,7 +203,7 @@ export default function HomePage() {
             <div className="lg:col-span-2 flex flex-col gap-3 lg:gap-4">
               <Link href="/inspiration" className="group relative overflow-hidden block flex-1" style={{ height: 'clamp(200px, 25vw, 260px)' }}>
                 <img
-                  src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=700"
+                  src="https://images.pexels.com/photos/33642063/pexels-photo-33642063.jpeg"
                   alt="Élégance Parisienne"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
@@ -228,12 +228,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end">
+          {/* <div className="mt-8 flex justify-end">
             <Link href="/inspiration" className="inline-flex items-center gap-2 text-[0.75rem] font-medium tracking-[0.08em] uppercase text-charcoal-500 hover:text-charcoal-900 transition-colors group">
               Explorer la galerie
               <span className="h-px w-6 bg-charcoal-400 group-hover:w-10 transition-all duration-300" />
             </Link>
-          </div>
+          </div> */}
         </div>
       </section>
 
