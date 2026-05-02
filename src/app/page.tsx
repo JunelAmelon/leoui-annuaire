@@ -77,9 +77,8 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 pt-16 pb-20 sm:pt-20 sm:pb-24 flex items-center" style={{ minHeight: '100svh' }}>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 pt-2 pb-20 sm:pt-4 sm:pb-24 flex items-center" style={{ minHeight: '100svh' }}>
           <div className="w-full max-w-3xl">
-            <p className="label-xs text-white/70 mb-5 tracking-[0.14em]">La maison du mariage en France</p>
             <h1
               className="font-serif text-white mb-6"
               style={{
