@@ -215,6 +215,77 @@ export default function VendorProfileDetailView({
               </div>
             )}
 
+            {/* Mobile Vendor Info Section - appears after videos */}
+            <div className="lg:hidden mt-6 pb-4 border-b border-charcoal-200">
+              <h1 className="font-display text-[1.6rem] leading-tight text-charcoal-900 mb-1">{vendor.name}</h1>
+              {vendor.tagline && <p className="text-sm text-charcoal-500 italic mb-2">{vendor.tagline}</p>}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${i < Math.round(avgRating) ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`}
+                    />
+                  ))}
+                </div>
+                <span className="font-semibold text-charcoal-900">{avgRating.toFixed(1)}</span>
+                <span className="text-charcoal-400">·</span>
+                <button
+                  className="text-charcoal-600 underline underline-offset-2 hover:text-rose-600 text-sm"
+                  onClick={() => setActiveTab('avis')}
+                >
+                  {reviews.length} Avis
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 text-body-sm text-charcoal-600 mb-1">
+                <MapPin className="w-4 h-4 text-charcoal-400" />
+                <span>{vendor.location}</span>
+              </div>
+              {vendor.category && (
+                <div className="flex items-center gap-1.5 text-body-sm text-charcoal-500 mb-3">
+                  <Tag className="w-4 h-4 text-charcoal-400" />
+                  <span>{vendor.category}</span>
+                </div>
+              )}
+
+              {vendor.startingPrice && (
+                <div className="bg-rose-50 p-5 mb-4 border-l-4 border-rose-500 mt-4">
+                  <p className="text-xs text-rose-600 uppercase tracking-wider mb-1">Tarif indicatif</p>
+                  <p className="font-serif text-2xl text-charcoal-900">{vendor.startingPrice}</p>
+                  <p className="text-xs text-charcoal-500 mt-1">Sur devis personnalisé</p>
+                </div>
+              )}
+
+              {vendor.responseTime && (
+                <div className="flex items-center gap-2 mb-4 text-body-sm text-charcoal-600">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <span>Répond en {vendor.responseTime}</span>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide mb-3"
+              >
+                Envoyer un message
+              </button>
+
+              <div className="space-y-3 pt-3 border-t border-charcoal-100">
+                {vendor.weddingsCompleted > 0 && (
+                  <div className="flex items-center gap-2.5 text-body-sm text-charcoal-700">
+                    <Users className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>Plus de {vendor.weddingsCompleted} couples</span>
+                  </div>
+                )}
+                {vendor.experience && (
+                  <div className="flex items-center gap-2.5 text-body-sm text-charcoal-700">
+                    <TrendingUp className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>{vendor.experience} d'expérience</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Tabs */}
             <div className="mt-4 lg:mt-6 border-b border-charcoal-200 w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="flex gap-1 min-w-max">
@@ -618,8 +689,8 @@ export default function VendorProfileDetailView({
             </div>
           </div>
 
-          {/* RIGHT STICKY SIDEBAR */}
-          <div className="w-full lg:w-[310px] flex-shrink-0 order-last lg:order-last">
+          {/* RIGHT STICKY SIDEBAR - Desktop only */}
+          <div className="hidden lg:block w-full lg:w-[310px] flex-shrink-0 order-last lg:order-last">
             <div className="sticky top-24">
               <h1 className="font-display text-[1.6rem] leading-tight text-charcoal-900 mb-1">{vendor.name}</h1>
               {vendor.tagline && <p className="text-sm text-charcoal-500 italic mb-2">{vendor.tagline}</p>}
