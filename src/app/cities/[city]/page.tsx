@@ -62,6 +62,8 @@ export default function CityPage({ params }: CityPageProps) {
   const [hasPromo, setHasPromo] = useState(false);
   const [hasAward, setHasAward] = useState(false);
   const [priceFilters, setPriceFilters] = useState<string[]>([]);
+  const [serviceFilters, setServiceFilters] = useState<string[]>([]);
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 6;
@@ -100,9 +102,14 @@ export default function CityPage({ params }: CityPageProps) {
   }, [city.name]);
 
   const categories = ['Tous', 'Photographes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Vidéastes'];
+  const priceOptions = ['Moins de 500€', '500€ - 1 000€', '1 000€ - 1 500€', 'Plus de 1 500€'];
+  const serviceOptions = ['Séance d\'engagement', 'Album photo', 'Photos haute résolution', 'Livraison express'];
 
   const togglePrice = (opt: string) => {
     setPriceFilters(prev => prev.includes(opt) ? prev.filter(p => p !== opt) : [...prev, opt]);
+  };
+  const toggleService = (opt: string) => {
+    setServiceFilters(prev => prev.includes(opt) ? prev.filter(p => p !== opt) : [...prev, opt]);
   };
 
   const filteredVendors = allVendors
@@ -112,12 +119,21 @@ export default function CityPage({ params }: CityPageProps) {
       const matchPromo = !hasPromo || v.hasPromo;
       const matchAward = !hasAward || v.hasAward;
       const matchPrice = priceFilters.length === 0 || priceFilters.some(opt => {
-        if (opt === '€') return (parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0) < 1000;
-        if (opt === '€€') { const p = parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0; return p >= 1000 && p < 3000; }
-        if (opt === '€€€') return (parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0) >= 3000;
+        const p = parseInt((v.startingPrice || '0').replace(/\D/g, '')) || 0;
+        if (opt === 'Moins de 500€') return p > 0 && p < 500;
+        if (opt === '500€ - 1 000€') return p >= 500 && p < 1000;
+        if (opt === '1 000€ - 1 500€') return p >= 1000 && p < 1500;
+        if (opt === 'Plus de 1 500€') return p >= 1500;
+        if (opt === '€') return p > 0 && p < 1000;
+        if (opt === '€€') return p >= 1000 && p < 3000;
+        if (opt === '€€€') return p >= 3000;
         return true;
       });
-      return matchCat && matchSearch && matchPromo && matchAward && matchPrice;
+      const matchService = serviceFilters.length === 0 || serviceFilters.some(s => 
+        (v.services || []).includes(s) || (v.description || '').toLowerCase().includes(s.toLowerCase())
+      );
+      const matchRating = !ratingFilter || (v.rating || 0) >= ratingFilter;
+      return matchCat && matchSearch && matchPromo && matchAward && matchPrice && matchService && matchRating;
     })
     .sort((a, b) => {
       if (sortBy === 'note') return (b.rating || 0) - (a.rating || 0);
@@ -236,15 +252,56 @@ export default function CityPage({ params }: CityPageProps) {
                 <ChevronDown className="w-4 h-4" />
               </button>
               <div className="space-y-2">
-                {['€', '€€', '€€€'].map(opt => (
+                {priceOptions.map(opt => (
                   <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={priceFilters.includes(opt)}
                       onChange={() => togglePrice(opt)}
-                      className="w-4 h-4 rounded border-charcoal-300 text-rose-600 focus:ring-rose-200"
+                      className="w-4 h-4 rounded border-charcoal-300 text-rose-600 accent-rose-600"
                     />
                     <span className="text-sm text-charcoal-700">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-charcoal-100 pt-5 mb-5">
+              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+                <span>Services</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="space-y-2">
+                {serviceOptions.map(opt => (
+                  <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={serviceFilters.includes(opt)}
+                      onChange={() => toggleService(opt)}
+                      className="w-4 h-4 rounded border-charcoal-300 text-rose-600 accent-rose-600"
+                    />
+                    <span className="text-sm text-charcoal-700">{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-charcoal-100 pt-5">
+              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+                <span>Note minimum</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="space-y-2">
+                {[{label: '4.5+ étoiles', val: 4.5}, {label: '4.0+ étoiles', val: 4.0}, {label: '3.5+ étoiles', val: 3.5}].map(opt => (
+                  <label key={opt.label} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rating"
+                      checked={ratingFilter === opt.val}
+                      onChange={() => setRatingFilter(ratingFilter === opt.val ? null : opt.val)}
+                      className="w-4 h-4 border-charcoal-300 text-rose-600 accent-rose-600"
+                    />
+                    <span className="text-sm text-charcoal-700">{opt.label}</span>
                   </label>
                 ))}
               </div>

@@ -632,10 +632,10 @@ export default function VendorProfileDetailView({
               )}
 
               {vendor.startingPrice && (
-                <div className="bg-ivory-50 p-5 mb-4 border-l-4 border-ivory-600">
-                  <p className="text-xs text-ivory-600 uppercase tracking-wider mb-1">Tarif indicatif</p>
-                  <p className="font-serif text-2xl text-ivory-900">{vendor.startingPrice}</p>
-                  <p className="text-xs text-ivory-500 mt-1">Sur devis personnalisé</p>
+                <div className="bg-rose-50 p-5 mb-4 border-l-4 border-rose-500">
+                  <p className="text-xs text-rose-600 uppercase tracking-wider mb-1">Tarif indicatif</p>
+                  <p className="font-serif text-2xl text-charcoal-900">{vendor.startingPrice}</p>
+                  <p className="text-xs text-charcoal-500 mt-1">Sur devis personnalisé</p>
                 </div>
               )}
 
@@ -649,14 +649,14 @@ export default function VendorProfileDetailView({
               <div className="flex gap-3 mb-5">
                 <button
                   onClick={() => setShowContactModal(true)}
-                  className="flex-1 bg-ivory-800 hover:bg-ivory-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide"
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide"
                 >
                   Envoyer un message
                 </button>
                 {vendor.phone ? (
                   <a
                     href={`tel:${vendor.phone}`}
-                    className="flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-ivory-800 text-ivory-800 hover:bg-ivory-50 transition-colors flex-shrink-0"
+                    className="flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
                     title={`Appeler ${vendor.name}`}
                   >
                     <Phone className="w-4 h-4" />
@@ -693,17 +693,17 @@ export default function VendorProfileDetailView({
                 Partager ce prestataire
               </button>
 
-              <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-ivory-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+              <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-rose-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
                 <button
                   onClick={() => setShowContactModal(true)}
-                  className="flex-1 bg-ivory-800 hover:bg-ivory-700 text-white font-medium py-3.5 transition-colors text-sm tracking-wide"
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 transition-colors text-sm tracking-wide"
                 >
                   Contacter ce prestataire
                 </button>
                 {vendor.phone ? (
                   <a
                     href={`tel:${vendor.phone}`}
-                    className="px-5 py-3.5 bg-white border-2 border-ivory-800 text-ivory-800 hover:bg-ivory-50 transition-colors flex-shrink-0 font-medium text-sm flex items-center gap-2"
+                    className="px-5 py-3.5 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0 font-medium text-sm flex items-center gap-2"
                   >
                     <Phone className="w-4 h-4" />
                     Appeler

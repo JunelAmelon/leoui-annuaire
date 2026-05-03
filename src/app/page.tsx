@@ -833,7 +833,7 @@ export default function HomePage() {
             </div>
             <Link
               href="/signup"
-              className="bg-ivory-800 hover:bg-ivory-700 text-white font-medium px-5 py-2.5 text-sm transition-colors whitespace-nowrap"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-5 py-2.5 text-sm transition-colors whitespace-nowrap"
             >
               Commencer
             </Link>
