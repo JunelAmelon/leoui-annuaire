@@ -20,6 +20,8 @@ import {
   Instagram,
   Image as ImageIcon,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Award,
 } from 'lucide-react';
 
@@ -90,6 +92,8 @@ export default function VendorProfileDetailView({
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(Boolean(existingClientReview));
+  const [showGallery, setShowGallery] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const photos: string[] = vendor.images?.length ? vendor.images : FALLBACK_PHOTOS;
   const faqs: { q: string; a: string }[] = vendor.faqs || [];
@@ -170,7 +174,7 @@ export default function VendorProfileDetailView({
                     <div className="overflow-hidden">
                       <img src={photos[2] || photos[0]} alt="Photo 3" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     </div>
-                    <div className="overflow-hidden relative">
+                    <div className="overflow-hidden relative cursor-pointer" onClick={() => { setCurrentPhotoIndex(3); setShowGallery(true); }}>
                       <img src={photos[3] || photos[0]} alt="Photo 4" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-ivory-900/60 flex items-center justify-center">
                         <span className="flex items-center gap-1.5 text-white text-sm font-medium">
@@ -833,7 +837,7 @@ export default function VendorProfileDetailView({
                 <button
                   type="submit"
                   disabled={sending || isContactDisabled}
-                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-3.5 transition-colors flex items-center justify-center gap-2 mt-2"
                 >
                   <Send className="w-4 h-4" />
                   {sending ? 'Envoi…' : 'Envoyer'}
@@ -846,6 +850,63 @@ export default function VendorProfileDetailView({
 
       {/* ensures vendorId is referenced (props parity) */}
       <span className="hidden">{vendorId}</span>
+
+      {/* Photo Gallery Lightbox */}
+      {showGallery && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col" onClick={() => setShowGallery(false)}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 text-white">
+            <span className="text-sm font-medium">{currentPhotoIndex + 1} / {photos.length}</span>
+            <button onClick={() => setShowGallery(false)} className="w-10 h-10 flex items-center justify-center hover:bg-white/10 transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Main Image */}
+          <div className="flex-1 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={photos[currentPhotoIndex]}
+              alt={`Photo ${currentPhotoIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-center gap-4 p-4">
+            <button
+              onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(i => i > 0 ? i - 1 : photos.length - 1); }}
+              className="w-12 h-12 flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-30"
+              disabled={photos.length <= 1}
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(i => i < photos.length - 1 ? i + 1 : 0); }}
+              className="w-12 h-12 flex items-center justify-center text-white hover:bg-white/10 transition-colors disabled:opacity-30"
+              disabled={photos.length <= 1}
+            >
+              <ChevronRight className="w-8 h-8" />
+            </button>
+          </div>
+
+          {/* Thumbnails */}
+          <div className="p-4 pt-0 overflow-x-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex gap-2 justify-center">
+              {photos.map((photo, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentPhotoIndex(idx)}
+                  className={`w-16 h-16 flex-shrink-0 overflow-hidden border-2 transition-all ${
+                    idx === currentPhotoIndex ? 'border-rose-500' : 'border-transparent opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={photo} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

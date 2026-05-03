@@ -112,11 +112,11 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
           {/* Logo */}
           <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
             <Link href="/"
-              className="w-10 h-10 flex-shrink-0 bg-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-700 transition-colors">
-              <Heart className="w-4 h-4 text-white fill-white" />
+              className="w-10 h-10 flex-shrink-0 border border-rose-600 flex items-center justify-center hover:bg-rose-600 transition-colors group">
+              <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors" />
             </Link>
             {!collapsed && (
-              <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui.net Pro</span>
+              <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui.net</span>
             )}
           </div>
 
@@ -130,14 +130,14 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                 <div key={item.href} className="relative group">
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-xl transition-all duration-150 ${
+                    className={`flex items-center gap-3 transition-all duration-150 ${
                       collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'
                     } ${active ? 'bg-rose-600' : 'hover:bg-rose-50'}`}
                   >
                     <div className="relative flex-shrink-0">
                       <item.icon className={`w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
                       {item.href.includes('notifications') && unreadNotifCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-rose-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 bg-rose-500 text-white text-[8px] font-bold flex items-center justify-center leading-none">
                           {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
                         </span>
                       )}
@@ -154,7 +154,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                     )}
                   </Link>
                   {collapsed && (
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-rose-700 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-rose-700 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                       {item.label}
                       <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-y-[5px] border-y-transparent border-r-[5px] border-r-rose-700" />
                     </div>
@@ -172,7 +172,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
             {/* Paramètres */}
             <div className="relative group">
               <Link href="/espace-prestataire/parametres"
-                className={`flex items-center gap-3 rounded-xl transition-all ${
+                className={`flex items-center gap-3 transition-all ${
                   collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'
                 } ${pathname === '/espace-prestataire/parametres' ? 'bg-rose-600' : 'hover:bg-rose-50'}`}>
                 <Settings className={`w-[17px] h-[17px] flex-shrink-0 ${pathname === '/espace-prestataire/parametres' ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />

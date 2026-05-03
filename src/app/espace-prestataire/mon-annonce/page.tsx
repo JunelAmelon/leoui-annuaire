@@ -117,6 +117,10 @@ export default function MonAnnoncePage() {
   const [sections, setSections] = useState({ photos: true, tags: false, links: false, faqs: false, team: false, packages: false, reportages: false });
   const toggleSection = (s: keyof typeof sections) => setSections(p => ({ ...p, [s]: !p[s] }));
 
+  // Drag and drop state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -197,6 +201,48 @@ export default function MonAnnoncePage() {
     }
   };
   const removeImage = (url: string) => setForm(p => ({ ...p, images: p.images.filter(x => x !== url) }));
+
+  // Drag and drop handlers
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Reorder images
+    const newImages = [...form.images];
+    const [draggedImage] = newImages.splice(draggedIndex, 1);
+    newImages.splice(dropIndex, 0, draggedImage);
+
+    setForm(p => ({ ...p, images: newImages }));
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+
+    // Auto-save after reordering
+    if (user && announcementId) {
+      try {
+        await updateDocument('vendors', announcementId, { images: newImages, updatedAt: new Date().toISOString() });
+        toast.success('Ordre des photos mis à jour');
+      } catch {
+        toast.error('Erreur lors de la sauvegarde de l\'ordre');
+      }
+    }
+  };
 
   const handlePhotoUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -409,13 +455,26 @@ export default function MonAnnoncePage() {
               </button>
               {sections.photos && (
                 <>
-                  <p className="text-xs text-charcoal-400 mb-4">La première image sera la photo principale. Importez depuis votre appareil ou collez une URL.</p>
+                  <p className="text-xs text-charcoal-400 mb-4">Glissez-déposez pour réorganiser. La première image sera la photo principale. Importez depuis votre appareil ou collez une URL.</p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-4">
                     {form.images.map((img, i) => (
-                      <div key={i} className="relative group aspect-square rounded-xl overflow-hidden bg-stone-100">
-                        <img src={img} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      <div
+                        key={img + i}
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={(e) => handleDragOver(e, i)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, i)}
+                        className={`relative group aspect-square rounded-xl overflow-hidden bg-stone-100 cursor-move border-2 transition-all ${
+                          dragOverIndex === i ? 'border-rose-500 scale-105' : 'border-transparent'
+                        } ${draggedIndex === i ? 'opacity-50' : 'opacity-100'}`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover pointer-events-none" onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                         {i === 0 && <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black/60 text-white text-[10px] rounded-md">Principale</span>}
-                        <button onClick={() => removeImage(img)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-1 left-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center text-[10px] font-medium">
+                          {i + 1}
+                        </div>
+                        <button onClick={() => removeImage(img)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
                           <X className="w-3 h-3" />
                         </button>
                       </div>
