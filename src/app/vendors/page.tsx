@@ -181,7 +181,7 @@ function VendorsPageContent() {
                     className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all" />
                 )}
               </div>
-              <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+              <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 text-sm transition-colors">
                 Rechercher
               </button>
             </div>
@@ -197,7 +197,7 @@ function VendorsPageContent() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                className={`px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-charcoal-900 text-white'
                     : 'bg-charcoal-50 text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'

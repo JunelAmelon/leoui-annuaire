@@ -107,78 +107,71 @@ export default function LoginPage() {
       </div>
 
       {/* RIGHT — form panel */}
-      <div className="flex-1 flex flex-col justify-center px-6 sm:px-10 lg:px-16 xl:px-20 py-12 bg-white overflow-y-auto">
-
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-10 lg:px-14 py-10 bg-white overflow-y-auto">
         {/* Mobile logo */}
-        <div className="lg:hidden mb-12 flex items-center gap-2.5">
-          <div className="w-6 h-6 border border-rose-600 flex items-center justify-center">
-            <Heart className="w-3 h-3 text-rose-600 fill-rose-600" />
+        <div className="lg:hidden mb-8 flex items-center gap-3">
+          <div className="w-9 h-9 bg-rose-50 flex items-center justify-center">
+            <Heart className="w-5 h-5 text-rose-600 fill-rose-200" />
           </div>
-          <span className="font-serif text-lg tracking-wide text-charcoal-900">LeOui.net</span>
+          <span className="font-display text-xl text-charcoal-900">LeOui.net</span>
         </div>
 
-        <div className="max-w-[22rem] w-full mx-auto">
-
-          {/* Heading */}
-          <p className="label-xs text-champagne-600 mb-4 tracking-[0.12em]">— Connexion</p>
-          <h1
-            className="font-serif text-charcoal-900 mb-2"
-            style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', fontWeight: 300, lineHeight: 1.08, letterSpacing: '-0.02em' }}
-          >
+        <div className="max-w-md w-full mx-auto">
+          <h1 className="font-display text-[2rem] leading-tight text-charcoal-900 mb-2">
             Bon retour
           </h1>
-          <p className="text-charcoal-500 text-sm font-light leading-relaxed mb-10">
+          <p className="text-charcoal-500 text-sm mb-7">
             Continuez la planification de votre mariage.
           </p>
 
-          {/* Error */}
           {error && (
-            <div className="border-l-2 border-rose-600 pl-4 py-2 bg-rose-50 text-sm text-rose-800 mb-8 font-sans font-light">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
               {error}
             </div>
           )}
 
-          {/* Form */}
-          <form className="space-y-8" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Email */}
             <div>
-              <label className="label-xs text-charcoal-500 block mb-2.5 tracking-[0.1em]">
-                Adresse email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input-field text-sm"
-                placeholder="sophie@email.com"
-              />
+              <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Adresse email</label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                  placeholder="votre@email.com"
+                />
+              </div>
             </div>
 
             {/* Password */}
             <div>
-              <div className="flex justify-between items-center mb-2.5">
-                <label className="label-xs text-charcoal-500 tracking-[0.1em]">Mot de passe</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-xs font-medium text-charcoal-700">Mot de passe</label>
                 <Link
                   href="/forgot-password"
-                  className="text-[0.7rem] font-medium text-charcoal-400 hover:text-charcoal-700 transition-colors tracking-wide"
+                  className="text-xs font-medium text-charcoal-400 hover:text-charcoal-700 transition-colors"
                 >
                   Oublié ?
                 </Link>
               </div>
               <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input-field pr-10 text-sm"
+                  className="w-full pl-10 pr-11 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal-400 hover:text-charcoal-700 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-charcoal-400 hover:text-charcoal-700"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -186,67 +179,59 @@ export default function LoginPage() {
             </div>
 
             {/* Remember */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 pt-1">
               <input
                 id="remember"
                 type="checkbox"
-                className="w-3.5 h-3.5 border border-charcoal-300 accent-rose-600"
+                className="w-4 h-4 border-charcoal-300 accent-rose-600 flex-shrink-0"
               />
-              <label htmlFor="remember" className="text-xs text-charcoal-500 font-light">Se souvenir de moi</label>
+              <label htmlFor="remember" className="text-xs text-charcoal-500 leading-relaxed">Se souvenir de moi</label>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary py-3.5 justify-center disabled:opacity-50"
+              className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold py-3.5 transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? 'Connexion…' : (<>Se connecter <ArrowRight className="w-3.5 h-3.5" /></>)}
+              {loading ? 'Connexion…' : (<>Se connecter <ArrowRight className="w-4 h-4" /></>)}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-8">
+          <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-charcoal-100" />
-            <span className="label-xs text-charcoal-300 tracking-[0.1em]">ou</span>
+            <span className="text-xs text-charcoal-400 uppercase tracking-wider">ou</span>
             <div className="flex-1 h-px bg-charcoal-100" />
           </div>
 
-          {/* Social */}
-          <div className="mb-10">
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={socialLoading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-charcoal-200 hover:bg-charcoal-50 transition-colors text-xs font-medium text-charcoal-700 tracking-wide disabled:opacity-60"
-            >
-              {socialLoading ? <span className="w-4 h-4 border-2 border-charcoal-300 border-t-charcoal-700 rounded-full animate-spin" /> : (
-                <Chrome className="w-4 h-4 flex-shrink-0" />
-              )}
-              Continuer avec Google
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={socialLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-charcoal-200 hover:bg-charcoal-50 transition-colors text-sm font-medium text-charcoal-700 disabled:opacity-60"
+          >
+            {socialLoading ? <span className="w-4 h-4 border-2 border-charcoal-300 border-t-charcoal-700 rounded-full animate-spin" /> : (
+              <Chrome className="w-4 h-4" />
+            )}
+            Continuer avec Google
+          </button>
 
-          {/* Sign up link */}
-          <p className="text-center text-xs text-charcoal-500 font-light">
+          <p className="text-center text-sm text-charcoal-500 mt-6">
             Pas encore de compte ?{' '}
-            <Link href="/signup" className="text-rose-600 font-medium hover:text-rose-700 transition-colors">
-              S'inscrire gratuitement
-            </Link>
+            <Link href="/signup" className="text-rose-600 font-semibold hover:underline">S'inscrire gratuitement</Link>
           </p>
 
-          {/* Vendor CTA */}
-          <div className="mt-8 pt-8 border-t border-charcoal-100 flex items-center gap-4">
-            <div className="w-8 h-8 border border-champagne-300 flex items-center justify-center flex-shrink-0">
-              <Store className="w-3.5 h-3.5 text-champagne-600" />
+          {/* Vendor portal CTA */}
+          <div className="mt-6 p-4 bg-charcoal-50 border border-charcoal-100 flex items-center gap-4">
+            <div className="w-10 h-10 bg-champagne-100 flex items-center justify-center flex-shrink-0">
+              <Store className="w-5 h-5 text-champagne-700" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-charcoal-900">Vous êtes un prestataire ?</p>
-              <p className="text-[0.7rem] text-charcoal-400 font-light mt-0.5">Accédez à votre espace professionnel</p>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-charcoal-900">Vous êtes un prestataire ?</p>
+              <p className="text-xs text-charcoal-500">Accédez à votre espace professionnel</p>
             </div>
             <Link
               href="/vendors/join"
-              className="text-[0.7rem] font-medium text-champagne-700 hover:text-champagne-800 transition-colors whitespace-nowrap tracking-wide"
+              className="text-xs font-semibold text-champagne-700 hover:underline whitespace-nowrap"
             >
               Portail pro →
             </Link>

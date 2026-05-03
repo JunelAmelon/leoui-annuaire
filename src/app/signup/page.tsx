@@ -153,7 +153,7 @@ export default function SignupPage() {
           </p>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
+            <div className="p-3 bg-red-50 border border-red-200 text-sm text-red-700 mb-4">
               {error}
             </div>
           )}
@@ -171,7 +171,7 @@ export default function SignupPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 rounded-xl text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function SignupPage() {
                     placeholder="Thomas"
                     value={partner}
                     onChange={(e) => setPartner(e.target.value)}
-                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 rounded-xl text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-3 py-3 border border-charcoal-200 rounded-xl text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                  className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                 />
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function SignupPage() {
                   type="date"
                   value={weddingDate}
                   onChange={(e) => setWeddingDate(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3 border border-charcoal-200 rounded-xl text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all text-charcoal-700"
+                  className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all text-charcoal-700"
                 />
               </div>
             </div>
@@ -228,7 +228,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-11 py-3 border border-charcoal-200 rounded-xl text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                  className="w-full pl-10 pr-11 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                 />
                 <button
                   type="button"
@@ -246,7 +246,7 @@ export default function SignupPage() {
                 type="checkbox"
                 checked={terms}
                 onChange={(e) => setTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-charcoal-300 accent-rose-600 flex-shrink-0"
+                className="mt-0.5 w-4 h-4 border-charcoal-300 accent-rose-600 flex-shrink-0"
               />
               <label htmlFor="terms" className="text-xs text-charcoal-500 leading-relaxed">
                 J'accepte les{' '}
@@ -259,7 +259,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold py-3.5 transition-colors flex items-center justify-center gap-2"
             >
               {loading ? 'Création du compte...' : (<>Créer mon compte gratuit <ArrowRight className="w-4 h-4" /></>)}
             </button>
@@ -275,7 +275,7 @@ export default function SignupPage() {
             type="button"
             onClick={handleGoogle}
             disabled={socialLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-charcoal-200 rounded-xl hover:bg-charcoal-50 transition-colors text-sm font-medium text-charcoal-700 disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-charcoal-200 hover:bg-charcoal-50 transition-colors text-sm font-medium text-charcoal-700 disabled:opacity-60"
           >
             {socialLoading ? <span className="w-4 h-4 border-2 border-charcoal-300 border-t-charcoal-700 rounded-full animate-spin" /> : (
               <Chrome className="w-4 h-4" />
@@ -289,8 +289,8 @@ export default function SignupPage() {
           </p>
 
           {/* Vendor portal CTA */}
-          <div className="mt-6 p-4 bg-charcoal-50 rounded-2xl border border-charcoal-100 flex items-center gap-4">
-            <div className="w-10 h-10 bg-champagne-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="mt-6 p-4 bg-charcoal-50 border border-charcoal-100 flex items-center gap-4">
+            <div className="w-10 h-10 bg-champagne-100 flex items-center justify-center flex-shrink-0">
               <Store className="w-5 h-5 text-champagne-700" />
             </div>
             <div className="flex-1">

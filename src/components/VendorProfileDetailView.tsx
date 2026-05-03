@@ -656,11 +656,11 @@ export default function VendorProfileDetailView({
                 {vendor.phone ? (
                   <a
                     href={`tel:${vendor.phone}`}
-                    className="flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+                    className="flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0 font-medium text-sm"
                     title={`Appeler ${vendor.name}`}
                   >
                     <Phone className="w-4 h-4" />
-                    <span className="text-sm font-medium">Appeler</span>
+                    Appeler
                   </a>
                 ) : null}
               </div>

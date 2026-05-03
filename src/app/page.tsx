@@ -267,25 +267,25 @@ export default function HomePage() {
             </h2>
           </div>
 
-          {/* Asymmetric: 1 tall left + 2 stacked right */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 lg:gap-4" style={{ height: 'auto' }}>
-            <Link href="/inspiration" className="group lg:col-span-3 relative overflow-hidden block" style={{ height: 'clamp(280px, 50vw, 540px)' }}>
+          {/* Mobile: 3 equal cards stacked / Desktop: asymmetric grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 lg:gap-4">
+            <Link href="/inspiration" className="group lg:col-span-3 relative overflow-hidden block aspect-[4/3] lg:aspect-auto lg:h-[clamp(280px,50vw,540px)]">
               <img
                 src="https://images.pexels.com/photos/574011/pexels-photo-574011.jpeg"
                 alt="Mariage Champêtre en Provence"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 overlay-warm" />
-              <div className="absolute bottom-0 left-0 p-8">
-                <p className="label-xs text-white/50 mb-2">Tendances</p>
-                <h3 className="font-serif text-white text-2xl font-light" style={{ letterSpacing: '-0.01em' }}>
-                  Mariage champêtre<br />en Provence
+              <div className="absolute bottom-0 left-0 p-6 lg:p-8">
+                <p className="label-xs text-white/50 mb-1.5 lg:mb-2">Tendances</p>
+                <h3 className="font-serif text-white text-lg lg:text-2xl font-light" style={{ letterSpacing: '-0.01em' }}>
+                  Mariage champêtre<br className="hidden lg:block" /> en Provence
                 </h3>
               </div>
             </Link>
 
-            <div className="lg:col-span-2 flex flex-col gap-3 lg:gap-4" style={{ height: 'clamp(280px, 50vw, 540px)' }}>
-              <Link href="/inspiration" className="group relative overflow-hidden block flex-1 min-h-0">
+            <div className="lg:col-span-2 flex flex-col gap-3 lg:gap-4 lg:h-[clamp(280px,50vw,540px)]">
+              <Link href="/inspiration" className="group relative overflow-hidden block aspect-[4/3] lg:flex-1 lg:min-h-0">
                 <img
                   src="https://images.pexels.com/photos/33642063/pexels-photo-33642063.jpeg"
                   alt="Élégance Parisienne"
@@ -297,7 +297,7 @@ export default function HomePage() {
                   <h3 className="font-serif text-white text-lg font-light">Élégance au château</h3>
                 </div>
               </Link>
-              <Link href="/inspiration" className="group relative overflow-hidden block flex-1 min-h-0">
+              <Link href="/inspiration" className="group relative overflow-hidden block aspect-[4/3] lg:flex-1 lg:min-h-0">
                 <img
                   src="https://images.pexels.com/photos/26972546/pexels-photo-26972546.jpeg"
                   alt="Romantisme bord de mer"
@@ -833,7 +833,7 @@ export default function HomePage() {
             </div>
             <Link
               href="/signup"
-              className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-5 py-2.5 text-sm transition-colors whitespace-nowrap"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-5 py-2.5 text-sm transition-colors whitespace-nowrap tracking-wide"
             >
               Commencer
             </Link>

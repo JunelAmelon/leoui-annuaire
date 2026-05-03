@@ -224,7 +224,7 @@ export default function HomeFeaturedVendors() {
               </div>
 
               {/* CTA Button */}
-              <div className="w-full bg-rose-600 hover:bg-rose-700 text-white text-center font-medium py-3 transition-colors">
+              <div className="w-full bg-rose-600 hover:bg-rose-700 text-white text-center font-medium py-3 transition-colors tracking-wide">
                 Voir le profil
               </div>
 
