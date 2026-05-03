@@ -135,45 +135,49 @@ export default function VendorProfileDetailView({
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* LEFT COLUMN */}
           <div className="flex-1 min-w-0 w-full overflow-x-hidden">
-            {/* Photo Gallery — mobile: horizontal scroll strip; desktop: editorial grid */}
-            <div className="sm:hidden w-full overflow-hidden rounded-2xl">
-              <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-                {photos.map((p, i) => (
-                  <div key={i} className="flex-shrink-0 rounded-2xl overflow-hidden" style={{ width: '82vw', height: '220px', scrollSnapAlign: 'start' }}>
-                    <img src={p} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+            {/* Photo Gallery — elegant masonry style */}
+            <div className="sm:hidden w-full">
+              <div className="grid grid-cols-2 gap-1">
+                <div className="col-span-2 aspect-[16/10] overflow-hidden">
+                  <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover" />
+                </div>
+                {photos.slice(1, 3).map((p, i) => (
+                  <div key={i} className="aspect-square overflow-hidden">
+                    <img src={p} alt={`Photo ${i + 2}`} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="hidden sm:flex gap-2 h-80 lg:h-[460px] rounded-2xl overflow-hidden">
-              <div className="flex-[1.7] relative overflow-hidden">
-                <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-700" />
-              </div>
-              <div className="hidden sm:grid flex-1 grid-cols-2 grid-rows-2 gap-2 relative">
-                <div className="overflow-hidden">
-                  <img src={photos[1] || photos[0]} alt="Photo 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+            <div className="hidden sm:block">
+              <div className="grid grid-cols-12 gap-1">
+                {/* Main large image */}
+                <div className="col-span-7 row-span-2 aspect-[4/3] overflow-hidden">
+                  <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-700" />
                 </div>
-                <div className="overflow-hidden relative">
-                  <img src={photos[2] || photos[0]} alt="Photo 3" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+                {/* Side images */}
+                <div className="col-span-5 grid grid-rows-2 gap-1">
+                  <div className="aspect-[16/9] overflow-hidden relative">
+                    <img src={photos[1] || photos[0]} alt="Photo 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     <button
                       onClick={() => setIsFavorite((f) => !f)}
-                      className="w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-soft hover:bg-white transition-colors"
+                      className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors"
                     >
-                      <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'text-rose-600 fill-rose-600' : 'text-charcoal-600'}`} />
+                      <Heart className={`w-4 h-4 ${isFavorite ? 'text-rose-600 fill-rose-600' : 'text-ivory-700'}`} />
                     </button>
                   </div>
-                </div>
-                <div className="overflow-hidden">
-                  <img src={photos[3] || photos[0]} alt="Photo 4" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                </div>
-                <div className="overflow-hidden relative">
-                  <img src={photos[4] || photos[0]} alt="Photo 5" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute bottom-2 right-2 flex gap-1.5 z-10">
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-white/90 backdrop-blur-sm text-charcoal-700 text-xs font-medium rounded-lg shadow-soft">
-                      <ImageIcon className="w-3 h-3" /> {photos.length} photo{photos.length !== 1 ? 's' : ''}
-                    </span>
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="overflow-hidden">
+                      <img src={photos[2] || photos[0]} alt="Photo 3" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                    </div>
+                    <div className="overflow-hidden relative">
+                      <img src={photos[3] || photos[0]} alt="Photo 4" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-ivory-900/60 flex items-center justify-center">
+                        <span className="flex items-center gap-1.5 text-white text-sm font-medium">
+                          <ImageIcon className="w-4 h-4" /> +{photos.length - 3}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -245,26 +249,31 @@ export default function VendorProfileDetailView({
 
                   {packages.length > 0 && (
                     <>
-                      <h3 className="font-serif text-heading-lg text-charcoal-900 mb-4 mt-8">Formules & Tarifs</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                      <h3 className="font-serif text-xl text-ivory-900 mb-6 mt-8 pb-2 border-b border-ivory-200">Formules & Tarifs</h3>
+                      <div className="space-y-4 mb-6">
                         {packages.map((pkg, i) => (
                           <div
                             key={i}
-                            className={`border-2 rounded-xl p-6 ${
-                              pkg.popular ? 'bg-rose-50 border-rose-300' : 'bg-ivory-50 border-charcoal-200'
+                            className={`relative p-5 ${
+                              pkg.popular ? 'bg-ivory-800 text-white' : 'bg-ivory-50 border border-ivory-200'
                             }`}
                           >
                             {pkg.popular && (
-                              <span className="inline-block px-2.5 py-0.5 bg-rose-600 text-white text-xs font-semibold rounded-full mb-2">
-                                Populaire
-                              </span>
+                              <div className="absolute -top-3 left-5 px-3 py-1 bg-rose-500 text-white text-xs font-semibold uppercase tracking-wider">
+                                Recommandé
+                              </div>
                             )}
-                            <h4 className="font-semibold text-charcoal-900 mb-1">{pkg.name}</h4>
-                            {pkg.price && <p className="font-display text-heading-xl text-rose-600 mb-4">{pkg.price}</p>}
-                            <ul className="space-y-2">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className={`font-serif text-lg ${pkg.popular ? 'text-white' : 'text-ivory-900'}`}>{pkg.name}</h4>
+                              {pkg.price && (
+                                <p className={`font-serif text-xl ${pkg.popular ? 'text-white' : 'text-ivory-800'}`}>{pkg.price}</p>
+                              )}
+                            </div>
+                            <ul className={`space-y-2 pt-3 border-t ${pkg.popular ? 'border-white/20' : 'border-ivory-200'}`}>
                               {pkg.items?.map((item: string, j: number) => (
-                                <li key={j} className="flex items-center gap-2 text-body-sm text-charcoal-700">
-                                  <Check className="w-4 h-4 text-rose-500 flex-shrink-0" /> {item}
+                                <li key={j} className={`flex items-start gap-2 text-sm ${pkg.popular ? 'text-white/80' : 'text-ivory-700'}`}>
+                                  <span className={`w-1 h-1 rounded-full mt-2 flex-shrink-0 ${pkg.popular ? 'bg-white' : 'bg-ivory-600'}`}></span>
+                                  {item}
                                 </li>
                               ))}
                             </ul>
@@ -623,16 +632,10 @@ export default function VendorProfileDetailView({
               )}
 
               {vendor.startingPrice && (
-                <div className="bg-white border border-charcoal-200 rounded-xl p-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-champagne-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Award className="w-4 h-4 text-champagne-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-charcoal-500">Tarif à partir de</p>
-                      <p className="font-semibold text-charcoal-900 text-base">{vendor.startingPrice}</p>
-                    </div>
-                  </div>
+                <div className="bg-ivory-50 p-5 mb-4 border-l-4 border-ivory-600">
+                  <p className="text-xs text-ivory-600 uppercase tracking-wider mb-1">Tarif indicatif</p>
+                  <p className="font-serif text-2xl text-ivory-900">{vendor.startingPrice}</p>
+                  <p className="text-xs text-ivory-500 mt-1">Sur devis personnalisé</p>
                 </div>
               )}
 
@@ -643,26 +646,23 @@ export default function VendorProfileDetailView({
                 </div>
               )}
 
-              <div className="flex gap-2 mb-5">
+              <div className="flex gap-3 mb-5">
                 <button
                   onClick={() => setShowContactModal(true)}
-                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm"
+                  className="flex-1 bg-ivory-800 hover:bg-ivory-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide"
                 >
-                  Nous contacter
+                  Envoyer un message
                 </button>
                 {vendor.phone ? (
                   <a
                     href={`tel:${vendor.phone}`}
-                    className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+                    className="flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-ivory-800 text-ivory-800 hover:bg-ivory-50 transition-colors flex-shrink-0"
                     title={`Appeler ${vendor.name}`}
                   >
                     <Phone className="w-4 h-4" />
+                    <span className="text-sm font-medium">Appeler</span>
                   </a>
-                ) : (
-                  <button disabled className="w-12 h-12 border-2 border-charcoal-200 rounded-xl flex items-center justify-center text-charcoal-300 flex-shrink-0 cursor-not-allowed">
-                    <Phone className="w-4 h-4" />
-                  </button>
-                )}
+                ) : null}
               </div>
 
               <div className="space-y-3 pt-4 border-t border-charcoal-100">
@@ -693,25 +693,22 @@ export default function VendorProfileDetailView({
                 Partager ce prestataire
               </button>
 
-              <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-charcoal-100 px-4 py-3 flex gap-3 shadow-lg">
+              <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-ivory-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
                 <button
                   onClick={() => setShowContactModal(true)}
-                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+                  className="flex-1 bg-ivory-800 hover:bg-ivory-700 text-white font-medium py-3.5 transition-colors text-sm tracking-wide"
                 >
-                  Nous contacter
+                  Contacter ce prestataire
                 </button>
                 {vendor.phone ? (
                   <a
                     href={`tel:${vendor.phone}`}
-                    className="w-12 h-12 border-2 border-rose-600 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+                    className="px-5 py-3.5 bg-white border-2 border-ivory-800 text-ivory-800 hover:bg-ivory-50 transition-colors flex-shrink-0 font-medium text-sm flex items-center gap-2"
                   >
                     <Phone className="w-4 h-4" />
+                    Appeler
                   </a>
-                ) : (
-                  <button disabled className="w-12 h-12 border-2 border-charcoal-200 rounded-xl flex items-center justify-center text-charcoal-300 flex-shrink-0 cursor-not-allowed">
-                    <Phone className="w-4 h-4" />
-                  </button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

@@ -49,10 +49,14 @@ export default function HomePage() {
       // Find the recommendations section
       const recSection = document.getElementById('recommandations');
       if (recSection) {
-        const rect = recSection.getBoundingClientRect();
-        // Show when section is in view (top of section reaches middle of viewport)
-        const shouldShow = rect.top < window.innerHeight * 0.6 && rect.bottom > 0;
-        setShowFloatingCta(shouldShow);
+        const recRect = recSection.getBoundingClientRect();
+        // Show when recommendations section is reached (stays visible until footer)
+        const recReached = recRect.top < window.innerHeight * 0.6;
+        
+        // Once shown, it stays visible until user dismisses it
+        if (recReached) {
+          setShowFloatingCta(true);
+        }
       }
     };
 
@@ -190,8 +194,8 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/80 via-charcoal-900/20 to-transparent" />
                 <div className="absolute inset-0 p-5 flex flex-col justify-between">
                   <span
-                    className="font-serif text-white/30 text-4xl leading-none"
-                    style={{ fontWeight: 300, fontStyle: 'italic' }}
+                    className="font-serif text-white text-5xl leading-none drop-shadow-lg"
+                    style={{ fontWeight: 200, fontStyle: 'italic', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
                   >
                     {n}
                   </span>
@@ -821,15 +825,15 @@ export default function HomePage() {
 
       {/* Floating CTA Button - Mobile only */}
       {showFloatingCta && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
-          <div className="bg-white rounded-2xl shadow-2xl p-3 border border-charcoal-100 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300">
-            <div className="flex-1">
-              <p className="text-xs text-charcoal-500">Trouvez votre prestataire idéal</p>
-              <p className="text-sm font-semibold text-charcoal-900">Je m&apos;inscris gratuitement</p>
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-charcoal-200 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center gap-3 max-w-md mx-auto">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-charcoal-500 truncate">Trouvez votre prestataire</p>
+              <p className="text-sm font-semibold text-charcoal-900">Inscription gratuite</p>
             </div>
             <Link
               href="/signup"
-              className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors whitespace-nowrap"
+              className="bg-ivory-800 hover:bg-ivory-700 text-white font-medium px-5 py-2.5 text-sm transition-colors whitespace-nowrap"
             >
               Commencer
             </Link>
