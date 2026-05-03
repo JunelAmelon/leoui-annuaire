@@ -619,7 +619,7 @@ export default function VendorProfileDetailView({
           </div>
 
           {/* RIGHT STICKY SIDEBAR */}
-          <div className="w-full lg:w-[310px] flex-shrink-0 order-first lg:order-last">
+          <div className="w-full lg:w-[310px] flex-shrink-0 order-last lg:order-last">
             <div className="sticky top-24">
               <h1 className="font-display text-[1.6rem] leading-tight text-charcoal-900 mb-1">{vendor.name}</h1>
               {vendor.tagline && <p className="text-sm text-charcoal-500 italic mb-2">{vendor.tagline}</p>}
