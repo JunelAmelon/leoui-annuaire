@@ -17,8 +17,8 @@ import { db } from '@/lib/firebase';
 
 const NAV = [
   { href: '/espace-prestataire',                    label: 'Tableau de bord',  icon: LayoutDashboard, exact: true },
-  { href: '/espace-prestataire/mon-annonce',        label: 'Mon annonce',      icon: Megaphone },
-  { href: '/espace-prestataire/contacts',           label: 'Contacts',         icon: MessageSquare },
+  { href: '/espace-prestataire/mon-annonce',        label: 'Mon profil',       icon: Megaphone },
+  { href: '/espace-prestataire/contacts',           label: 'Messages',         icon: MessageSquare },
   { href: '/espace-prestataire/devis',              label: 'Devis',            icon: FileText },
   { href: '/espace-prestataire/contrats',           label: 'Contrats',         icon: FileCheck2 },
   { href: '/espace-prestataire/factures',           label: 'Factures',         icon: Receipt },
@@ -132,7 +132,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                     href={item.href}
                     className={`flex items-center gap-3 transition-all duration-150 ${
                       collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'
-                    } ${active ? 'bg-rose-600' : 'hover:bg-rose-50'}`}
+                    } ${active ? 'bg-rose-600 rounded-xl' : 'hover:bg-rose-50'}`}
                   >
                     <div className="relative flex-shrink-0">
                       <item.icon className={`w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
@@ -174,7 +174,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
               <Link href="/espace-prestataire/parametres"
                 className={`flex items-center gap-3 transition-all ${
                   collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'
-                } ${pathname === '/espace-prestataire/parametres' ? 'bg-rose-600' : 'hover:bg-rose-50'}`}>
+                } ${pathname === '/espace-prestataire/parametres' ? 'bg-rose-600 rounded-xl' : 'hover:bg-rose-50'}`}>
                 <Settings className={`w-[17px] h-[17px] flex-shrink-0 ${pathname === '/espace-prestataire/parametres' ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
                 {!collapsed && <span className={`text-sm font-medium ${pathname === '/espace-prestataire/parametres' ? 'text-white' : 'text-charcoal-600 group-hover:text-rose-700'}`}>Paramètres</span>}
               </Link>

@@ -328,13 +328,13 @@ export default function HomePage() {
             <div>
               <p className="text-sm font-medium text-rose-400 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
                 <span className="w-8 h-px bg-rose-400"></span>
-                Par région
+                Par ville
               </p>
               <h2
                 className="font-serif text-white"
                 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.01em' }}
               >
-                Trouvez vos prestataires locaux
+                Trouvez des prestataires près de chez vous
               </h2>
             </div>
           </div>

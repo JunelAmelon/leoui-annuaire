@@ -105,15 +105,15 @@ export default function EspacePrestatairePage() {
   ];
 
   const quickActions = [
-    { href: '/espace-prestataire/mon-annonce', label: 'Modifier mon annonce', icon: BadgeCheck, desc: 'Mettez à jour vos photos et infos' },
-    { href: '/espace-prestataire/contacts', label: 'Voir les contacts', icon: MessageSquare, desc: 'Répondez aux demandes de clients' },
+    { href: '/espace-prestataire/mon-annonce', label: 'Mon profil', icon: BadgeCheck, desc: 'Mettez à jour vos photos et infos' },
+    { href: '/espace-prestataire/contacts', label: 'Messages', icon: MessageSquare, desc: 'Répondez aux demandes de clients' },
     { href: '/espace-prestataire/devis', label: 'Créer un devis', icon: FileText, desc: 'Envoyez une proposition tarifaire' },
     { href: '/espace-prestataire/planning', label: 'Mon planning', icon: CalendarDays, desc: 'Gérez vos disponibilités' },
   ];
 
   const quickActionBg: Record<string, string> = {
-    'Modifier mon annonce': 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&cs=tinysrgb&w=1600',
-    'Voir les contacts': 'https://images.pexels.com/photos/7709086/pexels-photo-7709086.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    'Mon profil': 'mariage (1).jpg',
+    'Messages': 'https://images.pexels.com/photos/7709086/pexels-photo-7709086.jpeg?auto=compress&cs=tinysrgb&w=1600',
     'Créer un devis': 'https://images.pexels.com/photos/6863183/pexels-photo-6863183.jpeg?auto=compress&cs=tinysrgb&w=1600',
     'Mon planning': 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1600',
   };

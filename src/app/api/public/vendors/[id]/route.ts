@@ -60,6 +60,8 @@ export async function GET(_: Request, ctx: { params: { id: string } }) {
       ...vendorData,
       id: vendorId,
       imageUrl: (Array.isArray((vendorData as any).images) && (vendorData as any).images[0]) || (vendorData as any).imageUrl || (vendorData as any).photo || '',
+      videos: (vendorData as any).videos || [],
+      reportages: (vendorData as any).reportages || [],
     };
 
     const reviews = reviewsSnap.docs.map((d) => ({ ...d.data(), id: d.id }));

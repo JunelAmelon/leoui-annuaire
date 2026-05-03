@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Award,
+  Video,
 } from 'lucide-react';
 
 const FALLBACK_PHOTOS = [
@@ -96,6 +97,7 @@ export default function VendorProfileDetailView({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const photos: string[] = vendor.images?.length ? vendor.images : FALLBACK_PHOTOS;
+  const videos: string[] = vendor.videos || [];
   const faqs: { q: string; a: string }[] = vendor.faqs || [];
   const team: { name: string; role: string; bio: string; photo: string }[] = vendor.team || [];
   const reportages: { title: string; date: string; imageUrl: string; videoUrl?: string }[] = vendor.reportages || [];
@@ -186,6 +188,32 @@ export default function VendorProfileDetailView({
                 </div>
               </div>
             </div>
+
+            {/* Videos Section */}
+            {videos.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-medium text-charcoal-700 mb-3 flex items-center gap-2">
+                  <Video className="w-4 h-4 text-rose-600" />
+                  Vidéos de présentation
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {videos.map((video, i) => (
+                    <div key={video} className="relative rounded-xl overflow-hidden bg-stone-100">
+                      <video 
+                        src={video} 
+                        className="w-full aspect-video object-cover" 
+                        controls 
+                        preload="metadata"
+                        poster={photos[0]}
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-1 bg-black/60 text-white text-xs rounded-md">
+                        Vidéo {i + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="mt-4 lg:mt-6 border-b border-charcoal-200 w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>

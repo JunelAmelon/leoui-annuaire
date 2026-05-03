@@ -10,8 +10,8 @@ export default function Header() {
   const navLinks = [
     { href: '/vendors',         label: 'Prestataires' },
     { href: '/inspiration',     label: 'Inspiration' },
-    { href: '/planifier-votre-mariage', label: 'Planifier' },
-    { href: '/cities',          label: 'Régions' },
+    { href: '/planifier-votre-mariage', label: 'Planifier votre mariage' },
+    { href: '/cities',          label: 'Par ville' },
   ];
 
   return (
@@ -21,7 +21,7 @@ export default function Header() {
           <div className="flex items-center justify-between h-[4.25rem]">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0" title="LeOui.net - Accueil" aria-label="Retour à l'accueil">
               <div className="w-7 h-7 border border-rose-600 flex items-center justify-center transition-colors duration-300 group-hover:bg-rose-600">
                 <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors duration-300" />
               </div>
@@ -35,6 +35,8 @@ export default function Header() {
                   key={href}
                   href={href}
                   className="relative text-[0.8rem] font-medium tracking-[0.05em] text-charcoal-600 hover:text-charcoal-900 transition-colors duration-200 group py-1"
+                  title={`${label} - LeOui.net`}
+                  aria-label={`Aller à ${label}`}
                 >
                   {label}
                   <span className="absolute bottom-0 left-0 h-px w-0 bg-rose-600 group-hover:w-full transition-all duration-300 ease-out" />
@@ -47,10 +49,12 @@ export default function Header() {
               <Link
                 href="/login"
                 className="text-[0.8rem] font-medium tracking-[0.05em] text-charcoal-600 hover:text-charcoal-900 transition-colors duration-200"
+                title="Se connecter - LeOui.net"
+                aria-label="Connexion"
               >
                 Connexion
               </Link>
-              <Link href="/signup" className="btn-primary py-2.5 px-6 text-[0.72rem]">
+              <Link href="/signup" className="btn-primary py-2.5 px-6 text-[0.72rem]" title="Créer un compte sur LeOui.net" aria-label="S'inscrire">
                 S'inscrire
               </Link>
             </div>
@@ -60,6 +64,8 @@ export default function Header() {
               <Link
                 href="/login"
                 className="text-[0.8rem] font-medium text-charcoal-600"
+                title="Se connecter"
+                aria-label="Connexion"
               >
                 Connexion
               </Link>
@@ -86,7 +92,7 @@ export default function Header() {
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-charcoal-100">
-              <Link href="/" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2.5">
+              <Link href="/" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2.5" title="Accueil" aria-label="Retour à l'accueil">
                 <div className="w-6 h-6 border border-rose-600 flex items-center justify-center">
                   <Heart className="w-3 h-3 text-rose-600 fill-rose-600" />
                 </div>
@@ -105,6 +111,8 @@ export default function Header() {
                   href={href}
                   onClick={() => setDrawerOpen(false)}
                   className="block py-3.5 border-b border-charcoal-100 text-[0.9375rem] font-medium text-charcoal-800 hover:text-rose-600 transition-colors"
+                  title={label}
+                  aria-label={`Aller à ${label}`}
                 >
                   {label}
                 </Link>
@@ -117,6 +125,8 @@ export default function Header() {
                 href="/login"
                 onClick={() => setDrawerOpen(false)}
                 className="block text-center py-3 border border-charcoal-300 text-charcoal-800 text-sm font-medium tracking-[0.05em] hover:bg-charcoal-50 transition-colors"
+                title="Se connecter"
+                aria-label="Connexion"
               >
                 Se connecter
               </Link>
@@ -124,6 +134,8 @@ export default function Header() {
                 href="/signup"
                 onClick={() => setDrawerOpen(false)}
                 className="block text-center py-3 bg-rose-600 text-white text-sm font-medium tracking-[0.07em] uppercase hover:bg-rose-700 transition-colors"
+                title="Créer un compte"
+                aria-label="S'inscrire"
               >
                 Créer un compte
               </Link>

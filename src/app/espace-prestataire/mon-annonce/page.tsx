@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { Camera, MapPin, Save, Plus, X, Eye, ExternalLink, Globe, Star, Clock, Euro, CheckCircle, Instagram, Upload, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Camera, MapPin, Save, Plus, X, Eye, ExternalLink, Globe, Star, Clock, Euro, CheckCircle, Instagram, Upload, Loader2, Trash2, ChevronDown, ChevronUp, Video } from 'lucide-react';
 import { getDocuments, setDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
@@ -92,6 +92,7 @@ export default function MonAnnoncePage() {
     instagram: '',
     tags: [] as string[],
     images: [] as string[],
+    videos: [] as string[],
     faqs: [] as Faq[],
     team: [] as TeamMember[],
     packages: [] as Package[],
@@ -101,6 +102,11 @@ export default function MonAnnoncePage() {
   const [newImage, setNewImage] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  // Videos
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const MAX_VIDEOS = 2;
+  const MAX_VIDEO_SIZE_MB = 50; // 50MB max
   // FAQ
   const [newFaq, setNewFaq] = useState<Faq>({ q: '', a: '' });
   // Team
@@ -114,7 +120,7 @@ export default function MonAnnoncePage() {
   const [uploadingReportImg, setUploadingReportImg] = useState(false);
   const [uploadingReportVideo, setUploadingReportVideo] = useState(false);
   // Section expand
-  const [sections, setSections] = useState({ photos: true, tags: false, links: false, faqs: false, team: false, packages: false, reportages: false });
+  const [sections, setSections] = useState({ photos: true, videos: false, tags: false, links: false, faqs: false, team: false, packages: false, reportages: false });
   const toggleSection = (s: keyof typeof sections) => setSections(p => ({ ...p, [s]: !p[s] }));
 
   // Drag and drop state
@@ -145,6 +151,7 @@ export default function MonAnnoncePage() {
             instagram: d.instagram || '',
             tags: d.tags || [],
             images: d.images || [],
+            videos: d.videos || [],
             faqs: d.faqs || [],
             team: d.team || [],
             packages: d.packages || [],
@@ -201,6 +208,36 @@ export default function MonAnnoncePage() {
     }
   };
   const removeImage = (url: string) => setForm(p => ({ ...p, images: p.images.filter(x => x !== url) }));
+
+  const addVideo = async (file: File) => {
+    if (!file) return;
+    
+    // Check file size
+    const fileSizeMB = file.size / (1024 * 1024);
+    if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
+      toast.error(`La vidéo est trop lourde (${fileSizeMB.toFixed(1)}MB). Maximum ${MAX_VIDEO_SIZE_MB}MB.`);
+      return;
+    }
+    
+    // Check max videos
+    if (form.videos.length >= MAX_VIDEOS) {
+      toast.error(`Maximum ${MAX_VIDEOS} vidéos autorisées.`);
+      return;
+    }
+    
+    setUploadingVideo(true);
+    try {
+      const url = await uploadFile(file, 'vendors/videos');
+      setForm(p => ({ ...p, videos: [...p.videos, url] }));
+      toast.success('Vidéo ajoutée avec succès');
+    } catch {
+      toast.error('Erreur lors de l\'upload de la vidéo');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const removeVideo = (url: string) => setForm(p => ({ ...p, videos: p.videos.filter(x => x !== url) }));
 
   // Drag and drop handlers
   const handleDragStart = (index: number) => {
@@ -523,6 +560,55 @@ export default function MonAnnoncePage() {
                       placeholder="Ex: Album photo, Séance engagement…" />
                     <button onClick={addTag} className="px-4 py-2 bg-rose-600 text-white rounded-xl text-sm hover:bg-rose-700 transition-colors"><Plus className="w-4 h-4" /></button>
                   </div>
+                </>
+              )}
+            </div>
+
+            {/* Vidéos */}
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <button onClick={() => toggleSection('videos')} className="w-full flex items-center justify-between mb-1">
+                <h2 className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Vidéos de présentation</h2>
+                {sections.videos ? <ChevronUp className="w-4 h-4 text-charcoal-400" /> : <ChevronDown className="w-4 h-4 text-charcoal-400" />}
+              </button>
+              {sections.videos && (
+                <>
+                  <p className="text-xs text-charcoal-400 mb-4">Ajoutez jusqu'à {MAX_VIDEOS} vidéos de maximum {MAX_VIDEO_SIZE_MB}MB pour présenter votre travail.</p>
+                  
+                  {/* Video list */}
+                  {form.videos.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      {form.videos.map((video, i) => (
+                        <div key={video} className="relative group rounded-xl overflow-hidden bg-stone-100">
+                          <video src={video} className="w-full aspect-video object-cover" controls preload="metadata" />
+                          <button onClick={() => removeVideo(video)} className="absolute top-2 right-2 w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
+                            <X className="w-4 h-4" />
+                          </button>
+                          <span className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] rounded-md">Vidéo {i + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload button */}
+                  {form.videos.length < MAX_VIDEOS && (
+                    <div className="flex gap-3">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={e => e.target.files?.[0] && addVideo(e.target.files[0])}
+                        ref={videoInputRef}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => videoInputRef.current?.click()}
+                        disabled={uploadingVideo}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm hover:bg-rose-700 transition-colors disabled:opacity-50"
+                      >
+                        {uploadingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+                        {uploadingVideo ? 'Upload...' : `Ajouter une vidéo (${form.videos.length}/${MAX_VIDEOS})`}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
