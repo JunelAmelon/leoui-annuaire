@@ -1,12 +1,22 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { PageGuide, GuideStep } from './guides.config';
 
 /**
  * États possibles du tour
  */
-type TourStatus = 'idle' | 'active' | 'paused' | 'completed';
+type TourStatus = 'idle' | 'active' | 'paused' | 'completed' | 'loading';
+
+/**
+ * Configuration des callbacks
+ */
+interface TourCallbacks {
+  onStepChange?: (stepIndex: number, step: GuideStep) => void;
+  onTourStart?: (guide: PageGuide) => void;
+  onTourComplete?: (guide: PageGuide) => void;
+  onTourStop?: (guide: PageGuide, stepIndex: number) => void;
+}
 
 /**
  * Interface du contexte
@@ -16,6 +26,7 @@ interface TourContextType {
   currentGuide: PageGuide | null;
   currentStepIndex: number;
   status: TourStatus;
+  isLoading: boolean;
   
   // Getters
   currentStep: GuideStep | null;
@@ -24,18 +35,23 @@ interface TourContextType {
   progress: number;
   
   // Actions
-  startTour: (guide: PageGuide) => void;
+  startTour: (guide: PageGuide, callbacks?: TourCallbacks) => void;
   stopTour: () => void;
   pauseTour: () => void;
   resumeTour: () => void;
-  nextStep: () => void;
+  nextStep: () => Promise<boolean>;
   prevStep: () => void;
-  goToStep: (index: number) => void;
+  goToStep: (index: number) => Promise<boolean>;
+  skipStep: () => void;
   
   // Vérifications
   hasCompletedTour: (guideId: string) => boolean;
   markTourAsCompleted: (guideId: string) => void;
   resetTourStatus: (guideId: string) => void;
+  
+  // Validation
+  validateStepTarget: (targetSelector: string) => boolean;
+  waitForStepReady: (targetSelector: string, timeout?: number) => Promise<boolean>;
 }
 
 // Création du contexte avec une valeur par défaut undefined
@@ -47,6 +63,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const [currentGuide, setCurrentGuide] = useState<PageGuide | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [status, setStatus] = useState<TourStatus>('idle');
+  const [isLoading, setIsLoading] = useState(false);
+  const callbacksRef = useRef<TourCallbacks>({});
 
   /**
    * Getters dérivés
@@ -59,30 +77,47 @@ export function TourProvider({ children }: { children: ReactNode }) {
     : 0;
 
   /**
-   * Démarrer un tour
+   * Démarrer un tour avec callbacks optionnels
    */
-  const startTour = useCallback((guide: PageGuide) => {
+  const startTour = useCallback((guide: PageGuide, callbacks?: TourCallbacks) => {
     // Vérifier si déjà complété
     if (hasCompletedTourInStorage(guide.id)) {
       console.log(`[Tour] Guide "${guide.id}" déjà complété, ignoré`);
       return;
     }
     
+    // Store callbacks
+    callbacksRef.current = callbacks || {};
+    
     setCurrentGuide(guide);
     setCurrentStepIndex(0);
     setStatus('active');
+    setIsLoading(false);
+    
     console.log(`[Tour] Démarrage du guide "${guide.id}" - ${guide.steps.length} étapes`);
+    
+    // Trigger callback
+    callbacksRef.current.onTourStart?.(guide);
   }, []);
 
   /**
    * Arrêter le tour
    */
   const stopTour = useCallback(() => {
+    const guide = currentGuide;
+    const stepIndex = currentStepIndex;
+    
     setStatus('idle');
     setCurrentStepIndex(0);
-    // Note: on garde currentGuide pour référence jusqu'au prochain start
+    setIsLoading(false);
+    
     console.log('[Tour] Tour arrêté');
-  }, []);
+    
+    // Trigger callback
+    if (guide) {
+      callbacksRef.current.onTourStop?.(guide, stepIndex);
+    }
+  }, [currentGuide, currentStepIndex]);
 
   /**
    * Mettre en pause
@@ -103,20 +138,48 @@ export function TourProvider({ children }: { children: ReactNode }) {
   }, [currentGuide, status]);
 
   /**
-   * Étape suivante
+   * Étape suivante - avec validation async
+   * Retourne true si l'étape a changé, false sinon
    */
-  const nextStep = useCallback(() => {
-    if (!currentGuide) return;
+  const nextStep = useCallback(async (): Promise<boolean> => {
+    if (!currentGuide) return false;
     
     if (isLastStep) {
       // Tour terminé
       markTourAsCompletedInStorage(currentGuide.id);
       setStatus('completed');
+      setIsLoading(false);
       console.log(`[Tour] Guide "${currentGuide.id}" complété!`);
-    } else {
-      setCurrentStepIndex(prev => Math.min(prev + 1, currentGuide.steps.length - 1));
+      
+      // Trigger callback
+      callbacksRef.current.onTourComplete?.(currentGuide);
+      return false;
     }
-  }, [currentGuide, isLastStep]);
+    
+    const nextIndex = currentStepIndex + 1;
+    const nextStep = currentGuide.steps[nextIndex];
+    
+    // Validate next step has a target if specified
+    if (nextStep?.target) {
+      setIsLoading(true);
+      const isReady = await waitForStepReadyAsync(nextStep.target, 3000);
+      setIsLoading(false);
+      
+      if (!isReady) {
+        console.warn(`[Tour] Étape ${nextIndex + 1}: cible "${nextStep.target}" non trouvée, skip`);
+        // Skip to next step
+        setCurrentStepIndex(prev => Math.min(prev + 1, currentGuide.steps.length - 1));
+        return true;
+      }
+    }
+    
+    setCurrentStepIndex(nextIndex);
+    
+    // Trigger callback
+    callbacksRef.current.onStepChange?.(nextIndex, nextStep);
+    
+    return true;
+  }, [currentGuide, currentStepIndex, isLastStep]);
 
   /**
    * Étape précédente
@@ -126,13 +189,82 @@ export function TourProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
-   * Aller à une étape spécifique
+   * Aller à une étape spécifique - avec validation
    */
-  const goToStep = useCallback((index: number) => {
-    if (currentGuide && index >= 0 && index < currentGuide.steps.length) {
-      setCurrentStepIndex(index);
+  const goToStep = useCallback(async (index: number): Promise<boolean> => {
+    if (!currentGuide || index < 0 || index >= currentGuide.steps.length) {
+      return false;
     }
+    
+    const step = currentGuide.steps[index];
+    
+    // Validate step has a target if specified
+    if (step?.target) {
+      setIsLoading(true);
+      const isReady = await waitForStepReadyAsync(step.target, 3000);
+      setIsLoading(false);
+      
+      if (!isReady) {
+        console.warn(`[Tour] Étape ${index + 1}: cible "${step.target}" non trouvée`);
+        return false;
+      }
+    }
+    
+    setCurrentStepIndex(index);
+    
+    // Trigger callback
+    callbacksRef.current.onStepChange?.(index, step);
+    
+    return true;
   }, [currentGuide]);
+
+  /**
+   * Skip l'étape courante
+   */
+  const skipStep = useCallback(() => {
+    if (!currentGuide) return;
+    
+    if (isLastStep) {
+      stopTour();
+    } else {
+      setCurrentStepIndex(prev => Math.min(prev + 1, currentGuide.steps.length - 1));
+    }
+  }, [currentGuide, isLastStep, stopTour]);
+
+  /**
+   * Valider que le target d'une étape existe
+   */
+  const validateStepTarget = useCallback((targetSelector: string): boolean => {
+    if (!targetSelector) return true;
+    return !!document.querySelector(targetSelector);
+  }, []);
+
+  /**
+   * Attendre qu'une étape soit prête (élément dans le DOM)
+   */
+  const waitForStepReadyAsync = async (targetSelector: string, timeout: number = 3000): Promise<boolean> => {
+    if (!targetSelector) return true;
+    
+    // Check immediately
+    if (document.querySelector(targetSelector)) {
+      return true;
+    }
+    
+    // Wait with timeout
+    const startTime = Date.now();
+    
+    return new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (document.querySelector(targetSelector)) {
+          clearInterval(checkInterval);
+          resolve(true);
+        } else if (Date.now() - startTime > timeout) {
+          clearInterval(checkInterval);
+          resolve(false);
+        }
+      }, 100);
+    });
+  };
 
   /**
    * Vérifier si un tour a été complété
@@ -194,6 +326,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     currentGuide,
     currentStepIndex,
     status,
+    isLoading,
     currentStep,
     isFirstStep,
     isLastStep,
@@ -205,9 +338,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
     nextStep,
     prevStep,
     goToStep,
+    skipStep,
     hasCompletedTour,
     markTourAsCompleted,
     resetTourStatus,
+    validateStepTarget,
+    waitForStepReady: waitForStepReadyAsync,
   };
 
   return (

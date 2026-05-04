@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTourContext } from './TourContext';
 import TourOverlay from './TourOverlay';
 import TourTooltip from './TourTooltip';
@@ -15,6 +15,7 @@ import TourTooltip from './TourTooltip';
  * - L'affichage de l'overlay avec spotlight
  * - L'affichage des tooltips
  * - Les animations globales
+ * - La gestion des erreurs (éléments non trouvés)
  * 
  * Exemple:
  * ```tsx
@@ -32,7 +33,6 @@ export default function TourManager() {
     status,
     isFirstStep,
     isLastStep,
-    progress,
     nextStep,
     prevStep,
     stopTour,
@@ -40,6 +40,37 @@ export default function TourManager() {
 
   const isActive = status === 'active';
   const hasTarget = !!currentStep?.target;
+
+  /**
+   * Gestion de l'élément non trouvé - skip automatique
+   */
+  const handleTargetNotFound = useCallback(() => {
+    if (!currentStep) return;
+    
+    console.warn(`[TourManager] Étape ${currentStepIndex + 1}: élément "${currentStep.target}" non trouvé, passage à l'étape suivante`);
+    
+    // Skip automatique vers l'étape suivante ou arrêt si dernière étape
+    if (isLastStep) {
+      stopTour();
+    } else {
+      nextStep();
+    }
+  }, [currentStep, currentStepIndex, isLastStep, nextStep, stopTour]);
+
+  /**
+   * Gestion du body scroll pendant le tour
+   */
+  useEffect(() => {
+    if (isActive) {
+      document.body.classList.add('tour-active');
+    } else {
+      document.body.classList.remove('tour-active');
+    }
+    
+    return () => {
+      document.body.classList.remove('tour-active');
+    };
+  }, [isActive]);
 
   // Ne rien afficher si pas de tour actif
   if (!isActive || !currentGuide) return null;
@@ -70,6 +101,8 @@ export default function TourManager() {
           onClose={stopTour}
           isFirstStep={isFirstStep}
           isLastStep={isLastStep}
+          onTargetNotFound={handleTargetNotFound}
+          maxWaitForTarget={3000}
         />
       )}
 

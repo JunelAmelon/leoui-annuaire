@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 
 interface Rect {
   top: number;
@@ -15,6 +15,14 @@ interface TourOverlayProps {
   onClick?: () => void;
   padding?: number;
   borderRadius?: number;
+  /**
+   * Délai max d'attente pour que l'élément apparaisse (ms)
+   */
+  maxWaitForTarget?: number;
+  /**
+   * Callback quand l'élément cible n'est pas trouvé
+   */
+  onTargetNotFound?: () => void;
 }
 
 export default function TourOverlay({
@@ -23,23 +31,35 @@ export default function TourOverlay({
   onClick,
   padding = 8,
   borderRadius = 12,
+  maxWaitForTarget = 3000,
+  onTargetNotFound,
 }: TourOverlayProps) {
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [isReady, setIsReady] = useState(false);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const targetElementRef = useRef<Element | null>(null);
 
-  // Calculate target element position
+  /**
+   * Calculate target element position avec retry
+   */
   const calculatePosition = useCallback(() => {
     if (!targetSelector || !isActive) {
       setTargetRect(null);
+      setIsReady(false);
       return;
     }
 
     const element = document.querySelector(targetSelector);
     if (!element) {
-      setTargetRect(null);
+      // Don't clear targetRect immediately - might be loading
+      if (!targetElementRef.current) {
+        setTargetRect(null);
+      }
       return;
     }
 
+    targetElementRef.current = element;
     const rect = element.getBoundingClientRect();
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
@@ -55,46 +75,109 @@ export default function TourOverlay({
       width: document.documentElement.scrollWidth,
       height: document.documentElement.scrollHeight,
     });
+
+    setIsReady(true);
   }, [targetSelector, isActive, padding]);
 
-  // Initial calculation and resize handler
+  /**
+   * Retry logic avec intervalle pour attendre l'élément
+   */
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !targetSelector) {
+      setIsReady(false);
+      targetElementRef.current = null;
+      return;
+    }
 
-    calculatePosition();
+    let attempts = 0;
+    const maxAttempts = Math.ceil(maxWaitForTarget / 100);
+    let found = false;
+
+    const checkTarget = () => {
+      const element = document.querySelector(targetSelector);
+      if (element) {
+        found = true;
+        targetElementRef.current = element;
+        calculatePosition();
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (checkTarget()) return;
+
+    // Retry with interval
+    const interval = setInterval(() => {
+      attempts++;
+      if (checkTarget()) {
+        clearInterval(interval);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        console.warn(`[TourOverlay] Target "${targetSelector}" not found after ${maxWaitForTarget}ms`);
+        onTargetNotFound?.();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [targetSelector, isActive, maxWaitForTarget, onTargetNotFound, calculatePosition]);
+
+  /**
+   * ResizeObserver pour recalculer quand le target change de taille
+   */
+  useEffect(() => {
+    if (!isActive || !targetElementRef.current) return;
+
+    // Cleanup previous
+    resizeObserverRef.current?.disconnect();
+
+    resizeObserverRef.current = new ResizeObserver(() => {
+      requestAnimationFrame(calculatePosition);
+    });
+
+    resizeObserverRef.current.observe(targetElementRef.current);
+    
+    if (document.body) {
+      resizeObserverRef.current.observe(document.body);
+    }
+
+    return () => {
+      resizeObserverRef.current?.disconnect();
+    };
+  }, [isActive, calculatePosition]);
+
+  /**
+   * Event listeners pour resize et scroll
+   */
+  useEffect(() => {
+    if (!isActive || !isReady) return;
+
+    let ticking = false;
 
     const handleResize = () => {
-      // Small delay to ensure DOM is settled
-      setTimeout(calculatePosition, 100);
+      requestAnimationFrame(() => {
+        calculatePosition();
+      });
     };
 
     const handleScroll = () => {
-      calculatePosition();
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          calculatePosition();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, true);
-
-    // Recalculate after a short delay to handle any dynamic content
-    const timeoutId = setTimeout(calculatePosition, 300);
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
-      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll, { capture: true });
     };
-  }, [calculatePosition, isActive]);
-
-  // Recalculate when target changes
-  useEffect(() => {
-    if (isActive && targetSelector) {
-      // Multiple attempts to catch dynamic content
-      const timeouts = [100, 300, 600].map((delay) =>
-        setTimeout(calculatePosition, delay)
-      );
-      return () => timeouts.forEach(clearTimeout);
-    }
-  }, [targetSelector, isActive, calculatePosition]);
+  }, [isActive, isReady, calculatePosition]);
 
   if (!isActive) return null;
 

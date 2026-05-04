@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { X, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right' | 'auto';
@@ -25,11 +25,20 @@ interface TourTooltipProps {
   onClose: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
+  /**
+   * Callback quand l'élément cible n'est pas trouvé
+   */
+  onTargetNotFound?: () => void;
+  /**
+   * Délai max d'attente pour que l'élément apparaisse (ms)
+   */
+  maxWaitForTarget?: number;
 }
 
 const TOOLTIP_WIDTH = 320;
 const TOOLTIP_MIN_HEIGHT = 180;
 const GAP = 16;
+const VIEWPORT_MARGIN = 16;
 
 export default function TourTooltip({
   targetSelector,
@@ -44,16 +53,36 @@ export default function TourTooltip({
   onClose,
   isFirstStep,
   isLastStep,
+  onTargetNotFound,
+  maxWaitForTarget = 5000,
 }: TourTooltipProps) {
   const [tooltipRect, setTooltipRect] = useState<TooltipRect | null>(null);
   const [actualPosition, setActualPosition] = useState<TooltipPosition>('bottom');
+  const [isReady, setIsReady] = useState(false);
+  const [targetFound, setTargetFound] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const mutationObserverRef = useRef<MutationObserver | null>(null);
+  const targetElementRef = useRef<Element | null>(null);
 
+  /**
+   * Algorithme de positionnement intelligent (floating UI style)
+   * Calcule la meilleure position avec fallback automatique
+   */
   const calculatePosition = useCallback(() => {
-    if (!targetSelector || !isVisible) return;
+    if (!targetSelector || !isVisible) {
+      setIsReady(false);
+      return;
+    }
 
     const target = document.querySelector(targetSelector);
-    if (!target) return;
+    if (!target) {
+      setTargetFound(false);
+      return;
+    }
+
+    targetElementRef.current = target;
+    setTargetFound(true);
 
     const targetRect = target.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -61,38 +90,92 @@ export default function TourTooltip({
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
 
+    // Get actual tooltip dimensions if available
+    const tooltipEl = tooltipRef.current;
+    const tooltipWidth = tooltipEl?.offsetWidth || TOOLTIP_WIDTH;
+    const tooltipHeight = tooltipEl?.offsetHeight || TOOLTIP_MIN_HEIGHT;
+
     // Calculate available space in each direction
-    const spaceTop = targetRect.top;
-    const spaceBottom = viewportHeight - targetRect.bottom;
-    const spaceLeft = targetRect.left;
-    const spaceRight = viewportWidth - targetRect.right;
+    const spaceTop = targetRect.top - VIEWPORT_MARGIN;
+    const spaceBottom = viewportHeight - targetRect.bottom - VIEWPORT_MARGIN;
+    const spaceLeft = targetRect.left - VIEWPORT_MARGIN;
+    const spaceRight = viewportWidth - targetRect.right - VIEWPORT_MARGIN;
+
+    // Scoring system for position selection
+    interface PositionScore {
+      pos: TooltipPosition;
+      score: number;
+      fits: boolean;
+    }
+
+    const positions: PositionScore[] = [
+      {
+        pos: 'bottom',
+        score: spaceBottom - tooltipHeight - GAP,
+        fits: spaceBottom >= tooltipHeight + GAP,
+      },
+      {
+        pos: 'top',
+        score: spaceTop - tooltipHeight - GAP,
+        fits: spaceTop >= tooltipHeight + GAP,
+      },
+      {
+        pos: 'right',
+        score: spaceRight - tooltipWidth - GAP,
+        fits: spaceRight >= tooltipWidth + GAP,
+      },
+      {
+        pos: 'left',
+        score: spaceLeft - tooltipWidth - GAP,
+        fits: spaceLeft >= tooltipWidth + GAP,
+      },
+    ];
 
     // Determine best position
-    let bestPosition: TooltipPosition = position;
+    let bestPosition: TooltipPosition;
     
-    if (position === 'auto') {
-      // Mobile-first: prefer bottom or top
-      if (viewportWidth < 640) {
-        // On mobile, always prefer bottom if there's space
-        bestPosition = spaceBottom > TOOLTIP_MIN_HEIGHT + GAP ? 'bottom' : 'top';
+    if (position !== 'auto') {
+      // Check if requested position fits
+      const requested = positions.find(p => p.pos === position);
+      if (requested?.fits) {
+        bestPosition = position;
       } else {
-        // Desktop: check all directions
-        const spaces = [
-          { pos: 'bottom' as TooltipPosition, space: spaceBottom },
-          { pos: 'top' as TooltipPosition, space: spaceTop },
-          { pos: 'right' as TooltipPosition, space: spaceRight },
-          { pos: 'left' as TooltipPosition, space: spaceLeft },
-        ];
+        // Find first fitting position, or best score
+        const fitting = positions.filter(p => p.fits);
+        if (fitting.length > 0) {
+          bestPosition = fitting.sort((a, b) => b.score - a.score)[0].pos;
+        } else {
+          bestPosition = positions.sort((a, b) => b.score - a.score)[0].pos;
+        }
+      }
+    } else {
+      // Mobile-first: prefer bottom or top
+      if (viewportWidth < 768) {
+        const bottomFits = spaceBottom >= tooltipHeight + GAP;
+        const topFits = spaceTop >= tooltipHeight + GAP;
         
-        // Sort by available space (descending)
-        spaces.sort((a, b) => b.space - a.space);
-        bestPosition = spaces[0].pos;
+        if (bottomFits) {
+          bestPosition = 'bottom';
+        } else if (topFits) {
+          bestPosition = 'top';
+        } else {
+          // Mobile bottom sheet style if no space
+          bestPosition = 'bottom';
+        }
+      } else {
+        // Desktop: use scoring
+        const fitting = positions.filter(p => p.fits);
+        if (fitting.length > 0) {
+          bestPosition = fitting.sort((a, b) => b.score - a.score)[0].pos;
+        } else {
+          bestPosition = positions.sort((a, b) => b.score - a.score)[0].pos;
+        }
       }
     }
 
     setActualPosition(bestPosition);
 
-    // Calculate tooltip position
+    // Calculate tooltip position with smart fallback
     let tooltipTop = 0;
     let tooltipLeft = 0;
 
@@ -100,122 +183,261 @@ export default function TourTooltip({
     const targetCenterY = targetRect.top + targetRect.height / 2;
 
     switch (bestPosition) {
-      case 'bottom':
-        tooltipTop = targetRect.bottom + GAP + scrollY;
-        tooltipLeft = Math.max(
-          16,
-          Math.min(
-            targetCenterX - TOOLTIP_WIDTH / 2 + scrollX,
-            viewportWidth - TOOLTIP_WIDTH - 16 + scrollX
-          )
-        );
-        break;
-      case 'top':
-        tooltipTop = targetRect.top - GAP - TOOLTIP_MIN_HEIGHT + scrollY;
-        // Ensure it doesn't go above viewport
-        if (tooltipTop < scrollY + 16) {
-          tooltipTop = targetRect.bottom + GAP + scrollY;
-          setActualPosition('bottom');
-        }
-        tooltipLeft = Math.max(
-          16,
-          Math.min(
-            targetCenterX - TOOLTIP_WIDTH / 2 + scrollX,
-            viewportWidth - TOOLTIP_WIDTH - 16 + scrollX
-          )
-        );
-        break;
-      case 'left':
+      case 'bottom': {
+        const idealTop = targetRect.bottom + GAP + scrollY;
         tooltipTop = Math.max(
-          16 + scrollY,
+          VIEWPORT_MARGIN + scrollY,
           Math.min(
-            targetCenterY - TOOLTIP_MIN_HEIGHT / 2 + scrollY,
-            document.documentElement.scrollHeight - TOOLTIP_MIN_HEIGHT - 16
+            idealTop,
+            document.documentElement.scrollHeight - tooltipHeight - VIEWPORT_MARGIN
           )
         );
-        tooltipLeft = targetRect.left - TOOLTIP_WIDTH - GAP + scrollX;
-        // If not enough space on left, flip to right
-        if (tooltipLeft < 16) {
-          tooltipLeft = targetRect.right + GAP + scrollX;
-          setActualPosition('right');
-        }
+        tooltipLeft = Math.max(
+          VIEWPORT_MARGIN + scrollX,
+          Math.min(
+            targetCenterX - tooltipWidth / 2 + scrollX,
+            viewportWidth - tooltipWidth - VIEWPORT_MARGIN + scrollX
+          )
+        );
         break;
-      case 'right':
+      }
+      case 'top': {
+        const idealTop = targetRect.top - GAP - tooltipHeight + scrollY;
+        tooltipTop = Math.max(VIEWPORT_MARGIN + scrollY, idealTop);
+        tooltipLeft = Math.max(
+          VIEWPORT_MARGIN + scrollX,
+          Math.min(
+            targetCenterX - tooltipWidth / 2 + scrollX,
+            viewportWidth - tooltipWidth - VIEWPORT_MARGIN + scrollX
+          )
+        );
+        break;
+      }
+      case 'left': {
         tooltipTop = Math.max(
-          16 + scrollY,
+          VIEWPORT_MARGIN + scrollY,
           Math.min(
-            targetCenterY - TOOLTIP_MIN_HEIGHT / 2 + scrollY,
-            document.documentElement.scrollHeight - TOOLTIP_MIN_HEIGHT - 16
+            targetCenterY - tooltipHeight / 2 + scrollY,
+            document.documentElement.scrollHeight - tooltipHeight - VIEWPORT_MARGIN
           )
         );
-        tooltipLeft = targetRect.right + GAP + scrollX;
-        // If not enough space on right, flip to left
-        if (tooltipLeft + TOOLTIP_WIDTH > viewportWidth + scrollX - 16) {
-          tooltipLeft = targetRect.left - TOOLTIP_WIDTH - GAP + scrollX;
-          setActualPosition('left');
-        }
+        const idealLeft = targetRect.left - GAP - tooltipWidth + scrollX;
+        tooltipLeft = Math.max(VIEWPORT_MARGIN + scrollX, idealLeft);
         break;
+      }
+      case 'right': {
+        tooltipTop = Math.max(
+          VIEWPORT_MARGIN + scrollY,
+          Math.min(
+            targetCenterY - tooltipHeight / 2 + scrollY,
+            document.documentElement.scrollHeight - tooltipHeight - VIEWPORT_MARGIN
+          )
+        );
+        const idealLeft = targetRect.right + GAP + scrollX;
+        tooltipLeft = Math.max(
+          VIEWPORT_MARGIN + scrollX,
+          Math.min(
+            idealLeft,
+            viewportWidth - tooltipWidth - VIEWPORT_MARGIN + scrollX
+          )
+        );
+        break;
+      }
     }
 
-    // Mobile adjustment: fixed position at bottom
-    if (viewportWidth < 640) {
-      tooltipLeft = 16 + scrollX;
+    // Mobile bottom sheet fallback when element takes full width
+    if (viewportWidth < 640 && targetRect.width > viewportWidth * 0.8) {
+      tooltipLeft = VIEWPORT_MARGIN + scrollX;
       tooltipTop = Math.max(
         tooltipTop,
-        viewportHeight - 280 + scrollY // Ensure it's visible above fold
+        viewportHeight - tooltipHeight - VIEWPORT_MARGIN + scrollY
       );
     }
 
     setTooltipRect({
       top: tooltipTop,
       left: tooltipLeft,
-      width: TOOLTIP_WIDTH,
-      height: TOOLTIP_MIN_HEIGHT,
+      width: tooltipWidth,
+      height: tooltipHeight,
     });
+
+    setIsReady(true);
   }, [targetSelector, isVisible, position]);
 
-  // Calculate position on mount and when dependencies change
+  /**
+   * Retry logic pour attendre que l'élément apparaisse dans le DOM
+   */
+  useEffect(() => {
+    if (!isVisible || !targetSelector) {
+      setIsReady(false);
+      setTargetFound(false);
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = Math.ceil(maxWaitForTarget / 100);
+    let found = false;
+
+    const checkTarget = () => {
+      const target = document.querySelector(targetSelector);
+      if (target) {
+        found = true;
+        targetElementRef.current = target;
+        setTargetFound(true);
+        calculatePosition();
+        
+        // Scroll l'élément en vue avec retry pour animations
+        setTimeout(() => {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest',
+          });
+        }, 100);
+        
+        // Recalcul après scroll
+        setTimeout(() => {
+          calculatePosition();
+        }, 600);
+        
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (checkTarget()) return;
+
+    // Retry interval
+    const interval = setInterval(() => {
+      attempts++;
+      if (checkTarget()) {
+        clearInterval(interval);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        console.warn(`[TourTooltip] Target "${targetSelector}" not found after ${maxWaitForTarget}ms`);
+        onTargetNotFound?.();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [targetSelector, isVisible, stepNumber, maxWaitForTarget, onTargetNotFound, calculatePosition]);
+
+  /**
+   * ResizeObserver pour recalculer quand le target change de taille
+   */
+  useEffect(() => {
+    if (!isVisible || !targetFound) return;
+
+    // Cleanup previous observers
+    resizeObserverRef.current?.disconnect();
+    
+    const target = targetElementRef.current;
+    if (!target) return;
+
+    // Create new ResizeObserver
+    resizeObserverRef.current = new ResizeObserver(() => {
+      // Debounced recalculation
+      requestAnimationFrame(calculatePosition);
+    });
+
+    resizeObserverRef.current.observe(target);
+    
+    // Also observe body for layout changes
+    if (document.body) {
+      resizeObserverRef.current.observe(document.body);
+    }
+
+    return () => {
+      resizeObserverRef.current?.disconnect();
+    };
+  }, [isVisible, targetFound, calculatePosition]);
+
+  /**
+   * MutationObserver pour détecter les changements DOM
+   */
   useEffect(() => {
     if (!isVisible) return;
 
-    calculatePosition();
+    mutationObserverRef.current?.disconnect();
+
+    mutationObserverRef.current = new MutationObserver((mutations) => {
+      // Check if our target was affected
+      const hasRelevantMutation = mutations.some(mutation => {
+        // Check if mutation affects target or its ancestors
+        const target = targetElementRef.current;
+        if (!target) return false;
+        
+        return (
+          mutation.target === target ||
+          target.contains(mutation.target as Node) ||
+          (mutation.target as Element).contains?.(target)
+        );
+      });
+
+      if (hasRelevantMutation) {
+        requestAnimationFrame(calculatePosition);
+      }
+    });
+
+    mutationObserverRef.current.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class'],
+    });
+
+    return () => {
+      mutationObserverRef.current?.disconnect();
+    };
+  }, [isVisible, calculatePosition]);
+
+  /**
+   * Event listeners pour resize et scroll
+   */
+  useEffect(() => {
+    if (!isVisible || !isReady) return;
+
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    let ticking = false;
 
     const handleResize = () => {
-      setTimeout(calculatePosition, 100);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        calculatePosition();
+      }, 100);
     };
 
     const handleScroll = () => {
-      calculatePosition();
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          calculatePosition();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, true);
-
-    // Multiple recalculations for dynamic content
-    const timeouts = [100, 300, 500].map((delay) =>
-      setTimeout(calculatePosition, delay)
-    );
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
-      timeouts.forEach(clearTimeout);
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+      if (resizeTimeout) clearTimeout(resizeTimeout);
     };
-  }, [calculatePosition, isVisible]);
+  }, [isVisible, isReady, calculatePosition]);
 
-  // Scroll target into view
-  useEffect(() => {
-    if (!isVisible || !targetSelector) return;
-
-    const target = document.querySelector(targetSelector);
-    if (target) {
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center',
-      });
-    }
-  }, [targetSelector, isVisible, stepNumber]);
+  /**
+   * Recalcul après changement de dimensions du tooltip
+   */
+  useLayoutEffect(() => {
+    if (!isVisible || !isReady) return;
+    
+    // Recalcul quand le tooltip est rendu pour la première fois
+    const timer = setTimeout(calculatePosition, 0);
+    return () => clearTimeout(timer);
+  }, [isVisible, isReady, calculatePosition]);
 
   if (!isVisible || !tooltipRect) return null;
 
