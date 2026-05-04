@@ -15,13 +15,13 @@ import { db } from '@/lib/firebase';
 import InteractiveGuide from '@/components/InteractiveGuide';
 
 const NAV = [
-  { href: '/espace-client',              label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
-  { href: '/espace-client/mariage',      label: 'Mon mariage',     icon: MapPin },
-  { href: '/espace-client/planning',     label: 'Planning',        icon: CalendarDays },
-  { href: '/espace-client/prestataires', label: 'Prestataires',    icon: Users },
+  { href: '/espace-client',              label: 'Tableau de bord', icon: LayoutDashboard, exact: true, tourId: 'dashboard' },
+  { href: '/espace-client/mariage',      label: 'Mon mariage',     icon: MapPin, tourId: 'venue' },
+  { href: '/espace-client/planning',     label: 'Planning',        icon: CalendarDays, tourId: 'planning' },
+  { href: '/espace-client/prestataires', label: 'Prestataires',    icon: Users, tourId: 'vendors' },
   { href: '/espace-client/checklist',    label: 'Checklist',       icon: CheckSquare },
   { href: '/espace-client/invites',      label: 'Invités',         icon: UserCheck },
-  { href: '/espace-client/messages',     label: 'Messages',        icon: MessageSquare },
+  { href: '/espace-client/messages',     label: 'Messages',        icon: MessageSquare, tourId: 'messaging' },
   { href: '/espace-client/documents',    label: 'Documents',       icon: FileText },
   { href: '/espace-client/paiements',    label: 'Paiements',       icon: CreditCard },
   { href: '/espace-client/galerie',      label: 'Galerie',         icon: Image },
@@ -117,7 +117,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
             {NAV.map(item => {
               const active = isActive(item);
               return (
-                <div key={item.href} className="relative group">
+                <div key={item.href} className="relative group" data-tour={item.tourId}>
                   <Link
                     href={item.href}
                     className={`flex items-center gap-3 rounded-xl transition-all duration-150 ${
@@ -280,7 +280,11 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
               {NAV.map(item => {
                 const active = isActive(item);
                 return (
-                  <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
+                  <Link 
+                    key={item.href} 
+                    href={item.href} 
+                    onClick={() => setMobileOpen(false)}
+                    data-tour={item.tourId}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       active ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:text-rose-700 hover:bg-rose-50'
                     }`}>
