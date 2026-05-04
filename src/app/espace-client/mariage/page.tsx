@@ -410,7 +410,7 @@ export default function MariagePage() {
 
       {/* ── INFORMATIONS + THÈME ── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-charcoal-100 shadow-soft">
+        <div data-tour="info-card" className="lg:col-span-3 bg-white rounded-2xl border border-charcoal-100 shadow-soft">
           <div className="px-5 py-4 border-b border-charcoal-100 flex items-center justify-between">
             <h2 className="font-semibold text-charcoal-900 text-sm">Informations générales</h2>
             <button onClick={openInfoEdit} className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
@@ -439,10 +439,10 @@ export default function MariagePage() {
 
         <div className="lg:col-span-2 space-y-4">
           {/* Theme */}
-          <div className="bg-white rounded-2xl border border-charcoal-100 shadow-soft">
+          <div data-tour="theme" className="bg-white rounded-2xl border border-charcoal-100 shadow-soft">
             <div className="px-5 py-4 border-b border-charcoal-100 flex items-center justify-between">
               <h2 className="font-semibold text-charcoal-900 text-sm">Thème & style</h2>
-              <button onClick={openThemeEdit} className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
+              <button onClick={openThemeEdit} data-tour="edit-info" className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
                 <Pencil className="w-3 h-3" /> Modifier
               </button>
             </div>

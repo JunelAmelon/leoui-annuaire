@@ -178,13 +178,14 @@ export default function PlanningPage() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Appointments */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6" data-tour="upcoming">
             <div className="flex items-start justify-between gap-4 mb-4">
               <h2 className="font-serif text-charcoal-900 text-base font-medium flex items-center gap-2">
                 <Clock className="w-4 h-4 text-charcoal-400" />Rendez-vous
               </h2>
               <button
                 onClick={() => setShowAdd(true)}
+                data-tour="add-appointment"
                 className="flex items-center gap-1.5 px-3 py-2 bg-charcoal-900 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" /> Ajouter
@@ -284,7 +285,7 @@ export default function PlanningPage() {
           </div>
 
           {/* Steps / Milestones */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6" data-tour="milestones">
             <h2 className="font-serif text-charcoal-900 text-base font-medium mb-4 flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-charcoal-400" />Étapes clés
             </h2>

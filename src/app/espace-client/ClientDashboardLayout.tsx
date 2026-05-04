@@ -12,7 +12,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import InteractiveGuide from '@/components/InteractiveGuide';
+import { TourProvider } from '@/components/tour/TourContext';
+import TourManager from '@/components/tour/TourManager';
+import { usePageTour } from '@/components/tour/usePageTour';
 
 const NAV = [
   { href: '/espace-client',              label: 'Tableau de bord', icon: LayoutDashboard, exact: true, tourId: 'dashboard' },
@@ -28,8 +30,29 @@ const NAV = [
   { href: '/espace-client/calculatrice', label: 'Budget',          icon: Calculator },
 ];
 
-export default function ClientDashboardLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Mapping des routes vers les IDs de guides
+ */
+const ROUTE_GUIDE_MAPPING: Record<string, string> = {
+  '/espace-client': 'dashboard',
+  '/espace-client/planning': 'planning',
+  '/espace-client/prestataires': 'prestataires',
+  '/espace-client/mariage': 'mariage',
+  '/espace-client/messages': 'messages',
+};
+
+function ClientDashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { startCurrentPageTour, hasGuideForCurrentPage } = usePageTour({
+    routeMapping: ROUTE_GUIDE_MAPPING,
+    userType: 'client',
+    onTourStart: (guide) => {
+      console.log(`[ClientDashboard] Guide démarré: ${guide.name}`);
+    },
+    onTourComplete: (guide) => {
+      console.log(`[ClientDashboard] Guide terminé: ${guide.name}`);
+    },
+  });
   const { user, signOut } = useAuth();
   const { client, event } = useClientData();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -37,7 +60,6 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpDisabled, setHelpDisabled] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  const [showGuide, setShowGuide] = useState(false);
   const [guideCompleted, setGuideCompleted] = useState(false);
 
   useEffect(() => {
@@ -345,38 +367,44 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
         <main className="p-5 sm:p-6 lg:p-8 relative">
           {children}
 
-          {/* Help Button - Updated with Guide */}
-          {!helpDisabled && (
+              {/* Help Button - Lance le guide de la page courante */}
+          {!helpDisabled && hasGuideForCurrentPage && (
             <button
               type="button"
-              onClick={() => setShowGuide(true)}
+              onClick={startCurrentPageTour}
               className="group fixed bottom-5 right-5 z-40 bg-gradient-to-r from-rose-500 to-rose-600 text-white px-4 py-3 rounded-full shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 hover:scale-105 transition-all duration-300 text-sm font-semibold flex items-center gap-2"
               aria-label="Ouvrir le guide interactif"
             >
               <HelpCircle className="w-4 h-4" />
               <span>Aide</span>
-              {/* Tooltip for first-time users */}
+              {/* Tooltip pour les nouveaux utilisateurs */}
               {!guideCompleted && (
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-charcoal-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                  Découvrir l'app
+                  Découvrir cette page
                   <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-charcoal-900" />
                 </span>
               )}
             </button>
           )}
 
-          {/* Interactive Guide Component */}
-          <InteractiveGuide
-            isOpen={showGuide}
-            onClose={() => setShowGuide(false)}
-            onComplete={() => {
-              setGuideCompleted(true);
-              try { localStorage.setItem('leoui_guide_completed', '1'); } catch {}
-            }}
-          />
-
         </main>
       </div>
     </div>
+  );
+}
+
+/**
+ * ClientDashboardLayout - Layout racine avec TourProvider
+ * 
+ * Ce composant enveloppe tout l'espace client avec le système de tour.
+ * Le TourManager est inclus dans TourProvider et gère automatiquement
+ * l'affichage des guides selon la page.
+ */
+export default function ClientDashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <TourProvider>
+      <ClientDashboardContent>{children}</ClientDashboardContent>
+      <TourManager />
+    </TourProvider>
   );
 }

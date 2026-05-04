@@ -225,7 +225,7 @@ export default function PrestatairesPage() {
       <div className="flex gap-5 items-start">
 
         {/* LEFT SIDEBAR */}
-        <aside className="w-52 flex-shrink-0 hidden lg:block">
+        <aside className="w-52 flex-shrink-0 hidden lg:block" data-tour="filters">
           <div className="bg-white rounded-2xl shadow-sm p-4 space-y-5">
             <div>
               <p className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider mb-3">Filtres</p>

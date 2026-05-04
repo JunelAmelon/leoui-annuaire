@@ -196,7 +196,7 @@ export default function EspaceClientPage() {
         </div>
 
         {/* DARK J-X CARD */}
-        <div className="lg:col-span-2 rounded-2xl bg-charcoal-900 shadow-sm overflow-hidden" style={{ minHeight: 240 }}>
+        <div data-tour="countdown" className="lg:col-span-2 rounded-2xl bg-charcoal-900 shadow-sm overflow-hidden" style={{ minHeight: 240 }}>
           <div className="p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-white/70 text-sm font-medium">Compte à rebours</h2>
@@ -247,7 +247,7 @@ export default function EspaceClientPage() {
       </div>
 
       {/* ── ROW 2: Invités gauge + Checklist bar + Équipe list ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="quick-actions">
 
         {/* INVITÉS — "Steps for Today" card */}
         <div className="bg-white rounded-2xl shadow-sm p-5">
@@ -274,7 +274,7 @@ export default function EspaceClientPage() {
         </div>
 
         {/* CHECKLIST — "Weight Loss Plan" card */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div data-tour="progress" className="bg-white rounded-2xl shadow-sm p-5">
           <div className="flex items-start justify-between mb-1">
             <div>
               <h3 className="font-semibold text-charcoal-900 text-sm">Votre checklist</h3>
