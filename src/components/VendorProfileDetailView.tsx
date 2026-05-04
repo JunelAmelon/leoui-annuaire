@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import VendorCard from '@/components/VendorCard';
+import SimilarVendorsCarousel from '@/components/SimilarVendorsCarousel';
 import {
   Star,
   MapPin,
@@ -95,6 +96,8 @@ export default function VendorProfileDetailView({
   const [reviewSubmitted, setReviewSubmitted] = useState(Boolean(existingClientReview));
   const [showGallery, setShowGallery] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [showStickyButton, setShowStickyButton] = useState(false);
+  const contactButtonRef = useRef<HTMLButtonElement>(null);
 
   const photos: string[] = vendor.images?.length ? vendor.images : FALLBACK_PHOTOS;
   const videos: string[] = vendor.videos || [];
@@ -106,6 +109,21 @@ export default function VendorProfileDetailView({
     ? (reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length)
     : (vendor.rating || 5);
   const activePromos = (promotions || []).filter((p: any) => !p.valid_to || new Date(p.valid_to) >= new Date());
+
+  // Observer pour afficher le bouton sticky après le défilement
+  useEffect(() => {
+    if (!contactButtonRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyButton(!entry.isIntersecting);
+      },
+      { threshold: 0, rootMargin: '-1px 0px 0px 0px' }
+    );
+    
+    observer.observe(contactButtonRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const tabs = [
     { id: 'informations', label: 'Informations' },
@@ -264,6 +282,7 @@ export default function VendorProfileDetailView({
               )}
 
               <button
+                ref={contactButtonRef}
                 onClick={() => setShowContactModal(true)}
                 className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide mb-3"
               >
@@ -796,7 +815,7 @@ export default function VendorProfileDetailView({
                 Partager ce prestataire
               </button>
 
-              <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-rose-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+              <div className={`fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-rose-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transition-transform duration-300 ${showStickyButton ? 'translate-y-0' : 'translate-y-full'}`}>
                 <button
                   onClick={() => setShowContactModal(true)}
                   className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 transition-colors text-sm tracking-wide"
@@ -819,27 +838,10 @@ export default function VendorProfileDetailView({
       </div>
 
       {similarVendors.length > 0 && (
-        <section className="py-16 px-4 sm:px-6 bg-white">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="font-display text-xl sm:text-display-sm text-charcoal-900 mb-6 sm:mb-8">Prestataires similaires</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {similarVendors.map((v: any) => (
-                <VendorCard
-                  key={v.id}
-                  id={v.id}
-                  name={v.name}
-                  category={v.category}
-                  location={v.location}
-                  rating={v.rating || 5}
-                  reviewCount={v.reviewCount || 0}
-                  imageUrl={v.images?.[0] || ''}
-                  startingPrice={v.startingPrice}
-                  hrefBase={similarHrefBase}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+        <SimilarVendorsCarousel
+          vendors={similarVendors}
+          hrefBase={similarHrefBase}
+        />
       )}
 
       {/* CONTACT MODAL */}

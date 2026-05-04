@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, CalendarDays, Users, CheckSquare,
-  MessageSquare, FileText, CreditCard, Image, Bell,
+  MessageSquare, FileText, CreditCard, Image, Bell, HelpCircle,
   Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import InteractiveGuide from '@/components/InteractiveGuide';
 
 const NAV = [
   { href: '/espace-client',              label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
@@ -36,6 +37,8 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpDisabled, setHelpDisabled] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideCompleted, setGuideCompleted] = useState(false);
 
   useEffect(() => {
     try {
@@ -43,6 +46,13 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
       setHelpDisabled(v === '1');
     } catch {
       setHelpDisabled(false);
+    }
+    // Check if guide was completed
+    try {
+      const g = localStorage.getItem('leoui_guide_completed');
+      setGuideCompleted(g === '1');
+    } catch {
+      setGuideCompleted(false);
     }
   }, []);
 
@@ -331,79 +341,36 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
         <main className="p-5 sm:p-6 lg:p-8 relative">
           {children}
 
+          {/* Help Button - Updated with Guide */}
           {!helpDisabled && (
             <button
               type="button"
-              onClick={() => setHelpOpen(true)}
-              className="fixed bottom-5 right-5 z-40 bg-charcoal-900 text-white px-4 py-2.5 rounded-full shadow-lg hover:bg-charcoal-700 transition-colors text-sm font-semibold"
+              onClick={() => setShowGuide(true)}
+              className="group fixed bottom-5 right-5 z-40 bg-gradient-to-r from-rose-500 to-rose-600 text-white px-4 py-3 rounded-full shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 hover:scale-105 transition-all duration-300 text-sm font-semibold flex items-center gap-2"
+              aria-label="Ouvrir le guide interactif"
             >
-              Aide
+              <HelpCircle className="w-4 h-4" />
+              <span>Aide</span>
+              {/* Tooltip for first-time users */}
+              {!guideCompleted && (
+                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-charcoal-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                  Découvrir l'app
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-charcoal-900" />
+                </span>
+              )}
             </button>
           )}
 
-          {helpOpen && !helpDisabled && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-charcoal-900/50 backdrop-blur-sm p-4" onClick={() => setHelpOpen(false)}>
-              <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                <div className="px-5 py-4 border-b border-charcoal-100 flex items-center justify-between">
-                  <p className="font-semibold text-charcoal-900 text-sm">Aide</p>
-                  <button
-                    type="button"
-                    onClick={() => setHelpOpen(false)}
-                    className="p-2 rounded-xl hover:bg-charcoal-50 text-charcoal-500 hover:text-charcoal-800 transition-colors"
-                    aria-label="Fermer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="px-5 py-4 space-y-3">
-                  <div className="bg-ivory-50 border border-charcoal-100 rounded-xl p-4">
-                    <p className="text-sm text-charcoal-800 font-semibold">Bien démarrer</p>
-                    <p className="text-sm text-charcoal-600 mt-1">
-                      Utilise le menu à gauche pour accéder à ton planning, tes prestataires, tes documents et ta messagerie.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="border border-charcoal-100 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-charcoal-700">Lieu de réception</p>
-                      <p className="text-xs text-charcoal-500 mt-1">À choisir depuis “Prestataires” (catégorie “Lieux de réception”).</p>
-                    </div>
-                    <div className="border border-charcoal-100 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-charcoal-700">Messagerie</p>
-                      <p className="text-xs text-charcoal-500 mt-1">Tu peux envoyer des messages et joindre des fichiers (image ou document).</p>
-                    </div>
-                    <div className="border border-charcoal-100 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-charcoal-700">Planning</p>
-                      <p className="text-xs text-charcoal-500 mt-1">Retrouve tes rendez-vous et étapes, du plus récent au plus ancien.</p>
-                    </div>
-                    <div className="border border-charcoal-100 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-charcoal-700">Budget</p>
-                      <p className="text-xs text-charcoal-500 mt-1">Modifie la répartition et enregistre pour la retrouver plus tard.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="px-5 py-4 border-t border-charcoal-100 flex items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try { localStorage.setItem('leoui_help_disabled', '1'); } catch {}
-                      setHelpDisabled(true);
-                      setHelpOpen(false);
-                    }}
-                    className="text-xs text-charcoal-500 hover:text-charcoal-800 underline underline-offset-2"
-                  >
-                    Ne plus afficher
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHelpOpen(false)}
-                    className="px-4 py-2 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors font-semibold"
-                  >
-                    Compris
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Interactive Guide Component */}
+          <InteractiveGuide
+            isOpen={showGuide}
+            onClose={() => setShowGuide(false)}
+            onComplete={() => {
+              setGuideCompleted(true);
+              try { localStorage.setItem('leoui_guide_completed', '1'); } catch {}
+            }}
+          />
+
         </main>
       </div>
     </div>

@@ -503,13 +503,17 @@ export default function MariagePage() {
 
       {/* ── MODALES D'ÉDITION ── */}
       {showInfoEdit && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowInfoEdit(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-charcoal-100 flex items-center justify-between">
-              <h3 className="font-semibold text-charcoal-900 text-sm">Informations générales</h3>
-              <button onClick={() => setShowInfoEdit(false)} className="p-1 hover:bg-charcoal-50 rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowInfoEdit(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
+            {/* Mobile drag handle */}
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
-            <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
+              <h3 className="font-semibold text-charcoal-900 text-base">Informations générales</h3>
+              <button onClick={() => setShowInfoEdit(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+            </div>
+            <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               {/* Photo du couple */}
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Photo du couple</label>
@@ -559,9 +563,9 @@ export default function MariagePage() {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-charcoal-100 flex justify-end gap-3">
-              <button onClick={() => setShowInfoEdit(false)} className="px-4 py-2 text-sm text-charcoal-600 hover:bg-charcoal-50 rounded-xl transition-colors">Annuler</button>
-              <button onClick={handleSaveInfo} disabled={saving} className="px-4 py-2 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors">
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex flex-col-reverse sm:flex-row justify-end gap-3 flex-shrink-0 bg-white">
+              <button onClick={() => setShowInfoEdit(false)} className="w-full sm:w-auto px-4 py-3 text-sm text-charcoal-600 hover:bg-charcoal-50 rounded-xl transition-colors min-h-[44px]">Annuler</button>
+              <button onClick={handleSaveInfo} disabled={saving} className="w-full sm:w-auto px-6 py-3 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors min-h-[44px] font-semibold">
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </button>
             </div>
@@ -570,13 +574,17 @@ export default function MariagePage() {
       )}
 
       {showThemeEdit && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowThemeEdit(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-charcoal-100 flex items-center justify-between">
-              <h3 className="font-semibold text-charcoal-900 text-sm">Thème & style</h3>
-              <button onClick={() => setShowThemeEdit(false)} className="p-1 hover:bg-charcoal-50 rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowThemeEdit(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
+            {/* Mobile drag handle */}
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
+              <h3 className="font-semibold text-charcoal-900 text-base">Thème & style</h3>
+              <button onClick={() => setShowThemeEdit(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+            </div>
+            <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Style du mariage</label>
                 <input type="text" value={themeForm.theme_style} onChange={e => setThemeForm(f => ({ ...f, theme_style: e.target.value }))} placeholder="Ex: Bohème, Champêtre, Moderne, Romantique..." className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
@@ -594,9 +602,9 @@ export default function MariagePage() {
                 )}
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-charcoal-100 flex justify-end gap-3">
-              <button onClick={() => setShowThemeEdit(false)} className="px-4 py-2 text-sm text-charcoal-600 hover:bg-charcoal-50 rounded-xl transition-colors">Annuler</button>
-              <button onClick={handleSaveTheme} disabled={saving} className="px-4 py-2 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors">
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex flex-col-reverse sm:flex-row justify-end gap-3 flex-shrink-0 bg-white">
+              <button onClick={() => setShowThemeEdit(false)} className="w-full sm:w-auto px-4 py-3 text-sm text-charcoal-600 hover:bg-charcoal-50 rounded-xl transition-colors min-h-[44px]">Annuler</button>
+              <button onClick={handleSaveTheme} disabled={saving} className="w-full sm:w-auto px-6 py-3 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors min-h-[44px] font-semibold">
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </button>
             </div>

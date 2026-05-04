@@ -325,30 +325,45 @@ export default function PlanningPage() {
         </div>
 
       {selectedAppt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-heading-sm text-charcoal-900">{selectedAppt.title}</h3>
-              <button onClick={() => setSelectedAppt(null)} className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/60 backdrop-blur-sm" onClick={() => setSelectedAppt(null)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[85dvh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
+            {/* Mobile drag handle */}
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
-            <div className="space-y-3 text-sm">
-              <p className="flex items-center gap-2 text-charcoal-600"><Calendar className="w-4 h-4" />{selectedAppt.date}{selectedAppt.time && ` à ${selectedAppt.time}`}</p>
-              {selectedAppt.location && <p className="flex items-center gap-2 text-charcoal-600"><MapPin className="w-4 h-4" />{selectedAppt.location}</p>}
-              {selectedAppt.with_whom && <p className="flex items-center gap-2 text-charcoal-600"><User className="w-4 h-4" />{selectedAppt.with_whom}</p>}
-              {selectedAppt.description && <p className="text-charcoal-600 mt-2">{selectedAppt.description}</p>}
+            <div className="px-4 sm:px-6 py-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-lg font-semibold text-charcoal-900 pr-4">{selectedAppt.title}</h3>
+                <button onClick={() => setSelectedAppt(null)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors flex-shrink-0"><X className="w-5 h-5 text-charcoal-500" /></button>
+              </div>
+              <div className="space-y-3 text-sm">
+                <p className="flex items-center gap-3 text-charcoal-600"><Calendar className="w-5 h-5 text-charcoal-400" />{selectedAppt.date}{selectedAppt.time && ` à ${selectedAppt.time}`}</p>
+                {selectedAppt.location && <p className="flex items-center gap-3 text-charcoal-600"><MapPin className="w-5 h-5 text-charcoal-400" />{selectedAppt.location}</p>}
+                {selectedAppt.with_whom && <p className="flex items-center gap-3 text-charcoal-600"><User className="w-5 h-5 text-charcoal-400" />{selectedAppt.with_whom}</p>}
+                {selectedAppt.description && <p className="text-charcoal-600 mt-2 bg-charcoal-50 p-3 rounded-xl">{selectedAppt.description}</p>}
+              </div>
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex-shrink-0">
+              <button onClick={() => setSelectedAppt(null)} className="w-full py-3 bg-charcoal-900 text-white rounded-xl font-medium hover:bg-charcoal-700 transition-colors min-h-[48px]">
+                Fermer
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-charcoal-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-heading-sm text-charcoal-900">Nouveau rendez-vous</h3>
-              <button onClick={() => setShowAdd(false)} className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[90dvh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
+            {/* Mobile drag handle */}
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
-            <div className="space-y-3">
+            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
+              <h3 className="font-display text-lg font-semibold text-charcoal-900">Nouveau rendez-vous</h3>
+              <button onClick={() => setShowAdd(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+            </div>
+            <div className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto flex-1 overscroll-contain">
               <div>
                 <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Titre *</label>
                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -387,10 +402,10 @@ export default function PlanningPage() {
                   className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400" rows={3} />
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowAdd(false)} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">Annuler</button>
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex flex-col-reverse sm:flex-row gap-3 flex-shrink-0 bg-white">
+              <button onClick={() => setShowAdd(false)} className="w-full sm:flex-1 py-3 border border-charcoal-200 text-charcoal-700 text-sm font-medium hover:bg-charcoal-50 transition-colors rounded-xl min-h-[48px]">Annuler</button>
               <button onClick={handleAddAppointment} disabled={saving}
-                className="flex-1 py-2.5 bg-charcoal-900 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
+                className="w-full sm:flex-1 py-3 bg-charcoal-900 text-white text-sm font-semibold hover:bg-charcoal-700 disabled:opacity-50 transition-colors rounded-xl min-h-[48px]">
                 {saving ? 'Ajout…' : 'Ajouter'}
               </button>
             </div>
