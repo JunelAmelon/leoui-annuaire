@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { getPaypalAccessToken, getPaypalBaseUrl, PAYPAL_PLAN_IDS } from '@/lib/paypal';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
+import { getActiveSubscription, resolveSubscriptionConflict } from '@/lib/subscription-manager';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -20,9 +21,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Plan PayPal non configuré' }, { status: 400 });
     }
 
+    // 🔄 VÉRIFICATION ANTI-DOUBLE ABONNEMENT
+    const activeSub = await getActiveSubscription(uid);
+    let conflictResult = null;
+    
+    if (activeSub && activeSub.provider === 'stripe') {
+      // Annuler Stripe immédiatement
+      conflictResult = await resolveSubscriptionConflict(uid, 'paypal', true);
+      console.log('[paypal/checkout] Conflit résolu:', conflictResult.message);
+    }
+
     const vendorSnap = await adminDb.collection('vendors').doc(uid).get();
     const vendor = vendorSnap.data() as any;
     if (!vendor) return NextResponse.json({ ok: false, error: 'Prestataire introuvable' }, { status: 404 });
+    
+    // Marquer dans le vendor qu'un switch de provider a eu lieu
+    if (conflictResult?.previousSubscription) {
+      await adminDb.collection('vendors').doc(uid).set({
+        previousProvider: conflictResult.previousSubscription.provider,
+        providerSwitchedAt: new Date(),
+      }, { merge: true });
+    }
 
     const accessToken = await getPaypalAccessToken();
     const response = await fetch(`${getPaypalBaseUrl()}/v1/billing/subscriptions`, {

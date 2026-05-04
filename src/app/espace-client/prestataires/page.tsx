@@ -10,6 +10,8 @@ import {
   Tag, CheckCircle2, Users,
 } from 'lucide-react';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
+import VendorCardUnified from '@/components/VendorCardUnified';
+import type { SubscriptionTier } from '@/lib/subscription-plans';
 
 interface Vendor {
   id: string;
@@ -26,6 +28,9 @@ interface Vendor {
   startingPrice?: string;
   description?: string;
   email?: string;
+  subscriptionTier?: SubscriptionTier;
+  hasPromo?: boolean;
+  vendorScore?: number;
 }
 
 const CATEGORIES = [
@@ -66,11 +71,16 @@ export default function PrestatairesPage() {
     if (cat) setCategory(cat);
   }, [searchParams]);
 
+  // 🔄 Utiliser l'API avec ranking basé sur les formules
   useEffect(() => {
-    getDocuments('vendors', [])
-      .then(docs => setVendors(
-        (docs as Vendor[]).map(v => ({ ...v, imageUrl: (v as any).images?.[0] || (v as any).imageUrl || '' }))
-      ))
+    fetch('/api/public/vendors')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        const docs = Array.isArray(json.vendors) ? json.vendors : [];
+        // Les vendors sont déjà triés par vendorScore (formule + note + avis)
+        setVendors(docs as Vendor[]);
+      })
       .catch(() => setVendors([]))
       .finally(() => setLoading(false));
   }, []);
@@ -97,13 +107,14 @@ export default function PrestatairesPage() {
 
   const parsePrice = (s: string) => { const n = (s || '').replace(/[^\d]/g, ''); return n ? parseInt(n) : 0; };
 
+  // 🔄 Filtrer les vendors (déjà triés par l'API selon la formule)
   const filtered = vendors
     .filter(v => {
       const matchCat = category === 'Tous' || v.category === category;
       const q = search.toLowerCase();
       const matchSearch = !q || v.name.toLowerCase().includes(q) || v.category.toLowerCase().includes(q);
-      const matchCity = !citySearch || (v.location || '').toLowerCase().includes(citySearch.toLowerCase());
-      const matchPromo = !hasPromo || (v as any).hasPromo;
+      const matchCity = !citySearch || (v.location || v.address || '').toLowerCase().includes(citySearch.toLowerCase());
+      const matchPromo = !hasPromo || v.hasPromo;
       const price = parsePrice(v.startingPrice || '');
       const matchPrice = priceFilters.length === 0 || priceFilters.some(f => {
         if (f === 'Moins de 500€') return price > 0 && price < 500;
@@ -117,13 +128,13 @@ export default function PrestatairesPage() {
       const matchSelected = !showSelectedOnly || selectedVendorIds.has(v.id) || selectedVendorIds.has((v as any).uid);
       return matchCat && matchSearch && matchCity && matchPromo && matchPrice && matchService && matchSelected;
     })
+    // Tri secondaire selon la sélection utilisateur
     .sort((a, b) => {
       if (sortBy === 'note') return ((b as any).rating || 0) - ((a as any).rating || 0);
       if (sortBy === 'prix-asc') return parsePrice(a.startingPrice || '') - parsePrice(b.startingPrice || '');
       if (sortBy === 'prix-desc') return parsePrice(b.startingPrice || '') - parsePrice(a.startingPrice || '');
-      if ((a as any).featured && !(b as any).featured) return -1;
-      if (!(a as any).featured && (b as any).featured) return 1;
-      return ((b as any).rating || 0) - ((a as any).rating || 0);
+      // Par défaut: garder l'ordre de l'API (vendorScore = formule + note + avis)
+      return (b.vendorScore || 0) - (a.vendorScore || 0);
     });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
@@ -291,86 +302,60 @@ export default function PrestatairesPage() {
             </div>
           ) : viewMode === 'list' ? (
             <div className="space-y-3">
-              {paginated.map(vendor => {
-                const photo = vendor.imageUrl || vendor.images?.[0] || vendor.photo || '';
-                return (
-                  <article key={vendor.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col sm:flex-row">
-                    <div className="sm:w-44 h-40 sm:h-auto flex-shrink-0 overflow-hidden relative cursor-pointer" onClick={() => openProfile(vendor)}>
-                      {photo ? (
-                        <img src={photo} alt={vendor.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="w-full h-full bg-stone-100 flex items-center justify-center"><Camera className="w-8 h-8 text-charcoal-300" /></div>
-                      )}
-                    </div>
-                    <div className="flex-1 p-5 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-start justify-between mb-1.5">
-                          <button onClick={() => openProfile(vendor)} className="text-left">
-                            <h3 className="font-serif text-charcoal-900 text-lg font-light hover:text-rose-600 transition-colors">{vendor.name}</h3>
-                          </button>
-                          <button onClick={() => setFavorites(prev => { const n = new Set(prev); n.has(vendor.id) ? n.delete(vendor.id) : n.add(vendor.id); return n; })}
-                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-rose-50 transition-colors ml-2 flex-shrink-0">
-                            <Heart className={`w-4 h-4 ${favorites.has(vendor.id) ? 'text-rose-500 fill-rose-500' : 'text-charcoal-300 hover:text-rose-500'}`} />
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="text-xs font-medium text-charcoal-500 bg-stone-100 px-2 py-0.5 rounded-full">{vendor.category}</span>
-                          {(vendor.location || vendor.address) && (
-                            <span className="text-xs text-charcoal-400 flex items-center gap-1"><MapPin className="w-3 h-3" />{vendor.location || vendor.address}</span>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                            <span className="text-xs font-semibold text-charcoal-700">{vendor.rating || '—'}</span>
-                            <span className="text-xs text-charcoal-400">({vendor.reviewCount || 0})</span>
-                          </div>
-                        </div>
-                        {vendor.description && <p className="text-sm text-charcoal-500 line-clamp-2 leading-relaxed">{vendor.description}</p>}
-                      </div>
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100">
-                        <div className="flex items-center gap-3">
-                          {vendor.startingPrice && <span className="text-sm text-charcoal-700">À partir de <strong>{vendor.startingPrice}</strong></span>}
-                          {(vendor as any).hasPromo && <span className="text-xs text-rose-600 flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-full"><Tag className="w-3 h-3" /> Promo</span>}
-                        </div>
-                        <button onClick={() => openProfile(vendor)}
-                          className="bg-charcoal-900 hover:bg-charcoal-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors">
-                          Voir le profil
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              {paginated.map(vendor => (
+                <VendorCardUnified
+                  key={vendor.id}
+                  id={vendor.id}
+                  name={vendor.name}
+                  category={vendor.category}
+                  location={vendor.location || vendor.address}
+                  rating={vendor.rating}
+                  reviewCount={vendor.reviewCount}
+                  imageUrl={vendor.imageUrl || vendor.images?.[0] || vendor.photo || ''}
+                  images={vendor.images}
+                  startingPrice={vendor.startingPrice}
+                  subscriptionTier={vendor.subscriptionTier}
+                  description={vendor.description}
+                  hasPromo={vendor.hasPromo}
+                  hrefBase="/espace-client/prestataires"
+                  variant="horizontal"
+                  showFavorite
+                  isFavorite={favorites.has(vendor.id)}
+                  onFavoriteToggle={(id) => setFavorites(prev => {
+                    const n = new Set(prev);
+                    n.has(id) ? n.delete(id) : n.add(id);
+                    return n;
+                  })}
+                />
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {paginated.map(vendor => {
-                const photo = vendor.imageUrl || vendor.images?.[0] || vendor.photo || '';
-                return (
-                  <div key={vendor.id} className="group cursor-pointer" onClick={() => openProfile(vendor)}>
-                    <article className="relative h-60 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-                      {photo ? (
-                        <img src={photo} alt={vendor.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="w-full h-full bg-stone-200 flex items-center justify-center"><Camera className="w-8 h-8 text-charcoal-400" /></div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                      <button onClick={e => { e.stopPropagation(); setFavorites(prev => { const n = new Set(prev); n.has(vendor.id) ? n.delete(vendor.id) : n.add(vendor.id); return n; }); }}
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center">
-                        <Heart className={`w-3.5 h-3.5 ${favorites.has(vendor.id) ? 'text-rose-500 fill-rose-500' : 'text-charcoal-500'}`} />
-                      </button>
-                      <div className="absolute bottom-0 p-4">
-                        <p className="text-[0.65rem] text-white/60 mb-0.5 uppercase tracking-wider">{vendor.category}</p>
-                        <h3 className="font-serif text-white font-light text-base">{vendor.name}</h3>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                          <span className="text-xs text-white/80">{vendor.rating || '—'}</span>
-                          {vendor.startingPrice && <span className="text-xs text-white/50">· {vendor.startingPrice}</span>}
-                        </div>
-                      </div>
-                    </article>
-                  </div>
-                );
-              })}
+              {paginated.map(vendor => (
+                <VendorCardUnified
+                  key={vendor.id}
+                  id={vendor.id}
+                  name={vendor.name}
+                  category={vendor.category}
+                  location={vendor.location || vendor.address}
+                  rating={vendor.rating}
+                  reviewCount={vendor.reviewCount}
+                  imageUrl={vendor.imageUrl || vendor.images?.[0] || vendor.photo || ''}
+                  images={vendor.images}
+                  startingPrice={vendor.startingPrice}
+                  subscriptionTier={vendor.subscriptionTier}
+                  description={vendor.description}
+                  hrefBase="/espace-client/prestataires"
+                  variant="compact"
+                  showFavorite
+                  isFavorite={favorites.has(vendor.id)}
+                  onFavoriteToggle={(id) => setFavorites(prev => {
+                    const n = new Set(prev);
+                    n.has(id) ? n.delete(id) : n.add(id);
+                    return n;
+                  })}
+                />
+              ))}
             </div>
           )}
 

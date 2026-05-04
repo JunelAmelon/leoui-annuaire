@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getTierFromPaypalPlanId, verifyPaypalWebhookSignature } from '@/lib/paypal';
+import { syncPayPalSubscription, cleanupActiveSubscriptions } from '@/lib/subscription-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,32 @@ export async function POST(req: Request) {
     if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED' || eventType === 'BILLING.SUBSCRIPTION.UPDATED') {
       const tier = getTierFromPaypalPlanId(planId);
       const nextBillingTime = resource?.billing_info?.next_billing_time || null;
+      
+      // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION
+      const subscription = await syncPayPalSubscription(vendorDocId, resource);
+      if (subscription) {
+        // Nettoyer les anciens abonnements Stripe
+        await cleanupActiveSubscriptions(vendorDocId, subscription.id);
+        
+        // Annuler les abonnements Stripe actifs en base
+        const stripeSubs = await adminDb
+          .collection('subscriptions')
+          .where('userId', '==', vendorDocId)
+          .where('provider', '==', 'stripe')
+          .where('status', 'in', ['active', 'pending'])
+          .get();
+        
+        const batch = adminDb.batch();
+        stripeSubs.docs.forEach(doc => {
+          batch.update(doc.ref, { 
+            status: 'canceled', 
+            canceledAt: new Date(),
+            updatedAt: new Date(),
+          });
+        });
+        await batch.commit();
+      }
+      
       await adminDb.collection('vendors').doc(vendorDocId).set({
         subscriptionTier: tier,
         subscriptionStatus: 'active',
@@ -51,6 +78,21 @@ export async function POST(req: Request) {
       eventType === 'BILLING.SUBSCRIPTION.EXPIRED' ||
       eventType === 'BILLING.SUBSCRIPTION.SUSPENDED'
     ) {
+      // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION - marquer comme canceled
+      const subSnapshot = await adminDb
+        .collection('subscriptions')
+        .where('providerSubscriptionId', '==', subscriptionId)
+        .limit(1)
+        .get();
+      
+      if (!subSnapshot.empty) {
+        await subSnapshot.docs[0].ref.update({
+          status: 'canceled',
+          canceledAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+      
       await adminDb.collection('vendors').doc(vendorDocId).set({
         subscriptionTier: 'free',
         subscriptionStatus: 'canceled',
@@ -62,6 +104,20 @@ export async function POST(req: Request) {
     }
 
     if (eventType === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') {
+      // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION - marquer comme past_due
+      const subSnapshot = await adminDb
+        .collection('subscriptions')
+        .where('providerSubscriptionId', '==', subscriptionId)
+        .limit(1)
+        .get();
+      
+      if (!subSnapshot.empty) {
+        await subSnapshot.docs[0].ref.update({
+          status: 'past_due',
+          updatedAt: new Date(),
+        });
+      }
+      
       await adminDb.collection('vendors').doc(vendorDocId).set({
         subscriptionStatus: 'past_due',
         subscriptionProvider: 'paypal',

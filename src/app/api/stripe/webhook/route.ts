@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { stripe } from '@/lib/stripe';
 import { syncVendorSubscriptionFromStripe } from '@/lib/stripe-sync';
+import { syncStripeSubscription, cleanupActiveSubscriptions } from '@/lib/subscription-manager';
 import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -33,30 +34,68 @@ export async function POST(req: Request) {
         if (!subId) break;
 
         const sub = await stripe.subscriptions.retrieve(subId);
+        
+        // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION
+        const subscription = await syncStripeSubscription(uid, sub);
+        if (subscription) {
+          // Nettoyer les anciens abonnements (sécurité)
+          await cleanupActiveSubscriptions(uid, subscription.id);
+        }
+        
+        // Sync vers vendor (legacy)
         await syncVendorSubscriptionFromStripe({
           uid,
           subscription: sub,
           stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id || '',
           sessionMetadata: session.metadata as Record<string, string | null> | undefined,
         });
+        
+        // 🔒 NETTOYER TOUS LES ABONNEMENTS PAYPAL
         await adminDb.collection('vendors').doc(uid).set({
           paypalSubscriptionId: null,
           pendingPaypalSubscriptionId: null,
           pendingPaypalPlanId: null,
+          subscriptionProvider: 'stripe',
           updatedAt: new Date().toISOString(),
         }, { merge: true });
+        
+        // Annuler tous les abonnements PayPal actifs en base
+        const paypalSubs = await adminDb
+          .collection('subscriptions')
+          .where('userId', '==', uid)
+          .where('provider', '==', 'paypal')
+          .where('status', 'in', ['active', 'pending'])
+          .get();
+        
+        const batch = adminDb.batch();
+        paypalSubs.docs.forEach(doc => {
+          batch.update(doc.ref, { 
+            status: 'canceled', 
+            canceledAt: new Date(),
+            updatedAt: new Date(),
+          });
+        });
+        await batch.commit();
+        
         break;
       }
 
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
         const uid = sub.metadata?.uid || '';
+        
+        // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION
+        if (uid) {
+          await syncStripeSubscription(uid, sub);
+        }
+        
         if (!uid) {
           const snap = await adminDb.collection('vendors')
             .where('stripeSubscriptionId', '==', sub.id).limit(1).get();
           if (!snap.empty) {
             const docId = snap.docs[0].id;
             await updateVendorSubscription(docId, sub);
+            await syncStripeSubscription(docId, sub);
           }
           break;
         }
@@ -67,6 +106,24 @@ export async function POST(req: Request) {
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
         const uid = sub.metadata?.uid || '';
+        
+        // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION - marquer comme canceled
+        if (uid || sub.id) {
+          const subSnapshot = await adminDb
+            .collection('subscriptions')
+            .where('providerSubscriptionId', '==', sub.id)
+            .limit(1)
+            .get();
+          
+          if (!subSnapshot.empty) {
+            await subSnapshot.docs[0].ref.update({
+              status: 'canceled',
+              canceledAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+        }
+        
         if (!uid) {
           const snap = await adminDb.collection('vendors')
             .where('stripeSubscriptionId', '==', sub.id).limit(1).get();

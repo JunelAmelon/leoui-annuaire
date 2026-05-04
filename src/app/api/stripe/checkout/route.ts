@@ -3,6 +3,11 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { stripe, STRIPE_PRICE_IDS } from '@/lib/stripe';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import { syncVendorSubscriptionFromStripe } from '@/lib/stripe-sync';
+import { 
+  getActiveSubscription, 
+  resolveSubscriptionConflict,
+  cleanupActiveSubscriptions 
+} from '@/lib/subscription-manager';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -24,9 +29,27 @@ export async function POST(req: Request) {
     const priceId = await resolveStripePriceId(configuredPriceOrProductId);
     if (!priceId) return NextResponse.json({ ok: false, error: 'Plan invalide ou prix non configuré' }, { status: 400 });
 
+    // 🔄 VÉRIFICATION ANTI-DOUBLE ABONNEMENT
+    const activeSub = await getActiveSubscription(uid);
+    let conflictResult = null;
+    
+    if (activeSub && activeSub.provider === 'paypal') {
+      // Annuler PayPal et continuer avec Stripe
+      conflictResult = await resolveSubscriptionConflict(uid, 'stripe', true);
+      console.log('[stripe/checkout] Conflit résolu:', conflictResult.message);
+    }
+
     const vendorSnap = await adminDb.collection('vendors').doc(uid).get();
     const vendor = vendorSnap.data() as any;
     if (!vendor) return NextResponse.json({ ok: false, error: 'Prestataire introuvable' }, { status: 404 });
+    
+    // Marquer dans le vendor qu'un switch de provider a eu lieu
+    if (conflictResult?.previousSubscription) {
+      await adminDb.collection('vendors').doc(uid).set({
+        previousProvider: conflictResult.previousSubscription.provider,
+        providerSwitchedAt: new Date(),
+      }, { merge: true });
+    }
 
     let stripeCustomerId: string = vendor.stripeCustomerId || '';
     let shouldCreateCustomer = !stripeCustomerId;
