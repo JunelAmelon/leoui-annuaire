@@ -3,7 +3,7 @@
 import React from 'react';
 import TourOverlay from './TourOverlay';
 import TourTooltip from './TourTooltip';
-import { TourStep } from './useTour';
+import { TourStep } from './guides.config';
 
 interface InteractiveTourProps {
   steps: TourStep[];
