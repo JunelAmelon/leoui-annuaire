@@ -64,11 +64,54 @@ export async function POST(req: Request) {
           const currentItem = existingSub.items.data[0];
           const currentPriceId = currentItem?.price?.id || '';
           if (currentPriceId && currentPriceId !== priceId) {
+            // 1. Mettre à jour l'abonnement avec prorata
             const updatedSub = await stripe.subscriptions.update(existingSubId, {
               items: [{ id: currentItem.id, price: priceId }],
               proration_behavior: 'create_prorations',
               metadata: { ...(existingSub.metadata || {}), uid, vendorId: uid, planId: String(planId) },
             });
+            
+            // 2. Récupérer la prochaine invoice pour voir le montant du prorata
+            const upcomingInvoice = await (stripe as any).invoices.retrieveUpcoming({
+              customer: stripeCustomerId,
+              subscription: existingSubId,
+            });
+            
+            // 3. S'il y a un montant à payer maintenant (prorata), créer un checkout
+            const amountDue = upcomingInvoice.amount_due;
+            if (amountDue > 0) {
+              // Créer un paiement immédiat pour le prorata
+              const paymentSession = await stripe.checkout.sessions.create({
+                customer: stripeCustomerId,
+                mode: 'payment',
+                line_items: [{
+                  price_data: {
+                    currency: 'eur',
+                    product_data: {
+                      name: `Changement de plan - ${planId}`,
+                      description: 'Ajustement proratisé jusqu\'à la prochaine période',
+                    },
+                    unit_amount: amountDue,
+                  },
+                  quantity: 1,
+                }],
+                success_url: `${APP_URL}/espace-prestataire/abonnement?success=true&upgrade=true`,
+                cancel_url: `${APP_URL}/espace-prestataire/abonnement?canceled=true`,
+                metadata: { uid, vendorId: uid, planId, type: 'prorata_upgrade' },
+              });
+              
+              // Mettre à jour le vendor avec le nouveau plan
+              await syncVendorSubscriptionFromStripe({
+                uid,
+                subscription: updatedSub,
+                stripeCustomerId,
+                sessionMetadata: { planId: String(planId), uid },
+              });
+              
+              return NextResponse.json({ ok: true, url: paymentSession.url, requiresPayment: true });
+            }
+            
+            // Pas de prorata à payer, juste mettre à jour
             const sync = await syncVendorSubscriptionFromStripe({
               uid,
               subscription: updatedSub,
