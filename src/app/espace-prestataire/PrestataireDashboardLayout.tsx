@@ -111,8 +111,10 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
 
           {/* Logo */}
           <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
-            <Link href="/"
-              className="w-10 h-10 flex-shrink-0 border border-rose-600 flex items-center justify-center hover:bg-rose-600 transition-colors group">
+            <Link
+              href="/"
+              className="w-10 h-10 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group"
+            >
               <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors" />
             </Link>
             {!collapsed && (
@@ -253,10 +255,10 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
           <div className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-2xl flex flex-col z-50">
             <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
-                <div className="w-8 h-8 bg-rose-600 rounded-xl flex items-center justify-center">
-                  <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                <div className="w-8 h-8 border border-rose-600 rounded-xl flex items-center justify-center">
+                  <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
                 </div>
-                <span className="font-serif text-lg text-charcoal-900">LeOui.net Pro</span>
+                <span className="font-serif text-lg text-charcoal-900">LeOui.net</span>
               </Link>
               <button onClick={() => setMobileOpen(false)} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-stone-100">
                 <X className="w-4 h-4" />
@@ -311,10 +313,12 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
       <div className="flex-1 min-w-0">
         {/* Mobile topbar */}
         <header className="lg:hidden sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 px-4 h-14 flex items-center justify-between shadow-sm">
-          <button onClick={() => setMobileOpen(true)} className="p-2 text-charcoal-600 rounded-xl hover:bg-stone-100">
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="font-serif text-lg text-charcoal-900">LeOui.net Pro</span>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 border border-rose-600 rounded-lg flex items-center justify-center">
+              <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+            </div>
+            <span className="font-serif text-lg text-charcoal-900">LeOui.net</span>
+          </Link>
           <div className={`relative w-9 h-9 rounded-full overflow-hidden ${avatarStyle.ring} ${avatarStyle.glow}`}>
             {profilePhoto ? (
               <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" />

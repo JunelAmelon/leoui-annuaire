@@ -9,7 +9,7 @@
  */
 
 import Link from 'next/link';
-import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight, Zap, Tag } from 'lucide-react';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 
@@ -80,131 +80,114 @@ export default function VendorCardUnified({
     }
   };
 
-  // Si horizontal (mode liste)
+  // Si horizontal (mode liste) - Style EXACT comme site public vendors/page.tsx
   if (variant === 'horizontal') {
     return (
-      <article className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col sm:flex-row group">
+      <article className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col sm:flex-row border-0 sm:border sm:border-charcoal-100 group">
         {/* Image */}
-        <div className="sm:w-44 h-40 sm:h-auto flex-shrink-0 overflow-hidden relative">
-          <Link href={`${hrefBase}/${id}`}>
-            <img 
-              src={displayImage} 
-              alt={name} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-            />
-          </Link>
-          {featured && (
-            <div className="absolute top-3 left-3 px-2 py-1 bg-rose-500 text-white text-xs font-semibold rounded-lg">
-              À la une
-            </div>
+        <Link href={`${hrefBase}/${id}`} className="sm:w-48 h-44 sm:h-auto flex-shrink-0 overflow-hidden relative">
+          <img
+            src={displayImage}
+            alt={name}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+          />
+          {tierBadge && (
+            <span className={`absolute top-2 left-2 px-2 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1 ${getTierStyles()}`}>
+              <Crown className="w-2.5 h-2.5" />{tierBadge.label}
+            </span>
           )}
-        </div>
-        
+        </Link>
+
         {/* Content */}
         <div className="flex-1 p-5 flex flex-col justify-between">
           <div>
-            <div className="flex items-start justify-between mb-1.5">
-              <div>
-                <Link href={`${hrefBase}/${id}`}>
-                  <h3 className="font-serif text-charcoal-900 text-lg font-light hover:text-rose-600 transition-colors">
-                    {name}
-                  </h3>
-                </Link>
-              </div>
+            <div className="flex items-start justify-between mb-1">
+              <Link href={`${hrefBase}/${id}`}>
+                <h3 className="font-serif text-heading-md text-charcoal-900 hover:text-rose-600 transition-colors">
+                  {name}
+                </h3>
+              </Link>
               {showFavorite && (
-                <button 
+                <button
                   onClick={() => onFavoriteToggle?.(id)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-rose-50 transition-colors ml-2 flex-shrink-0"
                 >
-                  <Heart className={`w-4 h-4 ${isFavorite ? 'text-rose-500 fill-rose-500' : 'text-charcoal-300 hover:text-rose-500'}`} />
+                  <Heart className={`w-4 h-4 ${isFavorite ? 'text-rose-500 fill-rose-500' : 'text-charcoal-400 hover:text-rose-500'}`} />
                 </button>
               )}
             </div>
-            
-            {/* Badges Row */}
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-xs font-medium text-charcoal-500 bg-stone-100 px-2 py-0.5 rounded-full">
-                {category}
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`} />
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-charcoal-900">{rating || '0.0'}</span>
+              <span className="text-sm text-charcoal-500">({reviewCount || 0})</span>
+              <span className="text-charcoal-300">·</span>
+              <span className="text-sm text-charcoal-500 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> {location || 'France'}
               </span>
-              {tierBadge && TierIcon && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 ${getTierStyles()}`}>
-                  <TierIcon className="w-3 h-3" />
-                  {tierBadge.label}
-                </span>
-              )}
-              {location && (
-                <span className="text-xs text-charcoal-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {location}
-                </span>
-              )}
-              {rating > 0 && (
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                  <span className="text-xs font-semibold text-charcoal-700">{rating.toFixed(1)}</span>
-                  <span className="text-xs text-charcoal-400">({reviewCount})</span>
-                </div>
-              )}
             </div>
-            
-            {description && (
-              <p className="text-sm text-charcoal-500 line-clamp-2 leading-relaxed">{description}</p>
-            )}
+            <p className="text-sm text-charcoal-600 line-clamp-2 leading-relaxed">
+              {description || `${category} professionnel pour votre mariage.`}
+            </p>
           </div>
-          
-          {/* Footer */}
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100">
-            <div className="flex items-center gap-3">
-              {startingPrice && (
-                <span className="text-sm text-charcoal-700">
-                  À partir de <strong>{startingPrice}</strong>
-                </span>
-              )}
+
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-charcoal-100 gap-2">
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className="text-sm text-charcoal-700 flex items-center gap-1.5 font-medium">
+                À partir de <span className="text-charcoal-900 font-semibold">{startingPrice || '-'}</span>
+              </span>
               {hasPromo && (
-                <span className="text-xs text-rose-600 flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-full">
-                  Promo
+                <span className="hidden sm:flex text-xs text-rose-600 items-center gap-1">
+                  <Tag className="w-3 h-3" /> 1 promotion
                 </span>
               )}
             </div>
-            
-            {/* CTA Button - Style exact comme espace public */}
-            <Link
-              href={`${hrefBase}/${id}`}
-              className="group inline-flex items-center justify-center gap-1.5 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-3 sm:px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-shrink-0"
-            >
-              <span className="hidden sm:inline">Voir le profil</span>
-              <span className="sm:hidden text-xs">Voir profil</span>
-              <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200 flex-shrink-0">
-                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-rose-500 group-hover:text-white" />
+            <div className="flex items-center justify-end gap-2 flex-shrink-0">
+              <span className="hidden sm:flex text-xs text-charcoal-500 items-center gap-1">
+                <Zap className="w-3 h-3 text-amber-500" /> Réponse rapide
               </span>
-            </Link>
+              <Link
+                href={`${hrefBase}/${id}`}
+                className="group inline-flex items-center justify-center gap-1.5 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-3 sm:px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-shrink-0"
+              >
+                <span className="hidden sm:inline">Voir le profil</span>
+                <span className="sm:hidden text-xs">Voir profil</span>
+                <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200 flex-shrink-0">
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-rose-500 group-hover:text-white animate-[bounce-x_1s_ease-in-out_infinite]" />
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </article>
     );
   }
 
-  // Compact (mode grid simplifié)
+  // Compact (mode grid) - Style EXACT comme site public vendors/page.tsx vue Photos
   if (variant === 'compact') {
     return (
-      <Link href={`${hrefBase}/${id}`} className="group cursor-pointer">
-        <article className="relative h-60 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-          <img 
-            src={displayImage} 
-            alt={name} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+      <Link href={`${hrefBase}/${id}`} className="group block">
+        <article className="relative h-64 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+          <img
+            src={displayImage}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
           {/* Favorite */}
           {showFavorite && (
-            <button 
+            <button
               onClick={(e) => { e.preventDefault(); onFavoriteToggle?.(id); }}
               className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition-colors"
             >
               <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'text-rose-500 fill-rose-500' : 'text-charcoal-500'}`} />
             </button>
           )}
-          
+
           {/* Tier Badge */}
           {tierBadge && (
             <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${getTierStyles()}`}>
@@ -212,20 +195,21 @@ export default function VendorCardUnified({
               {tierBadge.label}
             </div>
           )}
-          
-          {/* Content */}
-          <div className="absolute bottom-0 p-4 w-full">
-            <p className="text-[0.65rem] text-white/60 mb-0.5 uppercase tracking-wider">{category}</p>
-            <h3 className="font-serif text-white font-light text-base">{name}</h3>
-            <div className="flex items-center gap-1.5 mt-1">
-              {rating > 0 && (
-                <>
-                  <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                  <span className="text-xs text-white/80">{rating.toFixed(1)}</span>
-                </>
-              )}
-              {startingPrice && <span className="text-xs text-white/50">· {startingPrice}</span>}
+
+          {/* Content - Style exact site public */}
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={`w-3 h-3 ${i < Math.floor(rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-white/25'}`} />
+                ))}
+              </div>
+              <span className="text-xs text-white/80 font-medium">{rating || '0.0'}</span>
             </div>
+            <p className="text-white font-semibold text-sm truncate">{name}</p>
+            <p className="text-xs text-white/70 truncate flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3" /> {location || 'France'}
+            </p>
           </div>
         </article>
       </Link>
