@@ -9,7 +9,7 @@
  */
 
 import Link from 'next/link';
-import { MapPin, Star, Heart, BadgeCheck, Award, Crown } from 'lucide-react';
+import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight } from 'lucide-react';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 
@@ -166,12 +166,16 @@ export default function VendorCardUnified({
               )}
             </div>
             
-            {/* CTA Button - Style unifié */}
-            <Link 
+            {/* CTA Button - Style exact comme espace public */}
+            <Link
               href={`${hrefBase}/${id}`}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors"
+              className="group inline-flex items-center justify-center gap-1.5 bg-white border border-rose-200 text-charcoal-700 hover:border-rose-400 hover:bg-rose-50 font-medium px-3 sm:px-4 py-2 rounded-full text-sm transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap flex-shrink-0"
             >
-              Voir le profil
+              <span className="hidden sm:inline">Voir le profil</span>
+              <span className="sm:hidden text-xs">Voir profil</span>
+              <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors duration-200 flex-shrink-0">
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-rose-500 group-hover:text-white" />
+              </span>
             </Link>
           </div>
         </div>
