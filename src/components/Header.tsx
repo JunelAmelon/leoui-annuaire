@@ -8,6 +8,7 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const navLinks = [
+    { href: '/',                label: 'Accueil' },
     { href: '/vendors',         label: 'Prestataires' },
     { href: '/inspiration',     label: 'Inspiration' },
     { href: '/planifier-votre-mariage', label: 'Planifier votre mariage' },

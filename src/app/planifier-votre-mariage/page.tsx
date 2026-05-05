@@ -123,138 +123,86 @@ export default function WeddingPlannerPageV1() {
     <div className="min-h-screen bg-white">
       <Header />
 
-      {/* HERO — Editorial Style */}
-      <section className="relative min-h-[90vh] flex items-center">
-        {/* Background with parallax effect */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url('https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920')`,
-            }}
+      {/* HERO — Harmonized Style */}
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '580px' }}>
+        <div className="absolute inset-0">
+          <img
+            src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920"
+            alt="Wedding Planner"
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-stone-900/95 via-stone-800/80 to-stone-700/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-900/50 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="max-w-xl">
-              <AnimatedSection delay={0}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-px w-12 bg-rose-400" />
-                  <span className="text-rose-300 text-xs font-medium tracking-[0.2em] uppercase">Wedding Planner</span>
-                </div>
-              </AnimatedSection>
-              
-              <AnimatedSection delay={100}>
-                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white leading-[1.1] mb-6">
-                  Organisez votre mariage
-                  <span className="block italic text-rose-200 mt-2">avec sérénité</span>
-                </h1>
-              </AnimatedSection>
-              
-              <AnimatedSection delay={200}>
-                <p className="text-lg text-stone-300 leading-relaxed mb-8 max-w-md">
-                  Votre espace couple numérique tout-en-un. Planning, prestataires, budget et documents — centralisés avec l\'accompagnement d\'experts.
-                </p>
-              </AnimatedSection>
-              
-              <AnimatedSection delay={300}>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link 
-                    href="/signup" 
-                    className="group inline-flex items-center justify-center gap-3 bg-white hover:bg-rose-50 text-stone-900 font-medium px-8 py-4 transition-all duration-300"
-                  >
-                    <span>Commencer l\'aventure</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                  <a 
-                    href="#decouvrir" 
-                    className="group inline-flex items-center justify-center gap-2 text-white/80 hover:text-white px-6 py-4 transition-colors"
-                  >
-                    <Play className="w-4 h-4" />
-                    <span>Découvrir en vidéo</span>
-                  </a>
-                </div>
-              </AnimatedSection>
-
-              {/* Trust indicators */}
-              <AnimatedSection delay={400}>
-                <div className="flex items-center gap-6 mt-12 pt-8 border-t border-white/10">
-                  <div className="flex -space-x-3">
-                    {[1,2,3,4].map((i) => (
-                      <div key={i} className="w-10 h-10 rounded-full bg-stone-600 border-2 border-stone-800 flex items-center justify-center text-xs text-white/60">
-                        <Heart className="w-4 h-4" />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 mb-0.5">
-                      {[1,2,3,4,5].map((i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      ))}
-                      <span className="text-white/80 text-sm ml-1">4.9</span>
-                    </div>
-                    <p className="text-white/50 text-xs">Plus de 500 couples accompagnés</p>
-                  </div>
-                </div>
-              </AnimatedSection>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <div className="max-w-3xl">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-white/60 mb-4">
+              <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
+              <span>/</span>
+              <span className="text-white/90">Wedding Planner</span>
             </div>
 
-            {/* Right - Dashboard Preview */}
-            <AnimatedSection delay={200} className="hidden lg:block">
-              <div className="relative">
-                {/* Decorative elements */}
-                <div className="absolute -top-6 -left-6 w-24 h-24 border border-rose-300/30" />
-                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-rose-500/10" />
-                
-                {/* Dashboard Card */}
-                <div className="relative bg-white rounded-sm shadow-2xl p-6 backdrop-blur-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <p className="text-xs text-stone-400 uppercase tracking-wider">Tableau de bord</p>
-                      <p className="font-serif text-stone-800">Sophie & Thomas</p>
-                    </div>
-                    <div className="bg-rose-50 px-3 py-1.5">
-                      <span className="text-rose-600 text-sm font-medium">J-127</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    {[
-                      { value: '127', label: 'Jours', sub: 'avant le J-J' },
-                      { value: '18', label: 'Prestataires', sub: 'sélectionnés' },
-                      { value: '85%', label: 'Progression', sub: 'planification' },
-                      { value: '12 400€', label: 'Budget', sub: 'sur 25 000€' },
-                    ].map((stat, i) => (
-                      <div key={i} className="bg-stone-50 p-4">
-                        <p className="font-serif text-xl text-stone-800">{stat.value}</p>
-                        <p className="text-xs text-stone-500">{stat.label}</p>
-                        <p className="text-[10px] text-stone-400">{stat.sub}</p>
-                      </div>
-                    ))}
-                  </div>
+            {/* Title */}
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl text-white mb-3 leading-tight">
+              Organisez votre mariage
+              <span className="block italic text-champagne-300 mt-1">avec sérénité</span>
+            </h1>
 
-                  <div className="space-y-3">
-                    <p className="text-xs text-stone-400 uppercase tracking-wider">Prochaines étapes</p>
-                    {[
-                      { text: 'Validation du menu traiteur', done: true },
-                      { text: 'Essayage robe de mariée', done: false },
-                      { text: 'Réunion coordination finale', done: false },
-                    ].map((step, i) => (
-                      <div key={i} className="flex items-center gap-3 py-2 border-b border-stone-100 last:border-0">
-                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${step.done ? 'bg-rose-500' : 'border border-stone-300'}`}>
-                          {step.done && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className={`text-sm ${step.done ? 'text-stone-400 line-through' : 'text-stone-700'}`}>{step.text}</span>
-                      </div>
+            {/* Subtitle */}
+            <p className="text-lg text-white/80 mb-6 max-w-xl leading-relaxed">
+              Votre espace couple numérique tout-en-un. Planning, prestataires, budget et documents — centralisés avec l'accompagnement d'experts.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-rose-50 text-charcoal-900 font-semibold px-6 py-3 rounded-xl transition-colors"
+              >
+                Commencer l'aventure <ArrowRight className="w-4 h-4" />
+              </Link>
+              <a
+                href="#decouvrir"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium px-6 py-3 rounded-xl transition-colors"
+              >
+                <Play className="w-4 h-4" /> Découvrir en vidéo
+              </a>
+            </div>
+
+            {/* Stats */}
+            <div className="flex flex-wrap gap-6 sm:gap-8">
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {['https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?w=100',
+                    'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?w=100',
+                    'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?w=100',
+                    'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?w=100'
+                  ].map((src, i) => (
+                    <img key={i} src={src} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-charcoal-900" />
+                  ))}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1">
+                    {[1,2,3,4,5].map((i) => (
+                      <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
                     ))}
+                    <span className="text-white/80 text-sm ml-1">4.9</span>
                   </div>
+                  <p className="text-white/50 text-xs">500+ couples accompagnés</p>
                 </div>
               </div>
-            </AnimatedSection>
+              <div className="flex gap-6">
+                <div>
+                  <p className="font-display text-xl text-white font-bold">98%</p>
+                  <p className="text-white/50 text-xs">Satisfaction</p>
+                </div>
+                <div>
+                  <p className="font-display text-xl text-white font-bold">24h</p>
+                  <p className="text-white/50 text-xs">Réponse garantie</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -312,7 +260,7 @@ export default function WeddingPlannerPageV1() {
           <AnimatedSection className="text-center mb-16">
             <span className="text-rose-600 text-xs font-medium tracking-[0.2em] uppercase mb-4 block">Notre méthode</span>
             <h2 className="font-serif text-3xl sm:text-4xl text-stone-800 mb-4">
-              Quatre étapes vers l\'exceptionnel
+              Quatre étapes vers l'exceptionnel
             </h2>
           </AnimatedSection>
 
@@ -360,10 +308,14 @@ export default function WeddingPlannerPageV1() {
           <AnimatedSection>
             <Quote className="w-12 h-12 text-rose-400 mx-auto mb-8" />
             <blockquote className="font-serif text-2xl sm:text-3xl text-white leading-relaxed mb-8">
-              "LeOui a transformé nos préparatifs en un moment de plaisir. L\'équipe a été à l\'écoute de chaque détail de notre histoire."
+              "LeOui a transformé nos préparatifs en un moment de plaisir. L'équipe a été à l'écoute de chaque détail de notre histoire."
             </blockquote>
             <div className="flex items-center justify-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-stone-700" />
+              <img 
+                src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=200" 
+                alt="Marie & Julien"
+                className="w-12 h-12 rounded-full object-cover border-2 border-rose-400/30"
+              />
               <div className="text-left">
                 <p className="text-white font-medium">Marie & Julien</p>
                 <p className="text-stone-400 text-sm">Mariés en juin 2024 · Château de Versailles</p>
