@@ -202,17 +202,7 @@ export default function VendorJoinPage() {
                     ))}
                     <span className="text-white/80 text-sm ml-1">4.8</span>
                   </div>
-                  <p className="text-white/50 text-xs">2,400+ prestataires</p>
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <div>
-                  <p className="font-display text-xl text-white font-bold">50K+</p>
-                  <p className="text-white/50 text-xs">Couples actifs</p>
-                </div>
-                <div>
-                  <p className="font-display text-xl text-white font-bold">35%</p>
-                  <p className="text-white/50 text-xs">Taux de conversion</p>
+                  <p className="text-white/50 text-xs">Recommandé par 2,400+ pros</p>
                 </div>
               </div>
             </div>

@@ -290,10 +290,13 @@ export default function WeddingPlannerPageV1() {
                     <h3 className="font-serif text-2xl sm:text-3xl text-stone-800 mb-4">{step.title}</h3>
                     <p className="text-stone-600 leading-relaxed mb-6 max-w-md">{step.desc}</p>
                     
-                    <div className={`flex items-center gap-2 text-rose-600 font-medium text-sm ${i % 2 === 1 ? 'lg:justify-end' : ''}`}>
+                    <Link 
+                      href={`/planifier-votre-mariage/${step.num === '01' ? 'vision' : step.num === '02' ? 'expertise' : step.num === '03' ? 'espace' : 'jour-j'}`}
+                      className={`inline-flex items-center gap-2 text-rose-600 font-medium text-sm hover:text-rose-700 transition-colors ${i % 2 === 1 ? 'lg:justify-end' : ''}`}
+                    >
                       <span>Découvrir</span>
                       <ArrowRight className="w-4 h-4" />
-                    </div>
+                    </Link>
                   </div>
                 </div>
               </AnimatedSection>
