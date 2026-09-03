@@ -311,6 +311,9 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
       <div className="flex-1 min-w-0">
         {/* Mobile topbar */}
         <header className="lg:hidden sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-stone-200 px-4 h-14 flex items-center justify-between shadow-sm">
+          <button onClick={() => setMobileOpen(true)} className="p-2 text-charcoal-600 rounded-xl hover:bg-stone-100">
+            <Menu className="w-5 h-5" />
+          </button>
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 border border-rose-600 rounded-lg flex items-center justify-center">
               <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
