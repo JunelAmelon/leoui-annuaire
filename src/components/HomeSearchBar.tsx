@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, MapPin, ChevronDown, Store } from 'lucide-react';
-import { getDocuments } from '@/lib/db';
 
 const CATEGORIES = [
   'Tous les prestataires',
@@ -27,31 +26,55 @@ export default function HomeSearchBar() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [allVendors, setAllVendors] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [cities, setCities] = useState<string[]>([]);
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      getDocuments('vendors', []),
-      getDocuments('cities', [{ field: 'active', operator: '==', value: true }]),
-    ]).then(([docs, cityDocs]) => {
-      setAllVendors((docs as any[]).map(d => ({
-        id: d.id, name: d.name || '', category: d.category || '',
-        location: d.location || '', imageUrl: d.images?.[0] || '',
-      })));
-      const dbCities = (cityDocs as any[]).map((c: any) => c.name).sort();
-      if (dbCities.length > 0) setCities(dbCities);
-    }).catch(() => {});
+    fetch('/api/public/vendors')
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        const vendors = Array.isArray(json.vendors) ? json.vendors : [];
+        setAllVendors(vendors.map((v: any) => ({
+          id: v.id, name: v.name || '', category: v.category || '',
+          location: v.location || '', imageUrl: v.images?.[0] || v.imageUrl || '',
+        })));
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setShowSuggestions(false);
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+        setShowCitySuggestions(false);
+      }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  const fetchCities = (term: string) => {
+    if (term.length < 1) { setCitySuggestions([]); setShowCitySuggestions(false); setLoadingCities(false); return; }
+    setLoadingCities(true);
+    fetch(`/api/public/cities/search?q=${encodeURIComponent(term)}&limit=10`)
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        const cities = Array.isArray(json.cities) ? json.cities : [];
+        setCitySuggestions(cities);
+        setShowCitySuggestions(cities.length > 0);
+      })
+      .catch(() => {
+        setCitySuggestions([]);
+        setShowCitySuggestions(false);
+      })
+      .finally(() => setLoadingCities(false));
+  };
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
@@ -68,11 +91,21 @@ export default function HomeSearchBar() {
     }, 150);
   };
 
-  const handleSearch = () => {
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setCity(v);
+    if (cityDebounceRef.current) clearTimeout(cityDebounceRef.current);
+    if (v.length < 1) { setCitySuggestions([]); setShowCitySuggestions(false); return; }
+    cityDebounceRef.current = setTimeout(() => fetchCities(v), 180);
+  };
+
+  const handleSearch = (overrideQuery?: string, overrideCity?: string) => {
+    const q = (overrideQuery !== undefined ? overrideQuery : query).trim();
+    const c = (overrideCity !== undefined ? overrideCity : city).trim();
     const params = new URLSearchParams();
     if (category !== 'Tous les prestataires') params.set('cat', category);
-    if (city.trim()) params.set('ville', city.trim());
-    if (query.trim()) params.set('q', query.trim());
+    if (c) params.set('city', c);
+    if (q) params.set('q', q);
     router.push(`/vendors${params.toString() ? '?' + params.toString() : ''}`);
   };
 
@@ -106,7 +139,7 @@ export default function HomeSearchBar() {
         {showSuggestions && suggestions.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-charcoal-100 rounded-xl shadow-xl z-50 overflow-hidden">
             {suggestions.map(s => (
-              <button key={s.id} onMouseDown={() => { router.push(`/vendors/${s.id}`); setShowSuggestions(false); }}
+              <button key={s.id} onMouseDown={() => { setQuery(s.name); setShowSuggestions(false); handleSearch(s.name, undefined); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-rose-50 transition-colors text-left">
                 <div className="w-8 h-8 rounded-lg bg-stone-100 flex-shrink-0 overflow-hidden">
                   {s.imageUrl ? <img src={s.imageUrl} alt={s.name} className="w-full h-full object-cover" /> : <Store className="w-4 h-4 text-charcoal-300 m-auto mt-2" />}
@@ -129,17 +162,21 @@ export default function HomeSearchBar() {
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
           <MapPin className="w-4 h-4 text-charcoal-400" />
         </div>
-        {cities.length > 0 ? (
-          <select value={city} onChange={e => setCity(e.target.value)}
-            className="w-full pl-10 pr-4 py-4 bg-transparent text-charcoal-800 text-sm placeholder-charcoal-400 focus:outline-none border-0 appearance-none">
-            <option value="">Ville ou région…</option>
-            {cities.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        ) : (
-          <input type="text" value={city} onChange={e => setCity(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="Ville ou région…"
-            className="w-full pl-10 pr-4 py-4 bg-transparent text-charcoal-800 text-sm placeholder-charcoal-400 focus:outline-none border-0" />
+        <input type="text" value={city} onChange={handleCityChange}
+          onFocus={() => city.length >= 1 && setShowCitySuggestions(citySuggestions.length > 0)}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          placeholder="Ville ou région…"
+          className="w-full pl-10 pr-4 py-4 bg-transparent text-charcoal-800 text-sm placeholder-charcoal-400 focus:outline-none border-0" />
+        {showCitySuggestions && citySuggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-charcoal-100 rounded-xl shadow-xl z-50 overflow-hidden">
+            {citySuggestions.map(c => (
+              <button key={c} onMouseDown={() => { const cityName = c.split(' (')[0]; setCity(cityName); setShowCitySuggestions(false); handleSearch(undefined, cityName); }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-rose-50 transition-colors text-left">
+                <MapPin className="w-3.5 h-3.5 text-charcoal-400 flex-shrink-0" />
+                <span className="text-sm text-charcoal-700">{c}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 

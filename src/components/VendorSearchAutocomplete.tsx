@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, MapPin, X, Store } from 'lucide-react';
-import { getDocuments } from '@/lib/db';
 
 interface Suggestion {
   id: string;
@@ -21,6 +20,7 @@ interface Props {
   className?: string;
   inputClassName?: string;
   showIcon?: boolean;
+  dark?: boolean;
 }
 
 let cachedVendors: Suggestion[] | null = null;
@@ -28,15 +28,19 @@ let cachedVendors: Suggestion[] | null = null;
 async function loadVendors(): Promise<Suggestion[]> {
   if (cachedVendors) return cachedVendors;
   try {
-    const docs = await getDocuments('vendors', []);
-    cachedVendors = (docs as any[]).map(d => ({
-      id: d.id,
-      name: d.name || '',
-      category: d.category || '',
-      location: d.location || '',
-      imageUrl: d.images?.[0] || d.imageUrl || '',
+    const res = await fetch('/api/public/vendors');
+    const json = await res.json();
+    if (!res.ok || !json?.ok) return [];
+    const vendors = Array.isArray(json.vendors) ? json.vendors : [];
+    const mapped: Suggestion[] = vendors.map((v: any) => ({
+      id: v.id,
+      name: v.name || '',
+      category: v.category || '',
+      location: v.location || '',
+      imageUrl: v.images?.[0] || v.imageUrl || '',
     }));
-    return cachedVendors;
+    cachedVendors = mapped;
+    return mapped;
   } catch { return []; }
 }
 
@@ -48,6 +52,7 @@ export default function VendorSearchAutocomplete({
   className = '',
   inputClassName = '',
   showIcon = true,
+  dark = false,
 }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(value);
@@ -111,7 +116,7 @@ export default function VendorSearchAutocomplete({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className={`flex items-center ${inputClassName || 'border border-charcoal-200 rounded-xl bg-white'}`}>
-        {showIcon && <Search className="w-4 h-4 text-charcoal-400 ml-3 flex-shrink-0" />}
+        {showIcon && <Search className={`w-4 h-4 ml-3 flex-shrink-0 ${dark ? 'text-white/60' : 'text-charcoal-400'}`} />}
         <input
           type="text"
           value={query}
@@ -119,10 +124,10 @@ export default function VendorSearchAutocomplete({
           onFocus={() => { setFocused(true); if (query.length >= 2) getSuggestions(query); }}
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
-          className="flex-1 px-3 py-2.5 text-sm text-charcoal-700 placeholder-charcoal-400 bg-transparent outline-none"
+          className={`flex-1 px-3 py-2.5 text-sm bg-transparent outline-none ${dark ? 'text-white placeholder-white/50' : 'text-charcoal-700 placeholder-charcoal-400'}`}
         />
         {query && (
-          <button onClick={handleClear} className="mr-2 p-1 text-charcoal-300 hover:text-charcoal-600 rounded-full hover:bg-stone-100 transition-colors">
+          <button onClick={handleClear} className={`mr-2 p-1 rounded-full transition-colors ${dark ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-charcoal-300 hover:text-charcoal-600 hover:bg-stone-100'}`}>
             <X className="w-3.5 h-3.5" />
           </button>
         )}

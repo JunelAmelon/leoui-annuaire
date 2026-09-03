@@ -173,32 +173,32 @@ export default function VendorProfileDetailView({
               </div>
             </div>
 
-            <div className="hidden sm:block">
-              <div className="grid grid-cols-12 gap-1">
+            <div className="hidden sm:block w-full">
+              <div className="grid grid-cols-12 grid-rows-2 gap-1 h-[420px] sm:h-[460px] lg:h-[520px]">
                 {/* Main large image */}
-                <div className="col-span-7 row-span-2 aspect-[4/3] overflow-hidden">
+                <div className="col-span-7 row-span-2 h-full overflow-hidden">
                   <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-700" />
                 </div>
                 {/* Side images */}
-                <div className="col-span-5 grid grid-rows-2 gap-1">
-                  <div className="aspect-[16/9] overflow-hidden relative">
+                <div className="col-span-5 row-span-2 grid grid-rows-2 gap-1 h-full">
+                  <div className="overflow-hidden relative h-full">
                     <img src={photos[1] || photos[0]} alt="Photo 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     <button
                       onClick={() => setIsFavorite((f) => !f)}
-                      className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors"
+                      className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors z-10"
                     >
                       <Heart className={`w-4 h-4 ${isFavorite ? 'text-rose-600 fill-rose-600' : 'text-ivory-700'}`} />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    <div className="overflow-hidden">
+                  <div className="grid grid-cols-2 gap-1 h-full">
+                    <div className="overflow-hidden h-full">
                       <img src={photos[2] || photos[0]} alt="Photo 3" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     </div>
-                    <div className="overflow-hidden relative cursor-pointer" onClick={() => { setCurrentPhotoIndex(3); setShowGallery(true); }}>
+                    <div className="overflow-hidden relative cursor-pointer h-full" onClick={() => { setCurrentPhotoIndex(3); setShowGallery(true); }}>
                       <img src={photos[3] || photos[0]} alt="Photo 4" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-ivory-900/60 flex items-center justify-center">
                         <span className="flex items-center gap-1.5 text-white text-sm font-medium">
-                          <ImageIcon className="w-4 h-4" /> +{photos.length - 3}
+                          <ImageIcon className="w-4 h-4" /> +{Math.max(0, photos.length - 4)}
                         </span>
                       </div>
                     </div>
@@ -306,7 +306,7 @@ export default function VendorProfileDetailView({
             </div>
 
             {/* Tabs */}
-            <div className="mt-4 lg:mt-6 border-b border-charcoal-200 w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="mt-10 border-b border-charcoal-200 w-full overflow-x-auto relative z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="flex gap-1 min-w-max">
                 {tabs.map((tab) => (
                   <button

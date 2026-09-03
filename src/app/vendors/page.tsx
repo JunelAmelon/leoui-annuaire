@@ -9,6 +9,7 @@ import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, Chev
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
+import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 
 const bounceXKeyframes = `
 @keyframes bounce-x {
@@ -72,8 +73,18 @@ function VendorsPageContent() {
   // Update city filter when URL changes
   useEffect(() => {
     const city = searchParams.get('city');
-    if (city) {
-      setCityFilter(city);
+    const ville = searchParams.get('ville');
+    const c = city || ville;
+    if (c) {
+      setCityFilter(c);
+    }
+  }, [searchParams]);
+
+  // Update search query when URL changes
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setSearchQuery(q);
     }
   }, [searchParams]);
 
@@ -163,24 +174,18 @@ function VendorsPageContent() {
                 className="flex-1"
                 inputClassName="flex items-center bg-white/10 rounded-xl"
                 showIcon
+                dark
               />
-              <div className="relative flex-1">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-                {cities.length > 0 ? (
-                  <select
-                    value={cityFilter}
-                    onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
-                    className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white rounded-xl outline-none text-sm focus:bg-white/20 transition-all appearance-none"
-                  >
-                    <option value="" className="text-charcoal-900">Toutes les villes</option>
-                    {cities.map(c => <option key={c} value={c} className="text-charcoal-900">{c}</option>)}
-                  </select>
-                ) : (
-                  <input type="text" value={cityFilter} onChange={e => { setCityFilter(e.target.value); setCurrentPage(1); }}
-                    placeholder="Où ?"
-                    className="w-full pl-10 pr-3 py-2.5 bg-white/10 text-white placeholder-white/40 rounded-xl outline-none text-sm focus:bg-white/20 transition-all" />
-                )}
-              </div>
+              <CityAutocompleteInput
+                value={cityFilter}
+                onChange={v => { setCityFilter(v); setCurrentPage(1); }}
+                onSelect={v => { setCityFilter(v); setCurrentPage(1); }}
+                placeholder="Où ?"
+                dark
+                showPostalCode={false}
+                inputClassName="py-2.5"
+                className="flex-1"
+              />
               <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 text-sm transition-colors">
                 Rechercher
               </button>

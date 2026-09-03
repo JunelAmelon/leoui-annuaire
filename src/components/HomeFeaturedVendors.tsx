@@ -217,20 +217,20 @@ export default function HomeFeaturedVendors() {
           <Link
             key={v.id}
             href={`/vendors/${v.id}`}
-            className="group bg-white border border-charcoal-100 overflow-hidden hover:shadow-lg transition-all duration-300"
+            className="group bg-white border border-charcoal-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col"
           >
             {/* 3-Image Slider */}
             <ImageSlider images={v.images || [v.imageUrl || '']} vendorName={v.name} />
 
             {/* Content */}
-            <div className="p-4">
+            <div className="p-4 flex-1 flex flex-col">
               {/* Title */}
-              <h3 className="font-serif text-charcoal-900 text-lg leading-tight mb-1">
+              <h3 className="font-serif text-charcoal-900 text-lg leading-tight mb-1 min-h-[1.75rem]">
                 {v.name}
               </h3>
 
               {/* Rating & Location */}
-              <div className="flex items-center gap-2 text-sm text-charcoal-500 mb-2">
+              <div className="flex items-center gap-2 text-sm text-charcoal-500 mb-2 min-h-[1.25rem]">
                 {v.rating && v.rating > 0 && (
                   <>
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -245,20 +245,22 @@ export default function HomeFeaturedVendors() {
               </div>
 
               {/* 🎖️ Tier Badge */}
-              {tierBadge && TierIcon && (
-                <div className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border mb-2 ${getTierBadgeStyles(v.subscriptionTier!)}`}>
-                  <TierIcon className="w-3.5 h-3.5" />
-                  {tierBadge.label}
-                </div>
-              )}
+              <div className="min-h-[1.75rem] mb-2">
+                {tierBadge && TierIcon && (
+                  <div className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border ${getTierBadgeStyles(v.subscriptionTier!)}`}>
+                    <TierIcon className="w-3.5 h-3.5" />
+                    {tierBadge.label}
+                  </div>
+                )}
+              </div>
 
               {/* Description */}
-              <p className="text-sm text-charcoal-600 line-clamp-2 mb-3">
+              <p className="text-sm text-charcoal-600 line-clamp-2 mb-3 min-h-[2.5rem]">
                 {v.description || `${v.category} professionnel pour votre mariage.`}
               </p>
 
               {/* Price & Promo */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 min-h-[1.25rem] mt-auto">
                 {displayPrice && (
                   <span className="text-sm font-medium text-charcoal-900">
                     À partir de {displayPrice}

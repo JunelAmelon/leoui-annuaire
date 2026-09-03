@@ -105,7 +105,7 @@ export default function HomePage() {
         </div>
 
         {/* Animated cloud wave effect at bottom - full height to hide border */}
-        <div className="absolute bottom-0 left-0 right-0 z-20" style={{ height: '140px' }}>
+        <div className="absolute bottom-0 left-0 right-0 z-0" style={{ height: '140px' }}>
           <svg
             viewBox="0 0 1440 180"
             fill="none"

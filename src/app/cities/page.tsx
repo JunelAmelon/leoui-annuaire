@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import { MapPin, ArrowRight, Search, X } from 'lucide-react';
 import { getDocuments } from '@/lib/db';
 
@@ -122,14 +123,16 @@ export default function CitiesPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
               <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-                <input
-                  type="text"
+                <CityAutocompleteInput
                   value={citySearch}
-                  onChange={e => setCitySearch(e.target.value)}
+                  onChange={setCitySearch}
                   placeholder="Rechercher une ville (Paris, Lyon, Bordeaux...)"
-                  className="w-full pl-12 pr-10 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 outline-none text-sm focus:bg-white/20 transition-all"
+                  dark
+                  showPostalCode={false}
+                  icon={false}
+                  inputClassName="pl-12"
                 />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 pointer-events-none" />
                 {citySearch && (
                   <button onClick={() => setCitySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
                     <X className="w-4 h-4 text-white/50 hover:text-white" />

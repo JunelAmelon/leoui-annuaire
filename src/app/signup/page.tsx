@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, Store, Calendar, Chrome, Search, ClipboardList, MessageSquare, BarChart3 } from 'lucide-react';
+import { Heart, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, Store, Calendar, Chrome, Search, ClipboardList, MessageSquare, BarChart3, MapPin, Home } from 'lucide-react';
 import { signUp } from '@/lib/auth-helpers';
 import { useAuth } from '@/contexts/AuthContext';
+import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import { toast } from 'sonner';
 
 export default function SignupPage() {
@@ -15,6 +16,10 @@ export default function SignupPage() {
   const [partner, setPartner] = useState('');
   const [email, setEmail] = useState('');
   const [weddingDate, setWeddingDate] = useState('');
+  const [street, setStreet] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('France');
   const [password, setPassword] = useState('');
   const [terms, setTerms] = useState(false);
   const [error, setError] = useState('');
@@ -64,7 +69,10 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
     try {
-      await signUp({ email, password, name, partner, role: 'client' });
+      await signUp({
+        email, password, name, partner, role: 'client',
+        address: { street, city, postalCode, country }
+      });
       router.push('/espace-client');
     } catch (err: any) {
       const code = err?.code || '';
@@ -214,6 +222,60 @@ export default function SignupPage() {
                   value={weddingDate}
                   onChange={(e) => setWeddingDate(e.target.value)}
                   className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all text-charcoal-700"
+                />
+              </div>
+            </div>
+
+            {/* Address section */}
+            <div className="space-y-3 pt-1">
+              <p className="text-xs font-medium text-charcoal-700 flex items-center gap-1.5">
+                <Home className="w-3.5 h-3.5 text-charcoal-400" /> Adresse
+              </p>
+              <div>
+                <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Rue et numéro</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+                  <input
+                    type="text"
+                    placeholder="12 rue de la Paix"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Code postal</label>
+                  <input
+                    type="text"
+                    placeholder="75000"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="w-full px-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Ville</label>
+                  <CityAutocompleteInput
+                    value={city}
+                    onChange={setCity}
+                    placeholder="Paris"
+                    showPostalCode={false}
+                    icon={false}
+                    className="w-full"
+                    inputClassName="px-3 py-3 border-charcoal-200 bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Pays</label>
+                <input
+                  type="text"
+                  placeholder="France"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full px-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                 />
               </div>
             </div>

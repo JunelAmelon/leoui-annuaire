@@ -15,6 +15,12 @@ export interface SignUpData {
   partner?: string;
   phone?: string;
   role?: 'client' | 'planner';
+  address?: {
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+  };
 }
 
 export async function signUp(data: SignUpData): Promise<User> {
@@ -31,6 +37,7 @@ export async function signUp(data: SignUpData): Promise<User> {
     name: data.name,
     partner: data.partner || null,
     phone: data.phone || null,
+    address: data.address || null,
     role: data.role || 'client',
     created_at: new Date(),
   });

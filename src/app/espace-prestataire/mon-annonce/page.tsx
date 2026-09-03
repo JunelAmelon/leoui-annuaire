@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
+import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import { Camera, MapPin, Save, Plus, X, Eye, ExternalLink, Globe, Star, Clock, Euro, CheckCircle, Instagram, Upload, Loader2, Trash2, ChevronDown, ChevronUp, Video } from 'lucide-react';
 import { getDocuments, setDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
@@ -440,9 +441,13 @@ export default function MonAnnoncePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Ville / Région *</label>
-                    <input type="text" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all"
-                      placeholder="Ex: Paris, Île-de-France" />
+                    <CityAutocompleteInput
+                      value={form.location}
+                      onChange={v => setForm(p => ({ ...p, location: v }))}
+                      placeholder="Ex: Paris, Île-de-France"
+                      showPostalCode={false}
+                      icon={false}
+                    />
                   </div>
                 </div>
                 <div>

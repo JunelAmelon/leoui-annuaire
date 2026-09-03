@@ -118,17 +118,17 @@ export default function InspirationPage() {
               {/* Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filtered.map((article) => (
-                  <Link key={article.id} href={`/inspiration/${article.id}`} className="group block">
-                    <article className="card-elevated">
-                      <div className="relative aspect-[4/3] overflow-hidden">
+                  <Link key={article.id} href={`/inspiration/${article.id}`} className="group block h-full">
+                    <article className="card-elevated h-full flex flex-col">
+                      <div className="relative aspect-[4/3] overflow-hidden flex-shrink-0">
                         <img
                           src={article.imageUrl}
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
-                      <div className="p-6">
-                        <div className="flex items-center gap-3 mb-3">
+                      <div className="p-6 flex-1 flex flex-col">
+                        <div className="flex items-center gap-3 mb-3 min-h-[1.5rem]">
                           <span className="px-3 py-1 bg-champagne-100 text-champagne-800 text-xs font-semibold rounded-full">
                             {article.category}
                           </span>
@@ -136,11 +136,11 @@ export default function InspirationPage() {
                             <Clock className="w-3.5 h-3.5" />{article.readTime}
                           </span>
                         </div>
-                        <h3 className="font-serif text-heading-md text-charcoal-900 mb-2 group-hover:text-rose-600 transition-colors">
+                        <h3 className="font-serif text-heading-md text-charcoal-900 mb-2 group-hover:text-rose-600 transition-colors min-h-[3.5rem] line-clamp-2">
                           {article.title}
                         </h3>
-                        <p className="text-body-md text-charcoal-600 mb-4 line-clamp-2">{article.excerpt}</p>
-                        <div className="flex items-center justify-between">
+                        <p className="text-body-md text-charcoal-600 mb-4 line-clamp-2 min-h-[2.5rem]">{article.excerpt}</p>
+                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-charcoal-100">
                           <span className="text-body-sm text-charcoal-500">{article.date}</span>
                           <span className="text-rose-600 font-medium flex items-center gap-1 text-sm">
                             Lire <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

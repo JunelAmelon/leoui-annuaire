@@ -10,6 +10,7 @@ import {
   Tag, CheckCircle2, Users,
 } from 'lucide-react';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
+import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import VendorCardUnified from '@/components/VendorCardUnified';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 
@@ -183,12 +184,15 @@ export default function PrestatairesPage() {
             className="w-48"
             inputClassName="flex items-center border border-stone-200 rounded-xl bg-white shadow-sm"
           />
-          <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-stone-200 shadow-sm">
-            <MapPin className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
-            <input type="text" value={citySearch} onChange={e => { setCitySearch(e.target.value); setPage(1); }}
-              placeholder="Ville…"
-              className="text-sm text-charcoal-700 placeholder-charcoal-400 bg-transparent outline-none w-20" />
-          </div>
+          <CityAutocompleteInput
+            value={citySearch}
+            onChange={v => { setCitySearch(v); setPage(1); }}
+            placeholder="Ville…"
+            showPostalCode={false}
+            className="w-36"
+            icon={false}
+            inputClassName="border border-stone-200 rounded-xl shadow-sm w-full"
+          />
           <button
             onClick={() => { setShowSelectedOnly(p => !p); setPage(1); }}
             disabled={selectedVendorIds.size === 0}

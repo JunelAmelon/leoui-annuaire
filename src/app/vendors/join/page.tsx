@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import {
@@ -549,13 +550,12 @@ export default function VendorJoinPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-charcoal-700 mb-2">Ville principale *</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={form.city} 
-                    onChange={e => setField('city', e.target.value)} 
-                    className="w-full px-4 py-3 rounded-xl border border-charcoal-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all bg-white"
+                  <CityAutocompleteInput
+                    value={form.city}
+                    onChange={v => setField('city', v)}
                     placeholder="Paris, Lyon, Bordeaux..."
+                    showPostalCode={false}
+                    icon={false}
                   />
                 </div>
               </div>

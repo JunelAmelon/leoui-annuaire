@@ -52,6 +52,47 @@ function AnimatedSection({ children, className = '', delay = 0 }: { children: Re
 
 export default function WeddingPlannerPageV1() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+  const TESTIMONIALS = [
+    {
+      text: "LeOui.net a transformé nos préparatifs en un moment de plaisir. L'équipe a été à l'écoute de chaque détail de notre histoire.",
+      name: 'Marie & Julien',
+      city: 'Mariés en juin 2024 · Château de Versailles',
+      photo: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=200',
+    },
+    {
+      text: "Grâce à LeOui.net, nous avons trouvé notre photographe et notre traiteur en une semaine. Tout était parfait le jour J.",
+      name: 'Sophie & Raphaël',
+      city: 'Mariés en septembre 2024 · Domaine de Provence',
+      photo: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=200',
+    },
+    {
+      text: "L'espace couple nous a permis de tout centraliser. Budget, planning, prestataires — rien n'a été laissé au hasard.",
+      name: 'Inès & Karim',
+      city: 'Mariés en mai 2025 · Bordeaux',
+      photo: 'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=200',
+    },
+    {
+      text: "Un accompagnement d'une rare qualité. Notre wedding planner a anticipé chaque détail, nous n'avons rien eu à gérer.",
+      name: 'Camille & Antoine',
+      city: 'Mariés en octobre 2024 · Lyon',
+      photo: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=200',
+    },
+    {
+      text: "LeOui.net a changé notre façon de préparer notre mariage. Sereins, confiants, nous avons profité de chaque instant.",
+      name: 'Léa & Thomas',
+      city: 'Mariés en juillet 2025 · Annecy',
+      photo: 'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=200',
+    },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveTestimonial((prev) => (prev + 1) % TESTIMONIALS.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [TESTIMONIALS.length]);
 
   const features = [
     {
@@ -305,24 +346,48 @@ export default function WeddingPlannerPageV1() {
         </div>
       </section>
 
-      {/* TESTIMONIAL */}
-      <section className="py-24 px-4 sm:px-6 bg-stone-900">
+      {/* TESTIMONIALS — Auto-rotating slider */}
+      <section className="py-24 px-4 sm:px-6 bg-stone-900 overflow-hidden">
         <div className="max-w-4xl mx-auto text-center">
           <AnimatedSection>
             <Quote className="w-12 h-12 text-rose-400 mx-auto mb-8" />
-            <blockquote className="font-serif text-2xl sm:text-3xl text-white leading-relaxed mb-8">
-              "LeOui a transformé nos préparatifs en un moment de plaisir. L'équipe a été à l'écoute de chaque détail de notre histoire."
-            </blockquote>
-            <div className="flex items-center justify-center gap-4">
-              <img 
-                src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=200" 
-                alt="Marie & Julien"
-                className="w-12 h-12 rounded-full object-cover border-2 border-rose-400/30"
-              />
-              <div className="text-left">
-                <p className="text-white font-medium">Marie & Julien</p>
-                <p className="text-stone-400 text-sm">Mariés en juin 2024 · Château de Versailles</p>
-              </div>
+            <div className="relative min-h-[280px] sm:min-h-[240px]">
+              {TESTIMONIALS.map((t, i) => (
+                <div
+                  key={i}
+                  className={`absolute inset-0 transition-all duration-700 ${
+                    i === activeTestimonial ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+                  }`}
+                >
+                  <blockquote className="font-serif text-2xl sm:text-3xl text-white leading-relaxed mb-8">
+                    "{t.text}"
+                  </blockquote>
+                  <div className="flex items-center justify-center gap-4">
+                    <img
+                      src={t.photo}
+                      alt={t.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-rose-400/30"
+                    />
+                    <div className="text-left">
+                      <p className="text-white font-medium">{t.name}</p>
+                      <p className="text-stone-400 text-sm">{t.city}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Dots */}
+            <div className="flex justify-center gap-2 mt-10">
+              {TESTIMONIALS.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveTestimonial(i)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i === activeTestimonial ? 'w-8 bg-rose-400' : 'w-2 bg-white/30 hover:bg-white/50'
+                  }`}
+                  aria-label={`Témoignage ${i + 1}`}
+                />
+              ))}
             </div>
           </AnimatedSection>
         </div>
