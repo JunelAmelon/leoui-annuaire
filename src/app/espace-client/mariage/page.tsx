@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, updateDocument } from '@/lib/db';
-import { getClientVendors, getClientPayments, getClientGallery } from '@/lib/client-helpers';
+import { getClientVendors, getClientGallery } from '@/lib/client-helpers';
 import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Calendar, MapPin, Pencil, Users, Euro, ChevronRight, X, Camera } from 'lucide-react';
@@ -43,7 +43,6 @@ export default function MariagePage() {
   const [recentGuests, setRecentGuests] = useState<any[]>([]);
   const [teamVendors, setTeamVendors] = useState<any[]>([]);
   const [teamFilter, setTeamFilter] = useState('Tous');
-  const [totalPaid, setTotalPaid] = useState(0);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [showInfoEdit, setShowInfoEdit] = useState(false);
   const [showThemeEdit, setShowThemeEdit] = useState(false);
@@ -73,9 +72,6 @@ export default function MariagePage() {
       }).catch(() => {});
     if (client?.id) {
       getClientVendors(client.id, event?.id).then(vs => setTeamVendors(vs)).catch(() => {});
-      getClientPayments(client.id)
-        .then(ps => setTotalPaid(ps.filter(p => p.status === 'paid' || p.status === 'completed').reduce((s, p) => s + Number(p.amount || 0), 0)))
-        .catch(() => {});
     }
     if (event?.id) {
       getClientGallery(event.id).then(imgs => setGalleryImages(imgs.map(g => g.url))).catch(() => {});
@@ -357,19 +353,10 @@ export default function MariagePage() {
               <h3 className="font-semibold text-charcoal-900 text-sm">Mon budget</h3>
               <p className="text-xs text-rose-600">Contrôlez vos dépenses</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="text-center p-3 bg-ivory-50 rounded-xl">
-                <p className="text-[0.6rem] font-bold text-charcoal-500 uppercase tracking-wide mb-1">Budget prévu</p>
-                <p className="font-bold text-charcoal-900 text-base">{budget.toLocaleString('fr-FR')} €</p>
-              </div>
-              <div className="text-center p-3 bg-ivory-50 rounded-xl">
-                <p className="text-[0.6rem] font-bold text-charcoal-500 uppercase tracking-wide mb-1">Déjà payé</p>
-                <p className="font-bold text-rose-700 text-base">{totalPaid.toLocaleString('fr-FR')} €</p>
-              </div>
+            <div className="text-center p-3 bg-ivory-50 rounded-xl">
+              <p className="text-[0.6rem] font-bold text-charcoal-500 uppercase tracking-wide mb-1">Budget prévu</p>
+              <p className="font-bold text-charcoal-900 text-base">{budget.toLocaleString('fr-FR')} €</p>
             </div>
-            <Link href="/espace-client/paiements" className="w-full flex items-center justify-center py-2.5 border-2 border-rose-500 text-rose-600 hover:bg-rose-50 text-sm font-semibold rounded-xl transition-colors">
-              Ajouter une dépense
-            </Link>
           </div>
         </div>
       </div>

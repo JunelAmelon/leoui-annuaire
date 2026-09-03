@@ -270,7 +270,7 @@ export default function VendorProfileDetailView({
                 <div className="bg-rose-50 p-5 mb-4 border-l-4 border-rose-500 mt-4">
                   <p className="text-xs text-rose-600 uppercase tracking-wider mb-1">Tarif indicatif</p>
                   <p className="font-serif text-2xl text-charcoal-900">{vendor.startingPrice}</p>
-                  <p className="text-xs text-charcoal-500 mt-1">Sur devis personnalisé</p>
+                  <p className="text-xs text-charcoal-500 mt-1">Tarif sur demande</p>
                 </div>
               )}
 
@@ -757,7 +757,7 @@ export default function VendorProfileDetailView({
                 <div className="bg-rose-50 p-5 mb-4 border-l-4 border-rose-500">
                   <p className="text-xs text-rose-600 uppercase tracking-wider mb-1">Tarif indicatif</p>
                   <p className="font-serif text-2xl text-charcoal-900">{vendor.startingPrice}</p>
-                  <p className="text-xs text-charcoal-500 mt-1">Sur devis personnalisé</p>
+                  <p className="text-xs text-charcoal-500 mt-1">Tarif sur demande</p>
                 </div>
               )}
 

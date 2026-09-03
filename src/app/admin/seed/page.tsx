@@ -113,7 +113,7 @@ const VENDORS = [
       { name: 'Menu Prestige', price: '145 €/pers.', items: ['Cocktail premium (12 pièces)', '4 plats + fromages', 'Pièce montée sur mesure', 'Champagne à discrétion', 'Maître d\'hôtel dédié', 'Service 8h'], popular: true },
     ],
     faqs: [
-      { q: 'Proposez-vous des options végétariennes ou véganes ?', a: 'Oui, nous adaptons nos menus à toutes les préférences alimentaires. Merci de nous en informer lors de votre devis.' },
+      { q: 'Proposez-vous des options végétariennes ou véganes ?', a: 'Oui, nous adaptons nos menus à toutes les préférences alimentaires. Merci de nous en informer lors de votre demande.' },
       { q: 'Quel est le minimum de convives ?', a: 'Nous intervenons à partir de 30 personnes pour les mariages.' },
     ],
     team: [],
@@ -237,7 +237,7 @@ const VENDORS = [
     tagline: 'Pièces montées & gâteaux de mariage · Nantes',
     category: 'Pâtissier',
     location: 'Nantes, Pays de la Loire',
-    description: 'Sweet Dreams Pâtisserie crée des pièces montées et wedding cakes d\'exception. Chaque gâteau est une œuvre unique, confectionné artisanalement avec des ingrédients premium.\n\nDesigns sur mesure, dégustation incluse dans chaque devis, livraison et installation sur site.',
+    description: 'Sweet Dreams Pâtisserie crée des pièces montées et wedding cakes d\'exception. Chaque gâteau est une œuvre unique, confectionné artisanalement avec des ingrédients premium.\n\nDesigns sur mesure, dégustation incluse dans chaque commande, livraison et installation sur site.',
     experience: '7 ans',
     weddingsCompleted: 280,
     startingPrice: '450 €',

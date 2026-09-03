@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db';
-import { MessageSquare, Send, Paperclip, Search, Users, Store, ChevronLeft, Heart } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, Search, Users, Store, ChevronLeft, Heart, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/lib/storage';
 
@@ -40,11 +40,22 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [filePreview, setFilePreview] = useState<{ url: string; name: string; type: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [vendorPhotos, setVendorPhotos] = useState<Record<string, string>>({});
+
+  const openConversation = (conv: Conversation, mobile = true) => {
+    setSelected(conv);
+    if (mobile) setShowMobileChat(true);
+    if ((conv.unread_count_client ?? 0) > 0) {
+      updateDocument('conversations', conv.id, { unread_count_client: 0 });
+      setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count_client: 0 } : c));
+    }
+  };
 
   const coupleName = client
     ? `${client.name || ''}${client.name && client.partner ? ' & ' : ''}${client.partner || ''}`.trim()
@@ -71,7 +82,7 @@ export default function MessagesPage() {
           });
           const newConvs = [{ id: ref.id, type: 'client', client_name: coupleName }];
           setConversations(newConvs as Conversation[]);
-          setSelected(newConvs[0] as Conversation);
+          openConversation(newConvs[0] as Conversation, false);
         } else {
           const sorted = (convs as Conversation[]).sort((a, b) => {
             const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
@@ -79,7 +90,7 @@ export default function MessagesPage() {
             return tb - ta;
           });
           setConversations(sorted);
-          if (sorted.length > 0) { setSelected(sorted[0]); }
+          if (sorted.length > 0) { openConversation(sorted[0], false); }
           // Fetch vendor photos for vendor conversations
           const vendorConvs = (convs as Conversation[]).filter(c => c.type === 'vendor' && c.vendor_id);
           if (vendorConvs.length > 0) {
@@ -123,12 +134,31 @@ export default function MessagesPage() {
     load();
   }, [selected]);
 
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    const valid = Array.from(files).filter(f => {
+      const t = f.type.toLowerCase();
+      return t.startsWith('image/') || t === 'application/pdf';
+    });
+    if (valid.length) setPendingFiles(prev => [...prev, ...valid]);
+    setShowAttachMenu(false);
+  };
+
+  const removePendingFile = (idx: number) => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selected || !user) return;
+    if ((!newMessage.trim() && pendingFiles.length === 0) || !selected || !user) return;
     setSending(true);
     const content = newMessage.trim();
-    setNewMessage('');
     try {
+      const attachments = [];
+      for (const file of pendingFiles) {
+        const url = await uploadFile(file, 'chat');
+        attachments.push({ url, name: file.name, type: file.type });
+      }
+      const lastLabel = attachments.length
+        ? (attachments.length === 1 ? `Fichier : ${attachments[0].name}` : `${attachments.length} fichiers joints`)
+        : content;
       const msg: Msg = {
         id: Date.now().toString(),
         conversation_id: selected.id,
@@ -136,54 +166,25 @@ export default function MessagesPage() {
         sender_role: 'client',
         sender_name: coupleName,
         content,
+        attachments: attachments.length ? attachments : undefined,
         created_at: new Date().toISOString(),
       } as any;
       await addDocument('messages', msg);
+      const recipientField = selected.type === 'vendor' ? 'unread_count_vendor' : 'unread_count_planner';
+      const currentUnread = ((selected as any)[recipientField] || 0) as number;
       await updateDocument('conversations', selected.id, {
-        last_message: content,
+        last_message: lastLabel,
         last_message_at: new Date().toISOString(),
-        unread_count_vendor: selected.type === 'vendor' ? 1 : 0,
-        unread_count_planner: selected.type !== 'vendor' ? 1 : 0,
+        [recipientField]: currentUnread + 1,
       });
       setMessages(prev => [...prev, msg]);
+      setNewMessage('');
+      setPendingFiles([]);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch {
       toast.error("Impossible d'envoyer le message");
     } finally {
       setSending(false);
-    }
-  };
-
-  const sendAttachment = async (file: File) => {
-    if (!selected || !user) return;
-    setUploading(true);
-    const desc = newMessage.trim();
-    setNewMessage('');
-    try {
-      const url = await uploadFile(file, 'chat');
-      const msg: Msg = {
-        id: Date.now().toString(),
-        conversation_id: selected.id,
-        sender_id: user.uid,
-        sender_role: 'client',
-        sender_name: coupleName,
-        content: desc,
-        attachments: [{ url, name: file.name, type: file.type }],
-        created_at: new Date().toISOString(),
-      } as any;
-      await addDocument('messages', msg);
-      await updateDocument('conversations', selected.id, {
-        last_message: desc ? desc : `Fichier : ${file.name}`,
-        last_message_at: new Date().toISOString(),
-        unread_count_vendor: selected.type === 'vendor' ? 1 : 0,
-        unread_count_planner: selected.type !== 'vendor' ? 1 : 0,
-      });
-      setMessages(prev => [...prev, msg]);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    } catch {
-      toast.error("Impossible d'envoyer le fichier");
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -273,7 +274,7 @@ export default function MessagesPage() {
               filtered.map(conv => (
                 <button
                   key={conv.id}
-                  onClick={() => { setSelected(conv); setShowMobileChat(true); }}
+                  onClick={() => openConversation(conv)}
                   className={`w-full text-left px-4 py-3.5 border-b border-charcoal-50 transition-colors hover:bg-charcoal-50 ${
                     selected?.id === conv.id ? 'bg-rose-50 border-l-2 border-l-rose-400' : ''
                   }`}
@@ -388,12 +389,26 @@ export default function MessagesPage() {
                             {msg.attachments?.map((a, i) => {
                               const type = (a.type || '').toLowerCase();
                               const isImg = type.startsWith('image/');
+                              const isPdf = type === 'application/pdf';
                               return (
                                 <div key={i} className="mt-2">
                                   {isImg ? (
-                                    <a href={a.url} target="_blank" rel="noreferrer">
+                                    <button
+                                      type="button"
+                                      onClick={() => setFilePreview({ url: a.url, name: a.name || 'Image', type: a.type || 'image/*' })}
+                                      className="block"
+                                    >
                                       <img src={a.url} alt={a.name || 'Image'} className="max-h-56 rounded-xl border border-white/20 object-cover" />
-                                    </a>
+                                    </button>
+                                  ) : isPdf ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setFilePreview({ url: a.url, name: a.name || 'PDF', type: a.type || 'application/pdf' })}
+                                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors ${isMe ? 'text-white' : 'text-charcoal-700'}`}
+                                    >
+                                      <FileText className="w-4 h-4" />
+                                      <span className="text-xs underline">{a.name || 'Document PDF'}</span>
+                                    </button>
                                   ) : (
                                     <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isMe ? 'text-rose-100' : 'text-rose-700'}`}>
                                       <span className="inline-flex items-center gap-1">
@@ -419,41 +434,82 @@ export default function MessagesPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <div className="px-4 py-3 border-t border-charcoal-100 flex items-center gap-2 flex-shrink-0">
-                <input
-                  type="file"
-                  id="client-chat-file"
-                  className="hidden"
-                  onChange={e => {
-                    const f = e.target.files?.[0];
-                    e.target.value = '';
-                    if (f) void sendAttachment(f);
-                  }}
-                />
-                <button
-                  type="button"
-                  disabled={!selected || uploading}
-                  onClick={() => document.getElementById('client-chat-file')?.click()}
-                  className="p-2 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-50 rounded-xl transition-colors disabled:opacity-40"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </button>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
-                  placeholder="Écrivez votre message…"
-                  className="flex-1 px-4 py-2 bg-ivory-50 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all"
-                />
-                <button
-                  onClick={() => void sendMessage()}
-                  disabled={!newMessage.trim() || sending}
-                  className="p-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-40 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+              <div className="px-4 py-3 border-t border-charcoal-100 flex-shrink-0 space-y-2">
+                {pendingFiles.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {pendingFiles.map((file, i) => (
+                      <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-ivory-50 border border-charcoal-200 rounded-lg text-xs text-charcoal-700">
+                        {file.type.startsWith('image/') ? <ImageIcon className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
+                        <span className="max-w-[120px] truncate">{file.name}</span>
+                        <button type="button" onClick={() => removePendingFile(i)} className="text-charcoal-400 hover:text-rose-600"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input type="file" id="client-chat-image" className="hidden" multiple accept="image/*" onChange={e => { handleFileSelect(e.target.files); e.target.value = ''; }} />
+                  <input type="file" id="client-chat-pdf" className="hidden" multiple accept="application/pdf" onChange={e => { handleFileSelect(e.target.files); e.target.value = ''; }} />
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled={!selected || sending}
+                      onClick={() => setShowAttachMenu(v => !v)}
+                      className="p-2 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-50 rounded-xl transition-colors disabled:opacity-40"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
+                    {showAttachMenu && (
+                      <div className="absolute bottom-full left-0 mb-2 w-40 bg-white border border-charcoal-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => { document.getElementById('client-chat-image')?.click(); }}
+                          className="w-full text-left px-3 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 flex items-center gap-2"
+                        >
+                          <ImageIcon className="w-4 h-4" /> Images
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { document.getElementById('client-chat-pdf')?.click(); }}
+                          className="w-full text-left px-3 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 flex items-center gap-2"
+                        >
+                          <FileText className="w-4 h-4" /> PDFs
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
+                    placeholder="Écrivez votre message…"
+                    className="flex-1 px-4 py-2 bg-ivory-50 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all"
+                  />
+                  <button
+                    onClick={() => void sendMessage()}
+                    disabled={(!newMessage.trim() && pendingFiles.length === 0) || sending}
+                    className="p-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-40 transition-colors"
+                  >
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+
+              {/* Lightbox / inline preview */}
+              {filePreview && (
+                <div className="fixed inset-0 z-50 bg-charcoal-900/90 flex items-center justify-center p-4" onClick={() => setFilePreview(null)}>
+                  <button className="absolute top-4 right-4 w-9 h-9 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" onClick={() => setFilePreview(null)}>
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                  {filePreview.type.startsWith('image/') ? (
+                    <img src={filePreview.url} alt={filePreview.name} className="max-w-full max-h-[90vh] object-contain rounded-xl" onClick={e => e.stopPropagation()} />
+                  ) : (
+                    <div className="w-full max-w-4xl h-[85vh] bg-white rounded-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                      <embed src={filePreview.url} type="application/pdf" className="w-full h-full" />
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

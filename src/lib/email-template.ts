@@ -93,23 +93,6 @@ export function renderContactEmail(opts: { vendorName: string; clientName: strin
   });
 }
 
-export function renderDevisEmail(opts: { clientName: string; vendorName: string; reference: string; amount: number; pdfUrl?: string }) {
-  return renderEmailTemplate({
-    title: `Devis de ${opts.vendorName}`,
-    preheader: `Votre devis ${opts.reference} — ${opts.amount.toLocaleString('fr-FR')} € est disponible`,
-    bodyHtml: `
-      <p style="margin:0 0 12px;">Bonjour <strong>${opts.clientName}</strong>,</p>
-      <p style="margin:0 0 16px;"><strong>${opts.vendorName}</strong> vous a envoyé un devis&nbsp;:</p>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #EDE8E3;border-radius:10px;overflow:hidden;margin-bottom:20px;">
-        <tr style="background:#FDF9F7;"><td style="padding:12px 16px;font-size:13px;color:#6a6a6a;border-bottom:1px solid #EDE8E3;">Référence</td><td style="padding:12px 16px;font-size:13px;font-weight:600;border-bottom:1px solid #EDE8E3;">${opts.reference}</td></tr>
-        <tr><td style="padding:12px 16px;font-size:13px;color:#6a6a6a;">Montant TTC</td><td style="padding:12px 16px;font-size:15px;font-weight:700;color:#C0392B;">${opts.amount.toLocaleString('fr-FR')} €</td></tr>
-      </table>
-    `,
-    ctaLabel: 'Consulter le devis',
-    ctaUrl: opts.pdfUrl || 'https://leoui.net/espace-client/documents',
-  });
-}
-
 export function renderWelcomeEmail(opts: { name: string }) {
   return renderEmailTemplate({
     title: 'Bienvenue sur LeOui.net !',

@@ -304,7 +304,7 @@ export default function VendorJoinPage() {
               </div>
               <h3 className="font-serif text-xl text-charcoal-900 mb-2">Tout centralisé</h3>
               <p className="text-charcoal-600 text-sm leading-relaxed">
-                Devis, contrats, planning et messagerie dans un seul espace. Gagnez du temps sur l'administratif pour vous concentrer sur vos prestations.
+                Contrats, planning et messagerie dans un seul espace. Gagnez du temps sur l'administratif pour vous concentrer sur vos prestations.
               </p>
             </div>
           </div>
@@ -370,8 +370,7 @@ export default function VendorJoinPage() {
                   <h3 className="font-serif text-xl text-charcoal-900">Convertissez et faites grandir votre activité</h3>
                 </div>
                 <p className="text-charcoal-600 leading-relaxed max-w-xl">
-                  Répondez via la messagerie intégrée, envoyez vos devis et signez vos contrats électroniquement. 
-                  Le tout est traçable et vous gardez un historique complet de vos échanges.
+                  Répondez via la messagerie intégrée et gardez un historique complet de vos échanges.
                 </p>
               </div>
             </div>

@@ -2,11 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getDocuments, addDocument, deleteDocument, updateDocument } from '@/lib/db';
-import { getClientDevis } from '@/lib/client-helpers';
-import { createNotification } from '@/lib/notifications';
+import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
-import { FileText, Search, Upload, Eye, Download, FileCheck, FilePen, File, Trash2, ChevronLeft, ChevronRight, X, CheckCircle2, XCircle, AlertCircle, MoreVertical } from 'lucide-react';
+import { FileText, Search, Upload, FileCheck, Trash2, ChevronLeft, ChevronRight, X, Eye, Download as DownloadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DocumentItem {
@@ -16,21 +14,18 @@ interface DocumentItem {
   file_url?: string;
   uploaded_at?: string;
   uploaded_by?: string;
-  status?: string;
   source?: string;
 }
 
 const typeColors: Record<string, string> = {
   contrat: 'bg-rose-100 text-rose-700',
-  devis: 'bg-charcoal-100 text-charcoal-700',
-  facture: 'bg-green-100 text-green-700',
   planning: 'bg-champagne-100 text-champagne-700',
   photo: 'bg-charcoal-100 text-charcoal-700',
   autre: 'bg-charcoal-100 text-charcoal-600',
 };
 
 const typeLabels: Record<string, string> = {
-  contrat: 'Contrat', devis: 'Devis', facture: 'Facture', planning: 'Planning', photo: 'Photo', autre: 'Autre',
+  contrat: 'Contrat', planning: 'Planning', photo: 'Photo', autre: 'Autre',
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -46,146 +41,35 @@ export default function DocumentsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docName, setDocName] = useState('');
   const [docType, setDocType] = useState('autre');
+  const [customType, setCustomType] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-
-  const [validating, setValidating] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const fetchDocs = async () => {
     if (!client?.id) { setLoading(false); return; }
     try {
-      const [docItems, devisItems] = await Promise.all([
-        getDocuments('documents', [{ field: 'client_id', operator: '==', value: client.id }]),
-        getClientDevis(client.id, client.email),
-      ]);
-      const mapped = (docItems as any[]).map((d) => ({ ...d, source: 'documents' }));
-      const devisMapped = (devisItems as any[])
-        .filter((dv) => dv?.status !== 'draft')
-        .map((dv) => ({
-          id: `devis:${dv.id}`,
-          name: `Devis - ${dv.reference || ''}`,
-          type: 'devis',
-          file_url: dv.pdf_url || '',
-          uploaded_at: dv.sent_at || dv.date || '',
-          uploaded_by: 'vendor',
-          status: dv.status,
-          source: 'devis',
-          raw: dv,
-        }));
-      setDocs([...mapped, ...devisMapped]);
+      const docItems = await getDocuments('documents', [{ field: 'client_id', operator: '==', value: client.id }]);
+      setDocs((docItems as any[]).map((d) => ({ ...d, source: 'documents' })));
     } catch { toast.error('Erreur lors du chargement'); }
     finally { setLoading(false); }
-  };
-
-  const handleValidateDevis = async (doc: DocumentItem) => {
-    const devisId = (doc as any).raw?.id || doc.id.replace('devis:', '');
-    setValidating(doc.id);
-    try {
-      const { updateDocument: upd, addDocument: add } = await import('@/lib/db');
-      await upd('devis', devisId, { status: 'accepted', accepted_at: new Date().toISOString() });
-      // Créer la facture automatiquement
-      const raw = (doc as any).raw;
-      const invoiceRef = `FAC-${Date.now().toString().slice(-6)}`;
-      const amountTTC = raw?.amount || 0;
-      await add('invoices', {
-        vendor_id: raw?.vendor_id || '',
-        client_id: client?.id || '',
-        client_name: client?.name || '',
-        client_email: client?.email || '',
-        devis_id: devisId,
-        reference: invoiceRef,
-        amount: amountTTC,
-        amount_ht: (raw?.items || []).reduce((s: number, i: any) => s + i.qty * i.unit_price, 0),
-        amount_ttc: amountTTC,
-        tva: raw?.tva || 0,
-        items: raw?.items || [],
-        description: `${raw?.client_name || 'Client'} — ${raw?.reference || devisId}`,
-        category: 'Prestataire',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        notes: `Facture générée depuis le devis ${raw?.reference}`,
-      });
-      // Notifier le prestataire
-      if (raw?.vendor_id) {
-        createNotification({
-          recipientId: raw.vendor_id,
-          type: 'devis',
-          title: 'Devis accepté',
-          message: `${client?.name || 'Un client'} a accepté le devis ${raw?.reference || ''} — ${amountTTC.toLocaleString('fr-FR')} €`,
-          link: '/espace-prestataire/devis',
-        });
-      }
-      // Notifier le client (confirmation)
-      createNotification({
-        recipientId: client?.id || '',
-        type: 'payment',
-        title: 'Facture créée',
-        message: `La facture ${invoiceRef} de ${amountTTC.toLocaleString('fr-FR')} € est disponible dans vos paiements.`,
-        link: '/espace-client/paiements',
-      });
-      toast.success('Devis accepté — Une facture a été générée');
-      await fetchDocs();
-    } catch { toast.error('Erreur'); } finally { setValidating(null); }
-  };
-
-  const handleRejectDevis = async (doc: DocumentItem) => {
-    const devisId = (doc as any).raw?.id || doc.id.replace('devis:', '');
-    const raw = (doc as any).raw;
-    setValidating(doc.id);
-    try {
-      await updateDocument('devis', devisId, { status: 'rejected', rejected_at: new Date().toISOString() });
-      if (raw?.vendor_id) {
-        createNotification({
-          recipientId: raw.vendor_id,
-          type: 'devis',
-          title: 'Devis refusé',
-          message: `${client?.name || 'Un client'} a refusé le devis ${raw?.reference || ''}.`,
-          link: '/espace-prestataire/devis',
-        });
-      }
-      toast.success('Devis refusé');
-      await fetchDocs();
-    } catch { toast.error('Erreur'); } finally { setValidating(null); }
-  };
-
-  const handleSignContract = async (doc: DocumentItem) => {
-    const contractId = (doc as any).contract_id || '';
-    if (!contractId) { toast.error('Contrat introuvable'); return; }
-    const vendorId = (doc as any).vendor_id || '';
-    setValidating(doc.id);
-    try {
-      await updateDocument('contracts', contractId, { status: 'signed', signed_at: new Date().toISOString() });
-      await updateDocument('documents', doc.id, { status: 'signed' });
-      if (vendorId) {
-        createNotification({
-          recipientId: vendorId,
-          type: 'contrat',
-          title: 'Contrat signé',
-          message: `${client?.name || 'Un client'} a signé le contrat.`,
-          link: '/espace-prestataire/contrats',
-        });
-      }
-      toast.success('Contrat signé');
-      await fetchDocs();
-    } catch { toast.error('Erreur'); } finally { setValidating(null); }
   };
 
   useEffect(() => { if (!dataLoading) fetchDocs(); }, [client?.id, dataLoading]);
 
   const categories = useMemo(() => {
-    const count = (t: string) => docs.filter((d) => (d.type || '').toLowerCase() === t).length;
+    const count = (filter: (t: string) => boolean) => docs.filter((d) => filter((d.type || '').toLowerCase())).length;
     return [
-      { id: 'all', label: 'Tous', count: docs.length },
-      { id: 'contrat', label: 'Contrats', count: count('contrat') },
-      { id: 'devis', label: 'Devis', count: count('devis') },
-      { id: 'facture', label: 'Factures', count: count('facture') },
+      { id: 'all', label: 'Tous', count: docs.length, filter: () => true },
+      { id: 'contrat', label: 'Contrats', count: count((t) => t === 'contrat'), filter: (t: string) => t === 'contrat' },
+      { id: 'planning', label: 'Planning', count: count((t) => t === 'planning'), filter: (t: string) => t === 'planning' },
+      { id: 'autre', label: 'Autres', count: count((t) => !['contrat', 'planning'].includes(t)), filter: (t: string) => !['contrat', 'planning'].includes(t) },
     ];
   }, [docs]);
 
+  const activeCategory = categories.find((c) => c.id === categoryFilter);
+
   const filtered = docs.filter((d) => {
     const matchSearch = (d.name || '').toLowerCase().includes(search.toLowerCase());
-    const matchCat = categoryFilter === 'all' || (d.type || '').toLowerCase() === categoryFilter;
+    const matchCat = activeCategory ? activeCategory.filter((d.type || '').toLowerCase()) : true;
     return matchSearch && matchCat;
   });
 
@@ -197,15 +81,13 @@ export default function DocumentsPage() {
   const getTypeIcon = (type: string) => {
     switch ((type || '').toLowerCase()) {
       case 'contrat': return <FileCheck className="w-4 h-4 text-rose-500" />;
-      case 'devis': return <FilePen className="w-4 h-4 text-charcoal-500" />;
-      case 'facture': return <File className="w-4 h-4 text-green-500" />;
       default: return <FileText className="w-4 h-4 text-charcoal-400" />;
     }
   };
 
   const handleDeleteDoc = async (doc: DocumentItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (doc.source !== 'documents') { toast.error('Impossible de supprimer un devis'); return; }
+    if (doc.source !== 'documents') { toast.error('Impossible de supprimer ce document'); return; }
     if (!confirm(`Supprimer « ${doc.name} » ?`)) return;
     try {
       await deleteDocument('documents', doc.id);
@@ -224,7 +106,7 @@ export default function DocumentsPage() {
         client_id: client.id,
         event_id: event?.id || null,
         name: docName,
-        type: docType,
+        type: docType === 'autre' ? (customType.trim() || 'autre') : docType,
         file_url: fileUrl,
         file_type: selectedFile.type,
         file_size: selectedFile.size,
@@ -255,7 +137,7 @@ export default function DocumentsPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace client</p>
-          <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Documents &amp; devis</h1>
+          <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Documents</h1>
         </div>
         <button onClick={() => setIsUploadOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white text-sm font-medium rounded-xl hover:bg-rose-700 transition-colors">
@@ -266,158 +148,101 @@ export default function DocumentsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {categories.map((cat) => (
           <button key={cat.id} onClick={() => setCategoryFilter(cat.id)}
-            className={`text-left p-4 rounded-2xl border transition-all shadow-soft ${
+            className={`group text-left p-4 rounded-2xl border transition-all shadow-soft ${
               categoryFilter === cat.id
                 ? 'bg-rose-600 border-rose-600 text-white'
                 : 'bg-white border-charcoal-100 hover:border-rose-200'
             }`}>
-            <p className={`text-2xl font-bold ${categoryFilter === cat.id ? 'text-white' : 'text-charcoal-900'}`}>{cat.count}</p>
-            <p className={`text-sm mt-0.5 ${categoryFilter === cat.id ? 'text-rose-200' : 'text-charcoal-500'}`}>{cat.label}</p>
+            <div className="flex items-start justify-between">
+              <span className={`text-2xl font-bold leading-none ${categoryFilter === cat.id ? 'text-white' : 'text-charcoal-900'}`}>{cat.count}</span>
+              {categoryFilter === cat.id && <span className="w-2 h-2 rounded-full bg-white" />}
+            </div>
+            <p className={`text-sm mt-2 ${categoryFilter === cat.id ? 'text-rose-100' : 'text-charcoal-500'}`}>{cat.label}</p>
           </button>
         ))}
       </div>
 
-      <div className="bg-white border border-charcoal-100 rounded-2xl p-6 shadow-soft">
-        <div className="relative mb-5">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+      <div className="bg-white border border-charcoal-100 rounded-2xl shadow-soft overflow-hidden">
+        <div className="px-5 py-4 border-b border-charcoal-100 flex items-center gap-3">
+          <Search className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
           <input
             type="text" placeholder="Rechercher un document…"
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-ivory-50 focus:outline-none focus:border-rose-400 transition-all"
+            className="flex-1 min-w-0 text-sm bg-transparent focus:outline-none text-charcoal-700 placeholder:text-charcoal-400"
           />
         </div>
 
-        {filtered.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead>
+              <tr className="bg-ivory-50 text-charcoal-500 text-xs uppercase tracking-wider">
+                <th className="px-5 py-3 font-medium w-1/2">Nom</th>
+                <th className="px-5 py-3 font-medium w-24">Type</th>
+                <th className="px-5 py-3 font-medium w-40">Date</th>
+                <th className="px-5 py-3 font-medium w-32 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-charcoal-100">
+              {paginated.map((doc) => (
+                <tr key={doc.id} className="hover:bg-ivory-50/60 transition-colors">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-charcoal-100 flex items-center justify-center flex-shrink-0">
+                        {getTypeIcon(doc.type)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-charcoal-900 truncate">{doc.name}</p>
+                        <p className="text-xs text-charcoal-400">{doc.uploaded_by === 'client' ? 'Vous' : 'Prestataire'}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${typeColors[(doc.type||'').toLowerCase()] || typeColors.autre}`}>
+                      {typeLabels[(doc.type||'').toLowerCase()] || (doc.type ? doc.type.charAt(0).toUpperCase() + doc.type.slice(1) : 'Autre')}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-charcoal-600">{doc.uploaded_at || '—'}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center justify-end gap-0.5">
+                      {doc.file_url && (
+                        <>
+                          <a href={doc.file_url} target="_blank" rel="noreferrer" title="Ouvrir"
+                            className="p-2 rounded-lg hover:bg-charcoal-100 text-charcoal-500 transition-colors">
+                            <Eye className="w-4 h-4" />
+                          </a>
+                          <a href={doc.file_url} download={doc.name} target="_blank" rel="noreferrer" title="Télécharger"
+                            className="p-2 rounded-lg hover:bg-charcoal-100 text-charcoal-500 transition-colors">
+                            <DownloadIcon className="w-4 h-4" />
+                          </a>
+                        </>
+                      )}
+                      {doc.source === 'documents' && (
+                        <button onClick={(e) => handleDeleteDoc(doc, e)} title="Supprimer"
+                          className="p-2 rounded-lg hover:bg-rose-50 text-charcoal-500 hover:text-rose-600 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {filtered.length === 0 && (
           <div className="text-center py-12">
             <FileText className="w-10 h-10 mx-auto mb-3 text-charcoal-200" />
             <p className="text-charcoal-500 font-medium">Aucun document trouvé</p>
           </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              {paginated.map((doc) => (
-                <div key={doc.id} className="relative flex items-center gap-3 p-3.5 rounded-xl border border-charcoal-100 hover:border-rose-200 bg-ivory-50 transition-all">
-                  <div className="w-9 h-9 rounded-xl bg-white border border-charcoal-100 flex items-center justify-center flex-shrink-0">
-                    {getTypeIcon(doc.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-charcoal-900 truncate">{doc.name}</p>
-                    <p className="text-xs text-charcoal-400">{doc.uploaded_at || '—'} • {doc.uploaded_by === 'client' ? 'Vous' : 'Prestataire'}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${typeColors[(doc.type||'').toLowerCase()]||typeColors.autre}`}>
-                    {typeLabels[(doc.type||'').toLowerCase()]||doc.type}
-                  </span>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {doc.type === 'devis' && doc.status === 'accepted' && (
-                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full font-medium">
-                        <CheckCircle2 className="w-3 h-3" /> Accepté
-                      </span>
-                    )}
-                    {doc.type === 'devis' && doc.status === 'rejected' && (
-                      <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full font-medium">
-                        <XCircle className="w-3 h-3" /> Refusé
-                      </span>
-                    )}
-                    {doc.type === 'contrat' && doc.status === 'signed' && (
-                      <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
-                        <CheckCircle2 className="w-3 h-3" /> Signé
-                      </span>
-                    )}
+        )}
 
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setOpenMenuId((p) => p === doc.id ? null : doc.id); }}
-                      className="p-2 rounded-lg hover:bg-charcoal-100 transition-colors"
-                      title="Actions"
-                    >
-                      <MoreVertical className="w-4 h-4 text-charcoal-500" />
-                    </button>
-
-                    {openMenuId === doc.id && (
-                      <div className="absolute right-3 top-12 z-30 w-56 bg-white border border-charcoal-100 rounded-xl shadow-soft overflow-hidden">
-                        <div className="py-1">
-                          {doc.type === 'devis' && doc.status === 'sent' && (
-                            <>
-                              <button
-                                onClick={() => { setOpenMenuId(null); handleValidateDevis(doc); }}
-                                disabled={validating === doc.id}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 text-green-700 disabled:opacity-50"
-                              >
-                                Accepter
-                              </button>
-                              <button
-                                onClick={() => { setOpenMenuId(null); handleRejectDevis(doc); }}
-                                disabled={validating === doc.id}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 disabled:opacity-50"
-                              >
-                                Refuser
-                              </button>
-                              <div className="h-px bg-charcoal-100 my-1" />
-                            </>
-                          )}
-
-                          {doc.type === 'contrat' && doc.status === 'sent' && (
-                            <>
-                              <button
-                                onClick={() => { setOpenMenuId(null); handleSignContract(doc); }}
-                                disabled={validating === doc.id}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-800 disabled:opacity-50"
-                              >
-                                Signer
-                              </button>
-                              <div className="h-px bg-charcoal-100 my-1" />
-                            </>
-                          )}
-
-                          {doc.file_url && (
-                            <>
-                              <a
-                                href={doc.file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={() => setOpenMenuId(null)}
-                                className="block px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
-                              >
-                                Ouvrir
-                              </a>
-                              <a
-                                href={doc.file_url}
-                                download={doc.name}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={() => setOpenMenuId(null)}
-                                className="block px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
-                              >
-                                Télécharger
-                              </a>
-                            </>
-                          )}
-
-                          {doc.source === 'documents' && doc.type !== 'devis' && (
-                            <>
-                              <div className="h-px bg-charcoal-100 my-1" />
-                              <button
-                                onClick={(e) => { setOpenMenuId(null); handleDeleteDoc(doc, e as any); }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
-                              >
-                                Supprimer
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 mt-5">
-                <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page===1} className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                <span className="text-sm text-charcoal-500">Page {page} / {totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page===totalPages} className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"><ChevronRight className="w-4 h-4" /></button>
-              </div>
-            )}
-          </>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 px-5 py-4 border-t border-charcoal-100">
+            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page===1} className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+            <span className="text-sm text-charcoal-500">Page {page} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page===totalPages} className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+          </div>
         )}
       </div>
 
@@ -439,12 +264,18 @@ export default function DocumentsPage() {
                 <select value={docType} onChange={(e) => setDocType(e.target.value)}
                   className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-ivory-50 focus:outline-none focus:border-rose-400 transition-all">
                   <option value="contrat">Contrat</option>
-                  <option value="facture">Facture</option>
                   <option value="planning">Planning</option>
                   <option value="photo">Photo</option>
                   <option value="autre">Autre</option>
                 </select>
               </div>
+              {docType === 'autre' && (
+                <div>
+                  <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Précisez le type</label>
+                  <input type="text" value={customType} onChange={(e) => setCustomType(e.target.value)} placeholder="Ex: Note, Croquis, Devis…"
+                    className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-ivory-50 focus:outline-none focus:border-rose-400 transition-all" />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Fichier</label>
                 <input type="file" onChange={(e) => { const f = e.target.files?.[0]||null; setSelectedFile(f); if (f&&!docName) setDocName(f.name.replace(/\.[^/.]+$/, '')); }}

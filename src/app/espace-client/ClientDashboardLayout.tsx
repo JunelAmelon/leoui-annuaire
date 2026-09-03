@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, CalendarDays, Users, CheckSquare,
-  MessageSquare, FileText, CreditCard, Image, Bell, HelpCircle,
+  MessageSquare, FileText, Image, Bell,
   Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +14,6 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TourProvider } from '@/components/tour/TourContext';
 import TourManager from '@/components/tour/TourManager';
-import { usePageTour } from '@/components/tour/usePageTour';
 
 const NAV = [
   { href: '/espace-client',              label: 'Tableau de bord', icon: LayoutDashboard, exact: true, tourId: 'dashboard' },
@@ -25,7 +24,6 @@ const NAV = [
   { href: '/espace-client/invites',      label: 'Invités',         icon: UserCheck },
   { href: '/espace-client/messages',     label: 'Messages',        icon: MessageSquare, tourId: 'messaging' },
   { href: '/espace-client/documents',    label: 'Documents',       icon: FileText },
-  { href: '/espace-client/paiements',    label: 'Paiements',       icon: CreditCard },
   { href: '/espace-client/galerie',      label: 'Galerie',         icon: Image },
   { href: '/espace-client/calculatrice', label: 'Budget',          icon: Calculator },
 ];
@@ -43,40 +41,11 @@ const ROUTE_GUIDE_MAPPING: Record<string, string> = {
 
 function ClientDashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { startCurrentPageTour, hasGuideForCurrentPage } = usePageTour({
-    routeMapping: ROUTE_GUIDE_MAPPING,
-    userType: 'client',
-    onTourStart: (guide) => {
-      console.log(`[ClientDashboard] Guide démarré: ${guide.name}`);
-    },
-    onTourComplete: (guide) => {
-      console.log(`[ClientDashboard] Guide terminé: ${guide.name}`);
-    },
-  });
   const { user, signOut } = useAuth();
   const { client, event } = useClientData();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [helpDisabled, setHelpDisabled] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  const [guideCompleted, setGuideCompleted] = useState(false);
-
-  useEffect(() => {
-    try {
-      const v = localStorage.getItem('leoui_help_disabled');
-      setHelpDisabled(v === '1');
-    } catch {
-      setHelpDisabled(false);
-    }
-    // Check if guide was completed
-    try {
-      const g = localStorage.getItem('leoui_guide_completed');
-      setGuideCompleted(g === '1');
-    } catch {
-      setGuideCompleted(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -366,26 +335,6 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
         {/* Page content */}
         <main className="p-5 sm:p-6 lg:p-8 relative">
           {children}
-
-              {/* Help Button - Lance le guide de la page courante */}
-          {!helpDisabled && hasGuideForCurrentPage && (
-            <button
-              type="button"
-              onClick={startCurrentPageTour}
-              className="group fixed bottom-5 right-5 z-40 bg-gradient-to-r from-rose-500 to-rose-600 text-white px-4 py-3 rounded-full shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 hover:scale-105 transition-all duration-300 text-sm font-semibold flex items-center gap-2"
-              aria-label="Ouvrir le guide interactif"
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>Aide</span>
-              {/* Tooltip pour les nouveaux utilisateurs */}
-              {!guideCompleted && (
-                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-charcoal-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                  Découvrir cette page
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-charcoal-900" />
-                </span>
-              )}
-            </button>
-          )}
 
         </main>
       </div>

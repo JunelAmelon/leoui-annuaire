@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Heart, LayoutDashboard, Megaphone, MessageSquare, FileText,
+  Heart, LayoutDashboard, Megaphone, MessageSquare,
   CalendarDays, Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
-  FileCheck2, Receipt, Tag, Star, Bell, Crown,
+  FileCheck2, Tag, Star, Bell, Crown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDocument } from '@/lib/db';
@@ -19,9 +19,7 @@ const NAV = [
   { href: '/espace-prestataire',                    label: 'Tableau de bord',  icon: LayoutDashboard, exact: true },
   { href: '/espace-prestataire/mon-annonce',        label: 'Mon profil',       icon: Megaphone },
   { href: '/espace-prestataire/contacts',           label: 'Messages',         icon: MessageSquare },
-  { href: '/espace-prestataire/devis',              label: 'Devis',            icon: FileText },
   { href: '/espace-prestataire/contrats',           label: 'Contrats',         icon: FileCheck2 },
-  { href: '/espace-prestataire/factures',           label: 'Factures',         icon: Receipt },
   { href: '/espace-prestataire/planning',           label: 'Planning',         icon: CalendarDays },
   { href: '/espace-prestataire/promotions',         label: 'Promotions',       icon: Tag },
   { href: '/espace-prestataire/avis',               label: 'Avis clients',     icon: Star },

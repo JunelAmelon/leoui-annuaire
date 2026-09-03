@@ -48,22 +48,33 @@ const STATIC_FALLBACK = [
 
 function ImageSlider({ images, vendorName }: { images: string[]; vendorName: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const allImages = images.length >= 3 ? images.slice(0, 3) : images;
   
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const nextImage = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev + 1) % allImages.length);
   };
   
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const prevImage = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
   };
 
+  useEffect(() => {
+    if (allImages.length <= 1 || isPaused) return;
+    const interval = setInterval(() => nextImage(), 3000);
+    return () => clearInterval(interval);
+  }, [allImages.length, isPaused]);
+
   return (
-    <div className="relative h-48 overflow-hidden">
+    <div 
+      className="relative h-48 overflow-hidden"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {allImages.map((img, idx) => (
         <div
           key={idx}

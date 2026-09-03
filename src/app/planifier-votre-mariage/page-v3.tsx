@@ -37,7 +37,7 @@ export default function WeddingPlannerPage() {
               <span className="italic text-champagne-300">sereinement</span>
             </h1>
             <p className="text-body-md text-white/80 mb-7 max-w-lg">
-              Votre espace couple numérique tout-en-un : planning, prestataires, budget, documents et paiements, centralisés en un seul endroit.
+              Votre espace couple numérique tout-en-un : planning, prestataires, budget et documents, centralisés en un seul endroit.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
               <Link href="/signup" className="flex-1 inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
@@ -89,12 +89,12 @@ export default function WeddingPlannerPage() {
               {
                 icon: FileText,
                 title: 'Documents & Contrats',
-                desc: 'Tous vos documents centralisés : contrats, bons de commande, devis. Signez en ligne en toute sécurité.',
+                desc: 'Tous vos documents et contrats centralisés, accessibles en un clin d’œil.',
               },
               {
                 icon: CreditCard,
-                title: 'Suivi des paiements',
-                desc: 'Visualisez acomptes versés, soldes à régler et calendrier de paiements pour chaque prestataire.',
+                title: 'Budget maîtrisé',
+                desc: 'Suivez chaque dépense et gardez le contrôle de votre budget au fil des mois.',
               },
               {
                 icon: MessageCircle,
@@ -144,9 +144,9 @@ export default function WeddingPlannerPage() {
                 {[
                   'Compte à rebours en temps réel jusqu\'à votre mariage',
                   'Suivi des étapes validées par vous et votre planner',
-                  'Vue complète de votre budget et vos paiements',
+                  'Vue complète de votre budget',
                   'Vos prestataires avec statuts et coordonnées',
-                  'Documents, contrats et devis centralisés',
+                  'Documents et contrats centralisés',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <Check className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
@@ -217,7 +217,7 @@ export default function WeddingPlannerPage() {
             {[
               { num: '01', title: 'Premier rendez-vous', desc: 'Nous découvrons votre projet, vos envies, votre budget et votre date de mariage.' },
               { num: '02', title: 'Sélection des prestataires', desc: 'Accès à notre réseau exclusif. Nous négocions les meilleurs tarifs en votre faveur.' },
-              { num: '03', title: 'Suivi depuis votre espace', desc: 'Planning, documents, paiements — tout centralisé dans votre espace couple 24h/24.' },
+              { num: '03', title: 'Suivi depuis votre espace', desc: 'Planning et documents — tout centralisé dans votre espace couple 24h/24.' },
               { num: '04', title: 'Le grand jour', desc: 'Coordination complète sur place. Vous profitez pleinement sans vous soucier de rien.' },
             ].map((step, i) => (
               <div key={i} className="bg-charcoal-50 rounded-2xl p-6">

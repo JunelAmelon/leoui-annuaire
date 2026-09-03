@@ -46,7 +46,7 @@ const CHECKLIST = [
   { timing: '18 mois avant', items: ['Définir le budget', 'Choisir la date', 'Réserver le lieu', 'Commencer la liste des invités'] },
   { timing: '12 mois avant', items: ['Réserver le photographe', 'Choisir le traiteur', 'Sélectionner la robe / le costume', 'Envoyer les save-the-dates'] },
   { timing: '6 mois avant', items: ['Confirmer tous les prestataires', 'Choisir le fleuriste', 'Organiser la musique', 'Réserver les hébergements'] },
-  { timing: '1 mois avant', items: ['Confirmer les plans de table', 'Derniers essayages', 'Briefer tous les prestataires', 'Préparer les paiements finaux'] },
+  { timing: '1 mois avant', items: ['Confirmer les plans de table', 'Derniers essayages', 'Briefer tous les prestataires', 'Préparer les derniers règlements'] },
 ];
 
 export default function GuidePage() {

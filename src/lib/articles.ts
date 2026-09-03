@@ -167,7 +167,7 @@ Répartition indicative d'un budget mariage en France :
 - Transport : 2-3%
 - Divers & imprévus (à prévoir absolument) : 5-10%
 
-Quelques conseils pour optimiser votre budget : mariez-vous hors haute saison (octobre à mars) pour des tarifs 20 à 30% moins élevés. Préférez un jour de semaine si vous avez des invités flexibles. Demandez plusieurs devis et n'hésitez pas à négocier.
+Quelques conseils pour optimiser votre budget : mariez-vous hors haute saison (octobre à mars) pour des tarifs 20 à 30% moins élevés. Préférez un jour de semaine si vous avez des invités flexibles. Demandez plusieurs propositions et n'hésitez pas à négocier.
 
 Utilisez un tableur ou l'outil de suivi budgétaire de votre espace couple pour tracker chaque dépense en temps réel.`,
     imageUrl: 'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=800',

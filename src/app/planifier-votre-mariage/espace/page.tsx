@@ -31,7 +31,7 @@ export default function EspacePage() {
     {
       icon: FileText,
       title: 'Documents organisés',
-      desc: 'Devis, contrats, factures — stockés et classés automatiquement.',
+      desc: 'Contrats, plannings et documents utiles stockés et classés en un seul endroit.',
       color: 'bg-amber-50',
       iconColor: 'text-amber-700'
     },

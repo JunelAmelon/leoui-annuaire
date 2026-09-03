@@ -122,7 +122,7 @@ export default function WeddingPlannerPageV1() {
     {
       icon: CreditCard,
       title: 'Budget maîtrisé',
-      desc: 'Suivez chaque dépense, visualisez vos acomptes et anticipez les paiements à venir.',
+      desc: 'Suivez chaque dépense et anticipez votre budget au plus juste.',
       color: 'from-amber-50 to-amber-100',
       iconColor: 'text-amber-700',
       stat: '0€'

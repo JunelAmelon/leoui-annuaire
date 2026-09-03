@@ -1,162 +1,261 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, MapPin, X, Trash2, Loader2 } from 'lucide-react';
-import { getDocuments, addDocument, deleteDocument, getDocument } from '@/lib/db';
+import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
 import { toast } from 'sonner';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Trash2, User, X, Building2 } from 'lucide-react';
 
-const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-function getFirstDayOfMonth(year: number, month: number) {
-  const d = new Date(year, month, 1).getDay();
-  return d === 0 ? 6 : d - 1;
-}
-
-type PlanningEvent = {
+interface Appointment {
   id: string;
-  date: string;
   title: string;
-  location: string;
-  type: 'mariage' | 'seance' | 'rdv' | 'autre';
-  notes?: string;
-  uid: string;
+  date: string;
+  time?: string;
+  location?: string;
+  with_whom?: string;
+  description?: string;
+  type?: string;
   client_id?: string;
   client_name?: string;
+  vendor_name?: string;
+}
+
+interface CalendarEvent extends Appointment {
+  source: 'couple' | 'provider';
+}
+
+const parseDate = (v: string | undefined): Date | null => {
+  if (!v) return null;
+  if (v.includes('T')) {
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return null;
+    return d;
+  }
+  const [y, m, d] = v.split('-').map(Number);
+  if (y && m && d) return new Date(y, m - 1, d);
+  const fallback = new Date(v);
+  if (isNaN(fallback.getTime())) return null;
+  return fallback;
 };
 
-const TYPE_OPTIONS = [
-  { value: 'mariage', label: 'Mariage' },
-  { value: 'seance', label: 'Séance photo / vidéo' },
-  { value: 'rdv', label: 'Rendez-vous client' },
-  { value: 'autre', label: 'Autre' },
-];
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-const TYPE_COLORS: Record<string, string> = {
-  mariage: 'bg-rose-100 text-rose-700',
-  seance: 'bg-champagne-100 text-champagne-700',
-  rdv: 'bg-charcoal-100 text-charcoal-600',
-  autre: 'bg-stone-100 text-stone-600',
-};
+function EventsTable({
+  events,
+  onSelect,
+  onDelete,
+}: {
+  events: CalendarEvent[];
+  onSelect: (ev: CalendarEvent) => void;
+  onDelete: (ev: CalendarEvent, e: React.MouseEvent) => void;
+}) {
+  if (events.length === 0) {
+    return (
+      <div className="text-center py-12" data-tour="upcoming">
+        <CalendarIcon className="w-10 h-10 mx-auto mb-3 text-charcoal-200" />
+        <p className="text-charcoal-500 font-medium">Aucun événement trouvé</p>
+      </div>
+    );
+  }
 
-const TYPE_DOT: Record<string, string> = {
-  mariage: 'bg-rose-400',
-  seance: 'bg-champagne-500',
-  rdv: 'bg-charcoal-400',
-  autre: 'bg-stone-400',
-};
+  return (
+    <div className="overflow-x-auto" data-tour="upcoming">
+      <table className="w-full min-w-[640px] text-left text-sm">
+        <thead>
+          <tr className="bg-ivory-50 text-charcoal-500 text-xs uppercase tracking-wider">
+            <th className="px-4 py-3 font-medium w-40">Date</th>
+            <th className="px-4 py-3 font-medium w-24">Heure</th>
+            <th className="px-4 py-3 font-medium">Événement</th>
+            <th className="px-4 py-3 font-medium w-44">Lieu</th>
+            <th className="px-4 py-3 font-medium w-40">Avec</th>
+            <th className="px-4 py-3 font-medium w-28">Source</th>
+            <th className="px-4 py-3 font-medium w-24 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-charcoal-100">
+          {events.map((ev) => {
+            const d = parseDate(ev.date);
+            return (
+              <tr key={`${ev.source}-${ev.id}`} className="hover:bg-ivory-50/60 transition-colors">
+                <td className="px-4 py-3 text-charcoal-700">
+                  {d ? d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : ev.date}
+                </td>
+                <td className="px-4 py-3 text-charcoal-600">{ev.time || '—'}</td>
+                <td className="px-4 py-3 font-medium text-charcoal-900">
+                  <div className="flex items-center gap-2">
+                    {ev.source === 'provider' ? <Building2 className="w-3.5 h-3.5 text-charcoal-400" /> : <User className="w-3.5 h-3.5 text-charcoal-400" />}
+                    <span className="truncate">{ev.title}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-charcoal-600 truncate">{ev.location || '—'}</td>
+                <td className="px-4 py-3 text-charcoal-600 truncate">{ev.with_whom || '—'}</td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border ${
+                      ev.source === 'couple'
+                        ? 'bg-rose-100 text-rose-700 border-rose-200'
+                        : 'bg-champagne-100 text-champagne-700 border-champagne-200'
+                    }`}
+                  >
+                    {ev.source === 'couple' ? 'Avec client' : 'Sans client'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex items-center justify-end gap-0.5">
+                    <button
+                      onClick={() => onSelect(ev)}
+                      className="p-2 rounded-lg hover:bg-charcoal-100 text-charcoal-500 transition-colors"
+                      title="Voir"
+                    >
+                      <CalendarIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => onDelete(ev, e)}
+                      className="p-2 rounded-lg hover:bg-rose-50 text-charcoal-500 hover:text-rose-600 transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function PlanningPage() {
   const { user } = useAuth();
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [events, setEvents] = useState<PlanningEvent[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [linkedClients, setLinkedClients] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [vendorName, setVendorName] = useState<string>('');
+  const [vendorName, setVendorName] = useState('');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [filter, setFilter] = useState<'all' | 'couple' | 'provider'>('all');
+  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    date: '',
     title: '',
+    date: '',
+    time: '',
     location: '',
-    type: 'mariage' as PlanningEvent['type'],
-    notes: '',
+    with_whom: '',
     client_id: '',
-    client_name: '',
+    description: '',
+    type: 'RDV',
   });
 
   useEffect(() => {
     if (!user) return;
+    const uid = user.uid;
     setVendorName(user.displayName || user.email?.split('@')[0] || 'Prestataire');
-    const load = async () => {
-      setLoading(true);
+    async function fetchData() {
       try {
-        const docs = await getDocuments('planning_events', [
-          { field: 'uid', operator: '==', value: user.uid },
+        const items = await getDocuments('planning_events', [
+          { field: 'uid', operator: '==', value: uid },
         ]);
-        setEvents(docs as PlanningEvent[]);
-      } catch {
-        // ignore
+        const allTasks = items as any[];
+        const nextAppointments = allTasks
+          .filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv' || t?.kind === 'event' || t?.kind === undefined)
+          .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)) as Appointment[];
+        setAppointments(nextAppointments);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
+        setDataLoading(false);
       }
-    };
-    load();
-    // Charger les clients liés
-    getDocuments('collaborations', [{ field: 'vendor_id', operator: '==', value: user.uid }])
-      .then(collabs => setLinkedClients((collabs as any[]).map(c => ({ id: c.client_id || c.id, name: c.client_name || '', email: c.client_email || '' })).filter(c => c.name || c.email)))
+    }
+    fetchData();
+    getDocuments('collaborations', [{ field: 'vendor_id', operator: '==', value: uid }])
+      .then((collabs) =>
+        setLinkedClients(
+          (collabs as any[])
+            .map((c) => ({ id: c.client_id || c.id, name: c.client_name || '', email: c.client_email || '' }))
+            .filter((c) => c.name || c.email)
+        )
+      )
       .catch(() => {});
   }, [user]);
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
+  const allEvents = useMemo<CalendarEvent[]>(() => {
+    return appointments
+      .map((a) => ({
+        ...a,
+        source: (a.client_id ? 'couple' : 'provider') as 'couple' | 'provider',
+        with_whom: a.client_id ? a.client_name || 'Client' : a.with_whom || '—',
+      }))
+      .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0));
+  }, [appointments]);
 
-  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
-  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+  const filteredEvents = useMemo(() => {
+    if (filter === 'all') return allEvents;
+    return allEvents.filter((ev) => ev.source === filter);
+  }, [allEvents, filter]);
 
-  const eventsByDate = events.reduce((acc, ev) => {
-    const d = new Date(ev.date);
-    if (d.getFullYear() === year && d.getMonth() === month) {
-      const day = d.getDate();
-      acc[day] = acc[day] || [];
-      acc[day].push(ev);
+  const handleAddAppointment = async () => {
+    if (!user) {
+      toast.error('Non connecté');
+      return;
     }
-    return acc;
-  }, {} as Record<number, PlanningEvent[]>);
-
-  const upcoming = events
-    .filter(ev => new Date(ev.date) >= today)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 8);
-
-  const openAddModal = (day?: number) => {
-    const dateStr = day
-      ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      : '';
-    setForm({ date: dateStr, title: '', location: '', type: 'mariage', notes: '', client_id: '', client_name: '' });
-    setShowModal(true);
-  };
-
-  const handleSave = async () => {
-    if (!user || !form.title.trim() || !form.date) {
+    if (!form.title.trim() || !form.date) {
       toast.error('Titre et date requis');
       return;
     }
     setSaving(true);
     try {
-      const data = { ...form, uid: user.uid, vendor_id: user.uid, createdAt: new Date().toISOString() };
-      const newDoc = await addDocument('planning_events', data);
-      const newId = (newDoc as any).id || '';
-      setEvents(p => [...p, { ...data, id: newId } as PlanningEvent]);
-
-      // Sync agenda client si un client est sélectionné
+      const client = linkedClients.find((c) => c.id === form.client_id);
+      const clientName = client?.name || '';
+      const payload: any = {
+        kind: 'appointment',
+        title: form.title.trim(),
+        date: form.date,
+        time: form.time || null,
+        location: form.location || null,
+        with_whom: form.client_id ? clientName : form.with_whom || null,
+        description: form.description || null,
+        type: form.type || null,
+        client_id: form.client_id || null,
+        client_name: clientName || null,
+        uid: user.uid,
+        vendor_id: user.uid,
+        vendor_name: vendorName,
+        created_at: new Date().toISOString(),
+      };
+      const ref = await addDocument('planning_events', payload);
+      const newId = ref.id;
       if (form.client_id) {
         await addDocument('client_planning_events', {
           client_id: form.client_id,
+          client_name: clientName,
           vendor_id: user.uid,
           vendor_name: vendorName,
           planning_event_id: newId,
           date: form.date,
-          title: form.title,
-          location: form.location,
-          type: form.type,
-          notes: form.notes,
-          client_name: form.client_name,
-          created_at: new Date().toISOString(),
+          title: form.title.trim(),
+          location: form.location || null,
+          type: form.type || null,
+          notes: form.description || null,
           source: 'vendor',
+          created_at: new Date().toISOString(),
         });
-        toast.success(`Événement ajouté — Synchronisé dans l'agenda de ${form.client_name || 'votre client'}`);
-      } else {
-        toast.success('Événement ajouté');
       }
-      setShowModal(false);
+      setAppointments((prev) =>
+        [...prev, { id: newId, ...payload }].sort(
+          (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
+        )
+      );
+      toast.success('Événement ajouté');
+      setShowAdd(false);
+      setForm({ title: '', date: '', time: '', location: '', with_whom: '', client_id: '', description: '', type: 'RDV' });
     } catch {
       toast.error('Erreur lors de l\'ajout');
     } finally {
@@ -164,222 +263,415 @@ export default function PlanningPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteEvent = async (ev: CalendarEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Supprimer « ${ev.title} » ?`)) return;
     try {
-      await deleteDocument('planning_events', id);
-      setEvents(p => p.filter(e => e.id !== id));
+      await deleteDocument('planning_events', ev.id);
+      const linked = await getDocuments('client_planning_events', [
+        { field: 'planning_event_id', operator: '==', value: ev.id },
+      ]);
+      await Promise.all((linked as any[]).map((ce) => deleteDocument('client_planning_events', ce.id)));
+      setAppointments((prev) => prev.filter((a) => a.id !== ev.id));
+      setSelectedEvent(null);
       toast.success('Événement supprimé');
     } catch {
-      toast.error('Erreur suppression');
+      toast.error('Erreur lors de la suppression');
     }
   };
 
+  // Calendar data
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const monthLabel = currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const capitalizedMonthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+  const firstOfMonth = new Date(year, month, 1);
+  const startDay = firstOfMonth.getDay();
+  const offset = (startDay + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const totalCells = Math.ceil((daysInMonth + offset) / 7) * 7;
+  const calendarDays = Array.from({ length: totalCells }, (_, i) => new Date(year, month, i - offset + 1));
+  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const today = new Date();
+
+  const getDayEvents = (day: Date) =>
+    filteredEvents.filter((ev) => {
+      const d = parseDate(ev.date);
+      return d ? isSameDay(d, day) : false;
+    });
+
+  const changeMonth = (delta: number) => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  };
+
+  if (dataLoading || loading) {
+    return (
+      <PrestataireDashboardLayout>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-8 w-48 bg-charcoal-100 rounded-xl" />
+          <div className="h-64 bg-charcoal-100 rounded-2xl" />
+        </div>
+      </PrestataireDashboardLayout>
+    );
+  }
+
   return (
     <PrestataireDashboardLayout>
-      <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
-        <div>
-          <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
-          <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Planning</h1>
-          <p className="text-sm text-charcoal-500 mt-0.5">Visualisez vos dates réservées et vos disponibilités.</p>
-        </div>
-        <button onClick={() => openAddModal()} className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 transition-colors">
-          <Plus className="w-4 h-4" /> Ajouter un événement
-        </button>
+      <div className="space-y-6">
+        {/* Page header */}
+      <div>
+        <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
+        <h1
+          className="font-serif text-charcoal-900"
+          style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}
+        >
+          Planning
+        </h1>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-96 bg-white rounded-2xl animate-pulse" />
-          <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white rounded-2xl animate-pulse" />)}</div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
-            {/* Month nav */}
-            <div className="flex items-center justify-between mb-5">
-              <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-charcoal-50 text-charcoal-600 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <h2 className="font-display text-heading-sm text-charcoal-900">{MONTHS[month]} {year}</h2>
-              <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-charcoal-50 text-charcoal-600 transition-colors">
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+        {/* Toolbar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => changeMonth(-1)}
+              className="p-2 rounded-xl border border-charcoal-200 hover:bg-charcoal-50 transition-colors"
+              aria-label="Mois précédent"
+            >
+              <ChevronLeft className="w-4 h-4 text-charcoal-600" />
+            </button>
+            <h2 className="font-serif text-lg text-charcoal-900 min-w-[10rem] text-center">{capitalizedMonthLabel}</h2>
+            <button
+              onClick={() => changeMonth(1)}
+              className="p-2 rounded-xl border border-charcoal-200 hover:bg-charcoal-50 transition-colors"
+              aria-label="Mois suivant"
+            >
+              <ChevronRight className="w-4 h-4 text-charcoal-600" />
+            </button>
+          </div>
 
-            {/* Day headers */}
-            <div className="grid grid-cols-7 mb-2">
-              {DAYS.map(d => (
-                <div key={d} className="text-center text-xs font-semibold text-charcoal-400 py-1">{d}</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-charcoal-100 rounded-xl p-1">
+              {(['all', 'couple', 'provider'] as const).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filter === key
+                      ? 'bg-white text-charcoal-900 shadow-sm'
+                      : 'text-charcoal-500 hover:text-charcoal-700'
+                  }`}
+                >
+                  {key === 'all' ? 'Tous' : key === 'couple' ? 'Avec client' : 'Sans client'}
+                </button>
               ))}
             </div>
 
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1;
-                const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-                const dayEvents = eventsByDate[day] || [];
+            <div className="flex items-center bg-charcoal-100 rounded-xl p-1">
+              <button
+                onClick={() => setView('calendar')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  view === 'calendar' ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500 hover:text-charcoal-700'
+                }`}
+              >
+                Calendrier
+              </button>
+              <button
+                onClick={() => setView('list')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  view === 'list' ? 'bg-white text-charcoal-900 shadow-sm' : 'text-charcoal-500 hover:text-charcoal-700'
+                }`}
+              >
+                Liste
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowAdd(true)}
+              data-tour="add-appointment"
+              className="flex items-center gap-1.5 px-3 py-2 bg-charcoal-900 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors rounded-xl"
+            >
+              <Plus className="w-3.5 h-3.5" /> Ajouter
+            </button>
+          </div>
+        </div>
+
+        {view === 'calendar' ? (
+          <>
+            <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+              {weekDays.map((day) => (
+                <div key={day} className="text-xs font-medium text-charcoal-500 uppercase tracking-wider py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1" data-tour="calendar">
+              {calendarDays.map((day, idx) => {
+                const isCurrentMonth = day.getMonth() === month;
+                const isToday = isSameDay(day, today);
+                const dayEvents = getDayEvents(day);
                 return (
                   <div
-                    key={day}
-                    onClick={() => openAddModal(day)}
-                    className={`min-h-[56px] p-1 rounded-xl border transition-colors cursor-pointer ${
-                      isToday ? 'border-rose-300 bg-rose-50' : 'border-transparent hover:bg-stone-50'
-                    } ${dayEvents.length > 0 && !isToday ? 'bg-champagne-50 border-champagne-200' : ''}`}
+                    key={idx}
+                    className={`min-h-[110px] p-2 rounded-xl border transition-colors ${
+                      isCurrentMonth ? 'bg-white border-charcoal-100' : 'bg-charcoal-50 border-charcoal-50'
+                    } ${isToday ? 'ring-2 ring-rose-300 ring-offset-1' : ''}`}
                   >
-                    <p className={`text-xs font-semibold text-center mb-1 ${isToday ? 'text-rose-600' : 'text-charcoal-600'}`}>{day}</p>
-                    {dayEvents.slice(0, 2).map((ev, ei) => (
-                      <div key={ei} className={`text-[10px] leading-tight px-1 py-0.5 rounded font-medium truncate ${TYPE_COLORS[ev.type] || 'bg-charcoal-100 text-charcoal-600'}`}>
-                        {ev.title.split(' ')[0]}
-                      </div>
-                    ))}
-                    {dayEvents.length > 2 && <div className="text-[10px] text-charcoal-400 px-1">+{dayEvents.length - 2}</div>}
+                    <p
+                      className={`text-sm font-medium ${
+                        isCurrentMonth ? 'text-charcoal-900' : 'text-charcoal-300'
+                      }`}
+                    >
+                      {day.getDate()}
+                    </p>
+                    <div className="mt-1 space-y-1">
+                      {dayEvents.slice(0, 3).map((ev) => (
+                        <button
+                          key={`${ev.source}-${ev.id}`}
+                          onClick={() => setSelectedEvent(ev)}
+                          className={`block w-full text-left text-[10px] leading-tight px-1.5 py-1 rounded-md truncate border ${
+                            ev.source === 'couple'
+                              ? 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200'
+                              : 'bg-champagne-100 text-champagne-700 border-champagne-200 hover:bg-champagne-200'
+                          }`}
+                          title={ev.title}
+                        >
+                          {ev.title}
+                        </button>
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <button
+                          onClick={() => setView('list')}
+                          className="block w-full text-left text-[10px] text-charcoal-500 hover:text-charcoal-700 px-1.5 py-1"
+                        >
+                          +{dayEvents.length - 3} événements
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
+          </>
+        ) : (
+          <EventsTable events={filteredEvents} onSelect={setSelectedEvent} onDelete={handleDeleteEvent} />
+        )}
+      </div>
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-charcoal-100">
-              {TYPE_OPTIONS.map(t => (
-                <div key={t.value} className="flex items-center gap-1.5">
-                  <div className={`w-2.5 h-2.5 rounded-full ${TYPE_DOT[t.value]}`} />
-                  <span className="text-xs text-charcoal-500">{t.label}</span>
-                </div>
-              ))}
-              <span className="ml-auto text-xs text-charcoal-400">{events.length} événement{events.length !== 1 ? 's' : ''} total</span>
+      {selectedEvent && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/60 backdrop-blur-sm"
+          onClick={() => setSelectedEvent(null)}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[85dvh] flex flex-col animate-slide-up sm:animate-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
-          </div>
-
-          {/* Upcoming events */}
-          <div>
-            <h2 className="font-display text-heading-sm text-charcoal-900 mb-4">Prochains événements</h2>
-            {upcoming.length === 0 ? (
-              <div className="bg-white border border-charcoal-100 rounded-2xl p-8 text-center shadow-soft">
-                <CalendarDays className="w-8 h-8 text-charcoal-300 mx-auto mb-2" />
-                <p className="text-sm text-charcoal-500">Aucun événement à venir</p>
-                <button onClick={() => openAddModal()} className="mt-3 text-xs text-rose-600 hover:text-rose-700 font-medium">
-                  + Ajouter un événement
+            <div className="px-4 sm:px-6 py-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <div className="pr-4">
+                  <h3 className="font-display text-lg font-semibold text-charcoal-900">{selectedEvent.title}</h3>
+                  <span
+                    className={`inline-flex items-center gap-1 mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium border ${
+                      selectedEvent.source === 'couple'
+                        ? 'bg-rose-100 text-rose-700 border-rose-200'
+                        : 'bg-champagne-100 text-champagne-700 border-champagne-200'
+                    }`}
+                  >
+                    {selectedEvent.source === 'couple' ? (selectedEvent.client_name ? `Avec client : ${selectedEvent.client_name}` : 'Avec client') : 'Sans client'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors flex-shrink-0"
+                >
+                  <X className="w-5 h-5 text-charcoal-500" />
                 </button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {upcoming.map((ev) => {
-                  const d = new Date(ev.date);
-                  const diff = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                  return (
-                    <div key={ev.id} className="bg-white border border-charcoal-100 rounded-2xl p-4 shadow-soft hover:border-rose-200 transition-colors group">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-12 text-center">
-                          <p className="text-xs font-semibold text-charcoal-400 uppercase">{MONTHS[d.getMonth()].slice(0, 3)}</p>
-                          <p className="text-2xl font-bold text-charcoal-900 leading-none">{d.getDate()}</p>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-1">
-                            <p className="text-sm font-semibold text-charcoal-900 truncate">{ev.title}</p>
-                            <button onClick={() => handleDelete(ev.id)}
-                              className="opacity-0 group-hover:opacity-100 text-charcoal-300 hover:text-red-500 transition-all flex-shrink-0">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          {ev.location && (
-                            <div className="flex items-center gap-1 mt-1 text-xs text-charcoal-500">
-                              <MapPin className="w-3 h-3" />{ev.location}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 mt-1 text-xs text-charcoal-400">
-                            <Clock className="w-3 h-3" />
-                            {diff === 0 ? "Aujourd'hui" : diff === 1 ? 'Demain' : `Dans ${diff} jours`}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-3 text-sm">
+                <p className="flex items-center gap-3 text-charcoal-600">
+                  <CalendarIcon className="w-5 h-5 text-charcoal-400" />
+                  {parseDate(selectedEvent.date)?.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  }) || selectedEvent.date}
+                  {selectedEvent.time && ` à ${selectedEvent.time}`}
+                </p>
+                {selectedEvent.location && (
+                  <p className="flex items-center gap-3 text-charcoal-600">
+                    <MapPin className="w-5 h-5 text-charcoal-400" />
+                    {selectedEvent.location}
+                  </p>
+                )}
+                {selectedEvent.with_whom && (
+                  <p className="flex items-center gap-3 text-charcoal-600">
+                    <User className="w-5 h-5 text-charcoal-400" />
+                    {selectedEvent.with_whom}
+                  </p>
+                )}
+                {selectedEvent.type && (
+                  <p className="flex items-center gap-3 text-charcoal-600">
+                    <Clock className="w-5 h-5 text-charcoal-400" />
+                    {selectedEvent.type}
+                  </p>
+                )}
+                {selectedEvent.description && (
+                  <p className="text-charcoal-600 mt-2 bg-charcoal-50 p-3 rounded-xl">{selectedEvent.description}</p>
+                )}
               </div>
-            )}
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex-shrink-0">
+              <div className="flex gap-3">
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="flex-1 py-3 bg-charcoal-900 text-white rounded-xl font-medium hover:bg-charcoal-700 transition-colors min-h-[48px]"
+                  >
+                    Fermer
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteEvent(selectedEvent, e)}
+                    className="py-3 px-4 border border-rose-200 text-rose-600 rounded-xl font-medium hover:bg-rose-50 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Add event modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-serif text-charcoal-900 text-lg">Nouvel événement</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors">
-                <X className="w-4 h-4 text-charcoal-500" />
+      {showAdd && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/60 backdrop-blur-sm"
+          onClick={() => setShowAdd(false)}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[90dvh] flex flex-col animate-slide-up sm:animate-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
+              <h3 className="font-display text-lg font-semibold text-charcoal-900">Nouvel événement</h3>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-charcoal-500" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto flex-1 overscroll-contain">
               {linkedClients.length > 0 && (
-                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3">
-                  <label className="block text-sm font-semibold text-rose-700 mb-2">Lier à un client (sync agenda)</label>
+                <div>
+                  <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Lier à un client</label>
                   <select
                     value={form.client_id}
-                    onChange={e => {
-                      const cl = linkedClients.find(x => x.id === e.target.value);
-                      setForm(p => ({ ...p, client_id: e.target.value, client_name: cl?.name || '' }));
+                    onChange={(e) => {
+                      const selected = linkedClients.find((c) => c.id === e.target.value);
+                      setForm((f) => ({ ...f, client_id: e.target.value, with_whom: selected?.name || f.with_whom }));
                     }}
-                    className="w-full px-3 py-2 border border-rose-200 rounded-xl text-sm bg-white focus:outline-none focus:border-rose-400">
-                    <option value="">— Aucun client (pas de sync) —</option>
-                    {linkedClients.map(c => <option key={c.id} value={c.id}>{c.name}{c.email ? ` (${c.email})` : ''}</option>)}
+                    className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                  >
+                    <option value="">— Aucun client —</option>
+                    {linkedClients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.email ? ` (${c.email})` : ''}
+                      </option>
+                    ))}
                   </select>
                   {form.client_id && (
-                    <p className="text-xs text-rose-600 mt-1.5">Cet événement apparaitra dans l&apos;agenda de {form.client_name}</p>
+                    <p className="text-xs text-rose-600 mt-1.5">Cet événement sera visible dans l&apos;agenda du client</p>
                   )}
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Titre *</label>
-                <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all"
-                  placeholder="Ex: Mariage Sophie & Thomas" autoFocus />
+                <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Titre *</label>
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Date *</label>
-                  <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all" />
+                  <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Date *</label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Type</label>
-                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as PlanningEvent['type'] }))}
-                    className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all">
-                    {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
+                  <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Heure</label>
+                  <input
+                    value={form.time}
+                    onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                    placeholder="18:30"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Lieu</label>
-                <input type="text" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all"
-                  placeholder="Ex: Château de Versailles" />
+                <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Lieu</label>
+                <input
+                  value={form.location}
+                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Notes</label>
-                <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2}
-                  className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all resize-none"
-                  placeholder="Informations complémentaires…" />
+                <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Avec</label>
+                <input
+                  value={form.with_whom}
+                  onChange={(e) => setForm((f) => ({ ...f, with_whom: e.target.value }))}
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Type</label>
+                <input
+                  value={form.type}
+                  onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                  placeholder="RDV"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Notes</label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
+                  rows={3}
+                />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2.5 border border-charcoal-200 text-charcoal-700 rounded-xl text-sm hover:bg-stone-50 transition-colors">
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex flex-col-reverse sm:flex-row gap-3 flex-shrink-0 bg-white">
+              <button
+                onClick={() => setShowAdd(false)}
+                className="w-full sm:flex-1 py-3 border border-charcoal-200 text-charcoal-700 text-sm font-medium hover:bg-charcoal-50 transition-colors rounded-xl min-h-[48px]"
+              >
                 Annuler
               </button>
-              <button onClick={handleSave} disabled={saving || !form.title.trim() || !form.date}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {saving ? 'Sauvegarde…' : form.client_id ? 'Sauv. & synchroniser' : 'Enregistrer'}
+              <button
+                onClick={handleAddAppointment}
+                disabled={saving}
+                className="w-full sm:flex-1 py-3 bg-charcoal-900 text-white text-sm font-semibold hover:bg-charcoal-700 disabled:opacity-50 transition-colors rounded-xl min-h-[48px]"
+              >
+                {saving ? 'Ajout…' : 'Ajouter'}
               </button>
             </div>
           </div>
         </div>
       )}
+    </div>
     </PrestataireDashboardLayout>
   );
 }

@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const messages = [
     {
       vendor: 'Atelier Lumière',
-      preview: 'Bonjour, j\'ai bien reçu votre demande de devis...',
+      preview: 'Bonjour, j\'ai bien reçu votre demande d\'information...',
       time: '10:30',
       unread: true,
     },

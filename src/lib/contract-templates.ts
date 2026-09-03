@@ -201,7 +201,7 @@ Le présent contrat définit les prestations de décoration florale pour le mari
 
 ARTICLE 2 - PRESTATIONS DÉTAILLÉES
 Le prestataire s'engage à fournir :
-- Les compositions florales selon le devis détaillé
+- Les compositions florales selon la description détaillée
 - L'installation sur les lieux le jour J
 - Le retrait des compositions après l'événement (si prévu)
 - Le conseil et l'accompagnement dans le choix des variétés
@@ -425,7 +425,7 @@ En cas d'annulation :
 - Moins d'1 mois : aucun remboursement
 
 ARTICLE 8 - RETARD
-Tout retard le jour J pourra compromettre la qualité de la prestation. Si le retard excède 30 minutes, le prestataire se réserve le droit d'adapter la prestation ou de facturer le temps d'attente (50€/30min).
+Tout retard le jour J pourra compromettre la qualité de la prestation. Si le retard excède 30 minutes, le prestataire se réserve le droit d'adapter la prestation ou d'appliquer une majoration forfaitaire (50€/30min).
 
 ARTICLE 9 - DROIT À L'IMAGE
 Le prestataire se réserve le droit de photographier son travail à des fins promotionnelles, sauf opposition écrite du client.`,
@@ -434,7 +434,7 @@ Le prestataire se réserve le droit de photographier son travail à des fins pro
 Le présent contrat définit les prestations de service pour l'événement de mariage selon les modalités convenues entre les parties.
 
 ARTICLE 2 - DESCRIPTION DES PRESTATIONS
-Le prestataire s'engage à fournir les services détaillés dans le devis annexé au présent contrat, dans les conditions et délais convenus.
+Le prestataire s'engage à fournir les services détaillés dans le bon de commande annexé au présent contrat, dans les conditions et délais convenus.
 
 ARTICLE 3 - OBLIGATIONS DU PRESTATAIRE
 Le prestataire s'engage à :
@@ -474,156 +474,10 @@ ARTICLE 10 - DONNÉES PERSONNELLES
 Le prestataire s'engage à respecter la réglementation en vigueur concernant la protection des données personnelles (RGPD) et à ne pas divulguer les informations du client à des tiers sans autorisation.`,
 };
 
-export const DEVIS_CONDITIONS_TEMPLATES: Record<string, string> = {
-  'Photographe': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : Ce devis est valable 30 jours à compter de sa date d'émission.
-
-Acompte : Un acompte de 30% est requis pour confirmer la réservation de la date.
-
-Paiement : Le solde doit être réglé au plus tard 15 jours avant l'événement.
-
-Livraison : Les photographies retouchées seront livrées dans un délai de 8 semaines maximum après l'événement.
-
-Droits d'auteur : Le photographe conserve les droits d'auteur. Usage privé uniquement.
-
-Annulation : Voir conditions détaillées dans le contrat de prestation.`,
-
-  'Vidéaste': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : Ce devis est valable 30 jours.
-
-Réservation : Acompte de 40% requis pour bloquer la date.
-
-Solde : À régler 7 jours avant l'événement.
-
-Livraison : Film final sous 12 semaines, teaser sous 2 semaines.
-
-Droits : Usage privé uniquement. Le vidéaste conserve les droits d'auteur.
-
-Modifications : Deux séries de modifications incluses dans le montage.`,
-
-  'Traiteur': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 21 jours à compter de l'émission.
-
-Nombre définitif : À communiquer 15 jours avant l'événement.
-
-Paiement : 30% à la signature, 40% à J-30, solde le jour J avant service.
-
-Allergies : À signaler impérativement 21 jours avant.
-
-Normes : Respect strict des normes HACCP.
-
-Annulation : Voir conditions au contrat.`,
-
-  'Fleuriste': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 30 jours.
-
-Acompte : 40% à la signature.
-
-Solde : 7 jours avant l'événement.
-
-Fleurs : Variétés selon saison et disponibilité. Substitution possible par équivalent.
-
-Livraison : Installation le jour J aux horaires convenus.
-
-Conservation : Fraîcheur garantie 48h après livraison.`,
-
-  'DJ & Musicien': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 30 jours.
-
-Réservation : Acompte de 30% pour bloquer la date.
-
-Solde : À régler le jour J avant le début de la prestation.
-
-Durée : Heures supplémentaires facturées 150€/h.
-
-Matériel : Installation 2h avant. Accès électrique requis (220V, 16A).
-
-Playlist : Établie en concertation avec les clients.`,
-
-  'Décorateur': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 30 jours.
-
-Paiement : 40% à la signature, 30% à J-30, solde le jour de l'installation.
-
-Installation : 24h avant l'événement (sauf accord contraire).
-
-Démontage : Lendemain de l'événement.
-
-Caution : 500€ restituée après vérification du matériel.
-
-Modifications : 2 séries incluses, puis 80€ par modification.`,
-
-  'Wedding Planner': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 45 jours.
-
-Paiement : 30% à la signature, 40% à mi-parcours, solde à J-15.
-
-Disponibilité : Par téléphone, email et visioconférence.
-
-Réunions : Minimum 4 réunions physiques incluses.
-
-Jour J : Présence de 12h pour coordination complète.
-
-Indépendance : Aucune commission perçue sur les prestataires recommandés.`,
-
-  'Lieu de réception': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 60 jours.
-
-Paiement : 30% à la signature, 40% à J-60, solde + caution à J-15.
-
-Caution : 1500€ restituée sous 15 jours après état des lieux.
-
-Capacité : Maximum XX personnes.
-
-Horaires : Respect strict des horaires de fin de soirée.
-
-Assurance : Responsabilité civile obligatoire pour l'événement.`,
-
-  'Coiffeur & Maquilleur': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : 30 jours.
-
-Essai : Fortement recommandé 1 à 2 mois avant.
-
-Paiement : 30% à la signature, solde le jour de l'essai.
-
-Jour J : Espace calme et bien éclairé requis.
-
-Allergies : À signaler impérativement lors de la réservation.
-
-Retard : Au-delà de 30min, facturation possible (50€/30min).`,
-
-  'Autre': `CONDITIONS GÉNÉRALES DU DEVIS
-
-Validité : Ce devis est valable 30 jours à compter de sa date d'émission.
-
-Acompte : Un acompte de 30% est requis pour confirmer la prestation.
-
-Paiement : Le solde est à régler selon les modalités convenues.
-
-Modifications : Toute modification doit être notifiée par écrit.
-
-Annulation : Voir conditions détaillées au contrat.
-
-Assurance : Le prestataire est couvert par une assurance responsabilité civile professionnelle.`,
-};
-
 export function getDefaultServicesForCategory(category: string): ServicePrestation[] {
   return DEFAULT_SERVICES[category] || DEFAULT_SERVICES['Autre'];
 }
 
 export function getContractTemplateForCategory(category: string): string {
   return CONTRACT_LEGAL_TEMPLATES[category] || CONTRACT_LEGAL_TEMPLATES['Autre'];
-}
-
-export function getDevisConditionsForCategory(category: string): string {
-  return DEVIS_CONDITIONS_TEMPLATES[category] || DEVIS_CONDITIONS_TEMPLATES['Autre'];
 }

@@ -120,13 +120,6 @@ export const CLIENT_GUIDES: Record<string, PageGuide> = {
         description: 'Retrouvez la liste de vos rendez-vous à venir, triés par date. Cliquez pour voir les détails.',
         position: 'left',
       },
-      {
-        id: 'milestones',
-        target: '[data-tour="milestones"]',
-        title: 'Étapes clés',
-        description: 'Suivez vos jalons importants : réservation du lieu, choix du traiteur, envoi des invitations...',
-        position: 'top',
-      },
     ],
   },
 
@@ -228,7 +221,7 @@ export const CLIENT_GUIDES: Record<string, PageGuide> = {
         id: 'attachments',
         target: '[data-tour="attachments"]',
         title: 'Joindre des fichiers',
-        description: 'Partagez des photos, devis, contrats ou tout document utile pour votre organisation.',
+        description: 'Partagez des photos, contrats ou tout document utile pour votre organisation.',
         position: 'top',
       },
     ],

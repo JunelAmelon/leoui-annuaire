@@ -26,7 +26,6 @@ const typeConfig: Record<string, { icon: React.ElementType; cls: string }> = {
   payment:  { icon: Euro,          cls: 'text-green-600 bg-green-50' },
   planning: { icon: Calendar,      cls: 'text-champagne-700 bg-champagne-50' },
   review:   { icon: Star,          cls: 'text-amber-600 bg-amber-50' },
-  devis:    { icon: FileText,      cls: 'text-blue-600 bg-blue-50' },
   contrat:  { icon: FileText,      cls: 'text-charcoal-600 bg-charcoal-50' },
 };
 

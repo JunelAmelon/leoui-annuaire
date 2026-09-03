@@ -22,7 +22,7 @@ export default function TermsPage() {
             },
             {
               title: '3. Utilisation du service',
-              text: 'LeOui.net est une plateforme de mise en relation. Nous ne sommes pas partie aux contrats conclus entre les couples et les prestataires. Les transactions, devis et engagements sont établis directement entre les parties.',
+              text: 'LeOui.net est une plateforme de mise en relation. Nous ne sommes pas partie aux contrats conclus entre les couples et les prestataires. Les transactions et engagements sont établis directement entre les parties.',
             },
             {
               title: '4. Prestataires',

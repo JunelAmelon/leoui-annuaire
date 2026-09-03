@@ -19,7 +19,13 @@ interface Guest {
   side: 'mariée' | 'marié' | 'commun';
   table?: string;
   menu?: string;
+  menu_other?: string;
   plus_one?: boolean;
+  has_children?: boolean;
+  children_count?: number;
+  has_pets?: boolean;
+  pets_count?: number;
+  pet_type?: string;
   notes?: string;
   event_id?: string;
   client_id?: string;
@@ -31,8 +37,12 @@ const RSVP_CONFIG = {
   declined:  { label: 'Décliné',   icon: XCircle,  cls: 'bg-rose-50 text-rose-700 border border-rose-200' },
 };
 
-const SIDES = ['mariée', 'marié', 'commun'] as const;
-const MENUS = ['Standard', 'Végétarien', 'Vegan', 'Sans gluten', 'Enfant'];
+const SIDES = [
+  { value: 'mariée', label: 'Côté mariée' },
+  { value: 'marié', label: 'Côté marié' },
+  { value: 'commun', label: 'Commun' },
+] as const;
+const MENUS = ['Standard', 'Végétarien', 'Vegan', 'Sans gluten', 'Enfant', 'Autre'];
 
 export default function InvitesPage() {
   const { client, event, loading: dataLoading } = useClientData();
@@ -49,7 +59,10 @@ export default function InvitesPage() {
     first_name: '', last_name: '', email: '', phone: '',
     rsvp: 'pending' as Guest['rsvp'],
     side: 'commun' as Guest['side'],
-    table: '', menu: 'Standard', plus_one: false, notes: '',
+    table: '', menu: 'Standard', menu_other: '', plus_one: false,
+    has_children: false, children_count: 0,
+    has_pets: false, pets_count: 0, pet_type: '',
+    notes: '',
   });
 
   const fetchGuests = async () => {
@@ -69,12 +82,24 @@ export default function InvitesPage() {
 
   const openAdd = () => {
     setEditGuest(null);
-    setForm({ first_name: '', last_name: '', email: '', phone: '', rsvp: 'pending', side: 'commun', table: '', menu: 'Standard', plus_one: false, notes: '' });
+    setForm({
+      first_name: '', last_name: '', email: '', phone: '',
+      rsvp: 'pending', side: 'commun', table: '', menu: 'Standard', menu_other: '', plus_one: false,
+      has_children: false, children_count: 0, has_pets: false, pets_count: 0, pet_type: '',
+      notes: '',
+    });
     setShowModal(true);
   };
   const openEdit = (g: Guest) => {
     setEditGuest(g);
-    setForm({ first_name: g.first_name, last_name: g.last_name, email: g.email || '', phone: g.phone || '', rsvp: g.rsvp, side: g.side, table: g.table || '', menu: g.menu || 'Standard', plus_one: g.plus_one || false, notes: g.notes || '' });
+    setForm({
+      first_name: g.first_name, last_name: g.last_name, email: g.email || '', phone: g.phone || '',
+      rsvp: g.rsvp, side: g.side, table: g.table || '', menu: g.menu || 'Standard',
+      menu_other: g.menu_other || '', plus_one: g.plus_one || false,
+      has_children: g.has_children || false, children_count: g.children_count || 0,
+      has_pets: g.has_pets || false, pets_count: g.pets_count || 0, pet_type: g.pet_type || '',
+      notes: g.notes || '',
+    });
     setShowModal(true);
   };
 
@@ -325,19 +350,19 @@ export default function InvitesPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">RSVP</label>
+                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Réponse RSVP</label>
                   <select value={form.rsvp} onChange={e => setForm(f => ({ ...f, rsvp: e.target.value as Guest['rsvp'] }))}
                     className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors cursor-pointer">
-                    <option value="pending">En attente</option>
-                    <option value="confirmed">Confirmé</option>
-                    <option value="declined">Décliné</option>
+                    <option value="pending">En attente de réponse</option>
+                    <option value="confirmed">Présent (confirmé)</option>
+                    <option value="declined">Absent (décliné)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Côté</label>
+                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Entourage</label>
                   <select value={form.side} onChange={e => setForm(f => ({ ...f, side: e.target.value as Guest['side'] }))}
                     className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors cursor-pointer">
-                    {SIDES.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+                    {SIDES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
                 <div>
@@ -357,15 +382,69 @@ export default function InvitesPage() {
                     </button>
                   ))}
                 </div>
+                {form.menu === 'Autre' && (
+                  <input
+                    value={form.menu_other}
+                    onChange={e => setForm(f => ({ ...f, menu_other: e.target.value }))}
+                    className="mt-3 w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                    placeholder="Précisez le menu (allergies, régime spécifique…)"
+                  />
+                )}
               </div>
 
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.plus_one ? 'bg-charcoal-900 border-charcoal-900' : 'border-charcoal-300'}`}
-                  onClick={() => setForm(f => ({ ...f, plus_one: !f.plus_one }))}>
-                  {form.plus_one && <Check className="w-3 h-3 text-white" />}
+              <div className="space-y-3 border border-charcoal-100 p-4 rounded-lg bg-stone-50/50">
+                <p className="label-xs text-charcoal-500 tracking-[0.08em]">Accompagnants</p>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.has_children ? 'bg-charcoal-900 border-charcoal-900' : 'border-charcoal-300'}`}
+                      onClick={() => setForm(f => ({ ...f, has_children: !f.has_children }))}>
+                      {form.has_children && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <span className="text-sm font-light text-charcoal-700">Vient avec un ou plusieurs enfants</span>
+                  </label>
+                  {form.has_children && (
+                    <div className="ml-6.5 flex items-center gap-2">
+                      <label className="text-xs text-charcoal-500">Nombre d'enfants</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={form.children_count}
+                        onChange={e => setForm(f => ({ ...f, children_count: Math.max(0, parseInt(e.target.value || '0', 10)) }))}
+                        className="w-20 px-2 py-1.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                      />
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-light text-charcoal-700">Vient avec un +1</span>
-              </label>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.has_pets ? 'bg-charcoal-900 border-charcoal-900' : 'border-charcoal-300'}`}
+                      onClick={() => setForm(f => ({ ...f, has_pets: !f.has_pets }))}>
+                      {form.has_pets && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <span className="text-sm font-light text-charcoal-700">Vient avec un animal domestique</span>
+                  </label>
+                  {form.has_pets && (
+                    <div className="ml-6.5 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-charcoal-500">Nombre d'animaux</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={form.pets_count}
+                          onChange={e => setForm(f => ({ ...f, pets_count: Math.max(0, parseInt(e.target.value || '0', 10)) }))}
+                          className="w-20 px-2 py-1.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                        />
+                      </div>
+                      <input
+                        value={form.pet_type}
+                        onChange={e => setForm(f => ({ ...f, pet_type: e.target.value }))}
+                        className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
+                        placeholder="Type(s) d'animal : chien, chat…"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div>
                 <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Notes</label>

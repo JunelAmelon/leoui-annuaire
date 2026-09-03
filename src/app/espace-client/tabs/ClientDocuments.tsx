@@ -11,8 +11,6 @@ interface Props {
 
 const typeColors: Record<string, string> = {
   contrat: 'bg-rose-100 text-rose-700',
-  devis: 'bg-charcoal-100 text-charcoal-700',
-  facture: 'bg-green-100 text-green-700',
   planning: 'bg-champagne-100 text-champagne-700',
   autre: 'bg-charcoal-100 text-charcoal-600',
 };

@@ -18,9 +18,9 @@ const MÉTIERS = [
 
 
 const TESTIMONIALS = [
-  { name: 'Sophie & Thomas',    city: 'Paris · juin 2025',      text: '« Une sélection irréprochable. Chaque prestataire trouvé sur LeOui.net a dépassé nos attentes. Notre jour J était exactement comme imaginé. »' },
-  { name: 'Marie & Alexandre',  city: 'Lyon · septembre 2025',  text: '« Grâce à LeOui.net, nous avons constitué toute notre équipe en quelques jours. Un gain de temps précieux, une qualité incomparable. »' },
-  { name: 'Camille & Julien',   city: 'Bordeaux · mai 2025',    text: "« L’interface est élégante, les prestataires sont d’une qualité rare. Notre photographe était absolument exceptionnel. »" },
+  { name: 'Sophie & Thomas',    city: 'Paris · juin 2025',      text: 'Une sélection irréprochable. Chaque prestataire trouvé sur LeOui.net a dépassé nos attentes. Notre jour J était exactement comme imaginé.', image: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=800' },
+  { name: 'Marie & Alexandre',  city: 'Lyon · septembre 2025',  text: 'Grâce à LeOui.net, nous avons constitué toute notre équipe en quelques jours. Un gain de temps précieux, une qualité incomparable.', image: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=800' },
+  { name: 'Camille & Julien',   city: 'Bordeaux · mai 2025',    text: 'L’interface est élégante, les prestataires sont d’une qualité rare. Notre photographe était absolument exceptionnel.', image: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800' },
 ];
 
 export default function HomePage() {
@@ -356,7 +356,7 @@ export default function HomePage() {
             >
               Ce qu'ils disent
             </h2>
-            <div className="flex items-center">
+            <div className="flex items-center justify-center mt-4">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 text-champagne-500 fill-champagne-500" />
               ))}
@@ -367,17 +367,28 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="flex flex-col">
+            {TESTIMONIALS.map((t, i) => (
+              <div 
+                key={t.name} 
+                className="flex flex-col group transition-all duration-300 hover:-translate-y-1"
+                style={{ animationDelay: `${i * 120}ms` }}
+              >
                 <p
-                  className="font-serif text-charcoal-800 leading-relaxed flex-1 mb-6"
+                  className="font-serif text-charcoal-800 leading-relaxed flex-1 mb-6 transition-colors duration-300 group-hover:text-charcoal-900"
                   style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)', fontWeight: 300, fontStyle: 'italic' }}
                 >
-                  {t.text}
+                  « {t.text} »
                 </p>
-                <div className="border-t border-charcoal-200 pt-5">
-                  <p className="font-serif text-charcoal-900 text-sm font-medium">{t.name}</p>
-                  <p className="text-charcoal-400 text-xs font-medium tracking-wide mt-0.5">{t.city}</p>
+                <div className="border-t border-charcoal-200 pt-5 flex items-center gap-3">
+                  <img
+                    src={t.image}
+                    alt={t.name}
+                    className="w-11 h-11 rounded-full object-cover border border-charcoal-100 transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div>
+                    <p className="font-serif text-charcoal-900 text-sm font-medium">{t.name}</p>
+                    <p className="text-charcoal-400 text-xs font-medium tracking-wide mt-0.5">{t.city}</p>
+                  </div>
                 </div>
               </div>
             ))}

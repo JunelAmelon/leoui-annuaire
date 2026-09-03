@@ -161,45 +161,6 @@ export async function GET() {
       });
     }
 
-    // Seed invoices/payments
-    const invoicesRef = adminDb.collection('invoices');
-    const existingInvoices = await invoicesRef.where('client_id', '==', clientDocId).limit(1).get();
-    if (existingInvoices.empty) {
-      await invoicesRef.add({
-        client_id: clientDocId,
-        description: 'Acompte Château',
-        vendor: 'Château de la Mariée',
-        amount: 2000,
-        status: 'paid',
-        date: '2026-01-15',
-        created_at: new Date().toISOString(),
-      });
-      await invoicesRef.add({
-        client_id: clientDocId,
-        description: 'Acompte Traiteur',
-        vendor: 'Traiteur Délice',
-        amount: 1500,
-        status: 'pending',
-        due_date: '2026-04-20',
-        created_at: new Date().toISOString(),
-      });
-    }
-
-    // Seed devis
-    const devisRef = adminDb.collection('devis');
-    const existingDevis = await devisRef.where('client_id', '==', clientDocId).limit(1).get();
-    if (existingDevis.empty) {
-      await devisRef.add({
-        client_id: clientDocId,
-        client_email: clientEmail,
-        reference: 'DEV-TEST-001',
-        status: 'sent',
-        amount: 4200,
-        sent_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-      });
-    }
-
     // Seed conversation
     const convRef = adminDb.collection('conversations');
     const existingConv = await convRef.where('client_id', '==', clientDocId).limit(1).get();

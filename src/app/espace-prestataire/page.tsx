@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from './PrestataireDashboardLayout';
 import {
-  Eye, MessageSquare, FileText, Star, TrendingUp,
+  Eye, MessageSquare, Star, TrendingUp,
   ArrowRight, CalendarDays, BadgeCheck, Clock, ChevronRight, Crown, Zap,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import { auth, db } from '@/lib/firebase';
 
 export default function EspacePrestatairePage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ views: 0, messages: 0, devis: 0, rating: 0 });
+  const [stats, setStats] = useState({ views: 0, messages: 0, rating: 0 });
   const [recentContacts, setRecentContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier | null>(null);
@@ -27,9 +27,8 @@ export default function EspacePrestatairePage() {
     if (!user) return;
     const load = async () => {
       try {
-        const [conversations, devisList, vendorDoc, reviewsList] = await Promise.all([
+        const [conversations, vendorDoc, reviewsList] = await Promise.all([
           getDocuments('conversations', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
-          getDocuments('devis', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
           getDocument('vendors', user.uid),
           getDocuments('reviews', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
         ]);
@@ -39,7 +38,6 @@ export default function EspacePrestatairePage() {
         setStats({
           views: (vendorDoc as any)?.viewCount || 0,
           messages: conversations.length,
-          devis: devisList.length,
           rating: avgRating,
         });
         const recent = conversations.slice(0, 4);
@@ -100,21 +98,18 @@ export default function EspacePrestatairePage() {
   const statCards = [
     { label: 'Vues annonce', value: stats.views, icon: Eye, color: 'text-champagne-700', bg: 'bg-champagne-50', border: 'border-champagne-200' },
     { label: 'Messages reçus', value: stats.messages, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-    { label: 'Devis envoyés', value: stats.devis, icon: FileText, color: 'text-charcoal-600', bg: 'bg-charcoal-50', border: 'border-charcoal-200' },
-    { label: 'Note moyenne', value: stats.rating || '—', icon: Star, color: 'text-champagne-700', bg: 'bg-champagne-50', border: 'border-champagne-200', suffix: stats.rating ? '/5' : '' },
+    { label: 'Note moyenne', value: stats.rating || '—', icon: Star, color: 'text-champagne-700', bg: 'bg-champagne-50', border: 'border-charcoal-200', suffix: stats.rating ? '/5' : '' },
   ];
 
   const quickActions = [
     { href: '/espace-prestataire/mon-annonce', label: 'Mon profil', icon: BadgeCheck, desc: 'Mettez à jour vos photos et infos' },
     { href: '/espace-prestataire/contacts', label: 'Messages', icon: MessageSquare, desc: 'Répondez aux demandes de clients' },
-    { href: '/espace-prestataire/devis', label: 'Créer un devis', icon: FileText, desc: 'Envoyez une proposition tarifaire' },
     { href: '/espace-prestataire/planning', label: 'Mon planning', icon: CalendarDays, desc: 'Gérez vos disponibilités' },
   ];
 
   const quickActionBg: Record<string, string> = {
     'Mon profil': 'mariage (1).jpg',
     'Messages': 'https://images.pexels.com/photos/7709086/pexels-photo-7709086.jpeg?auto=compress&cs=tinysrgb&w=1600',
-    'Créer un devis': 'https://images.pexels.com/photos/6863183/pexels-photo-6863183.jpeg?auto=compress&cs=tinysrgb&w=1600',
     'Mon planning': 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1600',
   };
 

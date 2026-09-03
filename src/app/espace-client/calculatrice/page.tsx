@@ -10,14 +10,19 @@ import { toast } from 'sonner';
 type CalcOp = '+' | '−' | '×' | '÷' | null;
 
 const BUDGET_ITEMS = [
-  { id: 'salle',       label: 'Salle & réception',   pct: 30, color: '#A68540' },
-  { id: 'traiteur',    label: 'Traiteur & boissons',  pct: 35, color: '#BE6040' },
-  { id: 'photo',       label: 'Photographe / vidéo',  pct: 10, color: '#2D2A26' },
-  { id: 'deco',        label: 'Décoration & fleurs',  pct: 8,  color: '#8B7355' },
-  { id: 'musique',     label: 'Musique & animation',  pct: 7,  color: '#C4956A' },
-  { id: 'tenues',      label: 'Tenues & accessoires', pct: 6,  color: '#9B7B4F' },
+  { id: 'salle',       label: 'Salle & réception',   pct: 25, color: '#A68540' },
+  { id: 'traiteur',    label: 'Traiteur & boissons',  pct: 30, color: '#BE6040' },
+  { id: 'photo',       label: 'Photographe / vidéo',  pct: 8,  color: '#2D2A26' },
+  { id: 'deco',        label: 'Décoration & fleurs',  pct: 7,  color: '#8B7355' },
+  { id: 'musique',     label: 'Musique & animation',  pct: 6,  color: '#C4956A' },
+  { id: 'tenues',      label: 'Tenues & accessoires', pct: 5,  color: '#9B7B4F' },
   { id: 'papeterie',   label: 'Faire-part & papeterie',pct: 2, color: '#B89870' },
-  { id: 'divers',      label: 'Divers & imprévus',    pct: 2,  color: '#D4B896' },
+  { id: 'wedding-cake',label: 'Wedding cake',         pct: 2,  color: '#D4A5A5' },
+  { id: 'makeup',      label: 'Maquillage & coiffure',pct: 2,  color: '#E2B6B6' },
+  { id: 'transport',   label: 'Transport & voiture',  pct: 1,  color: '#9E9E9E' },
+  { id: 'cadeaux',     label: 'Cadeaux invités',      pct: 1,  color: '#C2A77D' },
+  { id: 'lune',        label: 'Lune de miel',         pct: 1,  color: '#88A0B5' },
+  { id: 'divers',      label: 'Divers & imprévus',    pct: 10, color: '#D4B896' },
 ];
 
 type BudgetItem = {

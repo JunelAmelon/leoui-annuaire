@@ -41,6 +41,7 @@ export default function ChecklistPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'done'>('all');
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editItem, setEditItem] = useState<ChecklistItem | null>(null);
   const [form, setForm] = useState({ title: '', deadline: '', priority: 'medium' as ChecklistItem['priority'] });
 
   useEffect(() => {
@@ -75,7 +76,23 @@ export default function ChecklistPage() {
     if (!dataLoading) fetchItems();
   }, [event?.id, client?.id, dataLoading]);
 
-  const handleAdd = async () => {
+  const openAdd = () => {
+    setEditItem(null);
+    setForm({ title: '', deadline: '', priority: 'medium' });
+    setShowModal(true);
+  };
+
+  const openEdit = (item: ChecklistItem) => {
+    setEditItem(item);
+    setForm({
+      title: item.title,
+      deadline: item.deadline || '',
+      priority: item.priority,
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
     if (!form.title.trim()) { toast.error('Titre requis'); return; }
     const id = event?.id || client?.id;
     if (!id) { toast.error('Données client manquantes'); return; }
@@ -85,19 +102,29 @@ export default function ChecklistPage() {
         title: form.title.trim(),
         deadline: form.deadline || null,
         priority: form.priority,
-        kind: 'milestone',
-        client_confirmed: false,
-        admin_confirmed: false,
-        event_id: event?.id || null,
-        client_id: client?.id || null,
-        created_at: new Date().toISOString(),
       };
-      const ref = await addDocument('tasks', payload);
-      setItems(prev => [...prev, { id: ref.id, title: payload.title, deadline: payload.deadline || undefined, completed: false, category: 'Étapes', priority: form.priority }]);
-      toast.success('Tâche ajoutée');
+      if (editItem) {
+        await updateDocument('tasks', editItem.id, payload);
+        setItems(prev => prev.map(i => i.id === editItem.id ? { ...i, ...payload, deadline: payload.deadline || undefined } : i));
+        toast.success('Tâche mise à jour');
+      } else {
+        const newPayload = {
+          ...payload,
+          kind: 'milestone',
+          client_confirmed: false,
+          admin_confirmed: false,
+          event_id: event?.id || null,
+          client_id: client?.id || null,
+          created_at: new Date().toISOString(),
+        };
+        const ref = await addDocument('tasks', newPayload);
+        setItems(prev => [...prev, { id: ref.id, title: payload.title, deadline: payload.deadline || undefined, completed: false, category: 'Étapes', priority: form.priority }]);
+        toast.success('Tâche ajoutée');
+      }
       setShowModal(false);
       setForm({ title: '', deadline: '', priority: 'medium' });
-    } catch { toast.error('Erreur lors de l\'ajout'); }
+      setEditItem(null);
+    } catch { toast.error(editItem ? 'Erreur lors de la mise à jour' : 'Erreur lors de l\'ajout'); }
     finally { setSaving(false); }
   };
 
@@ -186,7 +213,7 @@ export default function ChecklistPage() {
           </button>
         ))}
         </div>
-        <button onClick={() => setShowModal(true)}
+        <button onClick={openAdd}
           className="flex items-center gap-1.5 px-3 py-2 bg-charcoal-900 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors">
           <Plus className="w-3.5 h-3.5" /> Nouvelle tâche
         </button>
@@ -219,7 +246,7 @@ export default function ChecklistPage() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openEdit(item)}>
                   <p className={`text-sm font-light leading-snug ${
                     item.completed ? 'text-charcoal-400 line-through' : 'text-charcoal-900'
                   }`}>{item.title}</p>
@@ -247,13 +274,13 @@ export default function ChecklistPage() {
         )}
       </div>
 
-      {/* ── ADD TASK MODAL ── */}
+      {/* ── ADD / EDIT TASK MODAL ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-charcoal-900/50 p-0 sm:p-4">
           <div className="w-full sm:max-w-md bg-white shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100">
-              <h2 className="font-serif text-charcoal-900 text-base font-light">Nouvelle tâche</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 transition-colors"><X className="w-4 h-4" /></button>
+              <h2 className="font-serif text-charcoal-900 text-base font-light">{editItem ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
+              <button onClick={() => { setShowModal(false); setEditItem(null); }} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 transition-colors"><X className="w-4 h-4" /></button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
@@ -280,10 +307,10 @@ export default function ChecklistPage() {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">Annuler</button>
-              <button onClick={handleAdd} disabled={saving}
+              <button onClick={() => { setShowModal(false); setEditItem(null); }} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">Annuler</button>
+              <button onClick={handleSave} disabled={saving}
                 className="flex-1 py-2.5 bg-charcoal-900 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
-                {saving ? 'Ajout…' : 'Ajouter'}
+                {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : 'Ajouter'}
               </button>
             </div>
           </div>

@@ -10,7 +10,7 @@ export default function ExpertisePage() {
     { label: 'Qualité du travail', desc: 'Portfolio analysé, cohérence artistique' },
     { label: 'Expérience terrain', desc: 'Minimum 3 ans d\'activité, références vérifiées' },
     { label: 'Réactivité', desc: 'Délai de réponse aux demandes < 24h' },
-    { label: 'Transparence', desc: 'Devis clairs, pas de frais cachés' },
+    { label: 'Transparence', desc: 'Tarifs clairs, pas de frais cachés' },
     { label: 'Assurances', desc: 'RC Pro à jour, conformité légale' },
   ];
 

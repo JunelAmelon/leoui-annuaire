@@ -16,7 +16,6 @@ const NAV = [
   { href: '/admin/prestataires',  icon: Store,            label: 'Prestataires' },
   { href: '/admin/articles',      icon: BookOpen,         label: 'Articles' },
   { href: '/admin/cities',        icon: MapPin,           label: 'Villes' },
-  { href: '/admin/factures',      icon: Database,         label: 'Factures' },
   { href: '/admin/seed',          icon: Database,         label: 'Données de test' },
 ];
 

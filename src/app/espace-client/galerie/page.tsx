@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getDocuments, addDocument } from '@/lib/db';
+import { getDocuments, addDocument, deleteDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
-import { Upload, X, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Upload, X, ZoomIn, ChevronLeft, ChevronRight, Trash2, Move } from 'lucide-react';
 import { toast } from 'sonner';
 
 /* Album definitions — staticCover is shown only when no Firestore images exist */
@@ -21,8 +21,8 @@ type AlbumId = typeof ALBUMS[number]['id'];
 
 export default function GaleriePage() {
   const { client, event, loading: dataLoading } = useClientData();
-  /* allGallery: images grouped by album id */
-  const [allGallery, setAllGallery] = useState<Record<string, string[]>>({});
+  /* allGallery: images grouped by album id, with doc id */
+  const [allGallery, setAllGallery] = useState<Record<string, { id: string; url: string }[]>>({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [activeAlbum, setActiveAlbum] = useState<AlbumId | null>(null);
@@ -35,11 +35,11 @@ export default function GaleriePage() {
         ? [{ field: 'event_id', operator: '==', value: event.id }]
         : [{ field: 'client_id', operator: '==', value: client!.id }];
       const items = await getDocuments('galleries', filters as any).catch(() => []);
-      const grouped: Record<string, string[]> = {};
+      const grouped: Record<string, { id: string; url: string }[]> = {};
       for (const item of items as any[]) {
         const album: string = item.album || 'ma-galerie';
         if (!grouped[album]) grouped[album] = [];
-        grouped[album].push(item.url);
+        grouped[album].push({ id: item.id, url: item.url });
       }
       setAllGallery(grouped);
     } catch { /* ignore */ }
@@ -69,9 +69,30 @@ export default function GaleriePage() {
     finally { setUploading(false); }
   };
 
-  const getAlbumImages = (id: AlbumId): string[] => allGallery[id] || [];
+  const getAlbumImages = (id: AlbumId): { id: string; url: string }[] => allGallery[id] || [];
 
-  const openImage = (urls: string[], idx: number) => setPreview({ urls, idx });
+  const openImage = (images: { id: string; url: string }[], idx: number) =>
+    setPreview({ urls: images.map(img => img.url), idx });
+
+  const handleDeleteImage = async (e: React.MouseEvent, imageId: string) => {
+    e.stopPropagation();
+    if (!confirm('Supprimer cette photo ?')) return;
+    try {
+      await deleteDocument('galleries', imageId);
+      await fetchGallery();
+      toast.success('Photo supprimée');
+    } catch { toast.error('Erreur lors de la suppression'); }
+  };
+
+  const handleMoveImage = async (e: React.MouseEvent, imageId: string, targetAlbum: string) => {
+    e.stopPropagation();
+    if (targetAlbum === activeAlbum) return;
+    try {
+      await updateDocument('galleries', imageId, { album: targetAlbum });
+      await fetchGallery();
+      toast.success('Photo déplacée');
+    } catch { toast.error('Erreur lors du déplacement'); }
+  };
 
   if (dataLoading || loading) return (
     <div className="animate-pulse space-y-6">
@@ -117,12 +138,30 @@ export default function GaleriePage() {
               <p className="text-charcoal-400 text-xs mt-1 font-light">Ajoutez vos premières photos ci-dessus</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px bg-charcoal-100">
-              {imgs.map((url, i) => (
-                <div key={i} className="group relative bg-charcoal-50 overflow-hidden cursor-pointer" style={{ aspectRatio: i % 5 === 0 ? '1/1.3' : '1' }} onClick={() => openImage(imgs, i)}>
-                  <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {imgs.map((img, i) => (
+                <div key={img.id} className="group relative bg-charcoal-50 rounded-xl overflow-hidden cursor-pointer aspect-square" onClick={() => openImage(imgs, i)}>
+                  <img src={img.url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-charcoal-900/0 group-hover:bg-charcoal-900/25 transition-colors flex items-center justify-center">
                     <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <select
+                      value=""
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => { if (e.target.value) { handleMoveImage(e as any, img.id, e.target.value); e.target.value = ''; }}}
+                      className="text-[10px] px-1.5 py-1 rounded bg-white/90 border-0 text-charcoal-700 cursor-pointer hover:bg-white"
+                    >
+                      <option value="" disabled>Déplacer</option>
+                      {ALBUMS.map(a => a.id !== activeAlbum && <option key={a.id} value={a.id}>{a.label}</option>)}
+                    </select>
+                    <button
+                      onClick={e => handleDeleteImage(e, img.id)}
+                      className="p-1.5 rounded bg-white/90 text-charcoal-500 hover:text-rose-600 transition-colors"
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -158,6 +197,12 @@ export default function GaleriePage() {
 
   /* ── ALBUMS GRID ── */
   const totalPhotos = Object.values(allGallery).reduce((s, a) => s + a.length, 0);
+
+  const albumCover = (album: typeof ALBUMS[0]) => {
+    const first = allGallery[album.id]?.[0];
+    return first?.url || album.staticCover;
+  };
+
   return (
     <div className="space-y-5">
       {/* Page header */}
@@ -172,7 +217,7 @@ export default function GaleriePage() {
         {ALBUMS.map((album) => {
           const imgs = allGallery[album.id] || [];
           const count = imgs.length;
-          const coverSrc = imgs[0] || album.staticCover;
+          const coverSrc = albumCover(album);
           return (
             <div
               key={album.id}
@@ -180,7 +225,7 @@ export default function GaleriePage() {
               style={{ aspectRatio: '4/3' }}
               onClick={() => setActiveAlbum(album.id as AlbumId)}
             >
-              <img src={coverSrc} alt={album.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <img src={coverSrc} alt={album.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/75 via-charcoal-900/10 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-end px-5 pb-5">
                 <h3 className="font-serif text-white text-lg font-light leading-tight" style={{ letterSpacing: '-0.01em' }}>

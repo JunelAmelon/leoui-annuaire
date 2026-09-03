@@ -34,32 +34,6 @@ export interface EventData {
   notes?: string;
 }
 
-export interface DevisData {
-  id: string;
-  reference: string;
-  client_id?: string;
-  client_email?: string;
-  status: string;
-  date?: string;
-  sent_at?: string;
-  pdf_url?: string;
-  signed_pdf_url?: string;
-  signed_at?: string;
-  validated_at?: string;
-  amount?: number;
-  accepted_at?: string;
-  rejected_at?: string;
-  invoice_id?: string;
-  docusign?: {
-    envelope_id?: string;
-    status?: string;
-    recipients?: {
-      client?: { status?: string };
-      planner?: { status?: string };
-    };
-  };
-}
-
 export interface DocumentData {
   id: string;
   name: string;
@@ -105,22 +79,6 @@ export interface MessageData {
   content: string;
   attachments?: Array<{ url: string; name?: string; type?: string }>;
   created_at?: string;
-}
-
-export interface PaymentData {
-  id: string;
-  client_id: string;
-  description: string;
-  vendor?: string;
-  amount: number;
-  amount_due?: number;
-  status: string;
-  date?: string;
-  due_date?: string;
-  invoice?: boolean;
-  invoice_id?: string;
-  created_at?: any;
-  pdf_url?: string;
 }
 
 export interface VendorData {
@@ -199,62 +157,6 @@ export async function getClientDocuments(clientId: string): Promise<DocumentData
   } catch {
     return [];
   }
-}
-
-export async function getClientDevis(clientId: string, clientEmail?: string): Promise<DevisData[]> {
-  try {
-    const byId = await getDocuments('devis', [
-      { field: 'client_id', operator: '==', value: clientId },
-    ]);
-    if (byId.length > 0) return byId as DevisData[];
-
-    if (clientEmail) {
-      const byEmail = await getDocuments('devis', [
-        { field: 'client_email', operator: '==', value: clientEmail },
-      ]);
-      return byEmail as DevisData[];
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-export async function getClientPayments(clientId: string): Promise<PaymentData[]> {
-  try {
-    const payments = await getDocuments('invoices', [
-      { field: 'client_id', operator: '==', value: clientId },
-    ]);
-    return payments.map((p: any) => ({
-      ...p,
-      amount: Number(p.amount || p.amount_ttc || p.total || 0),
-      amount_due: Number(p.amount_due ?? p.amount ?? p.amount_ttc ?? 0),
-      status: p.status || 'pending',
-      description: p.description || p.notes || p.title || 'Paiement',
-      vendor: p.vendor || p.vendor_name || '',
-      category: p.category || 'Prestataire',
-      invoice: Boolean(p.pdf_url),
-    })) as PaymentData[];
-  } catch {
-    return [];
-  }
-}
-
-export async function getClientBudgetSummary(clientId: string): Promise<{
-  total: number;
-  paid: number;
-  pending: number;
-  remaining: number;
-}> {
-  const payments = await getClientPayments(clientId);
-  const total = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-  const paid = payments
-    .filter((p) => p.status === 'paid' || p.status === 'completed')
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-  const pending = payments
-    .filter((p) => p.status === 'pending' || p.status === 'overdue' || p.status === 'partial')
-    .reduce((sum, p) => sum + Number(p.amount_due ?? p.amount ?? 0), 0);
-  return { total, paid, pending, remaining: total - paid };
 }
 
 export async function getClientVendors(clientId: string, eventId?: string): Promise<VendorData[]> {

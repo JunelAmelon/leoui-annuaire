@@ -6,7 +6,6 @@ export type NotificationType =
   | 'payment'
   | 'planning'
   | 'review'
-  | 'devis'
   | 'contrat';
 
 export async function createNotification(params: {

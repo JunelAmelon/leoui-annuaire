@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments } from '@/lib/db';
-import { getClientVendors, getClientPayments } from '@/lib/client-helpers';
+import { getClientVendors } from '@/lib/client-helpers';
 import {
   Search, Plus, Heart, Calendar, ChevronRight,
   ArrowRight, CheckSquare, Users,
@@ -32,12 +33,13 @@ function GaugeChart({ value, max, color = '#A34E30' }: { value: number; max: num
 
 
 export default function EspaceClientPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { client, event, loading } = useClientData();
   const [taskStats, setTaskStats] = useState({ total: 0, done: 0 });
   const [guestStats, setGuestStats] = useState({ total: 0, confirmed: 0 });
   const [teamVendors, setTeamVendors] = useState<any[]>([]);
-  const [totalPaid, setTotalPaid] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const id = event?.id || client?.id;
@@ -57,9 +59,6 @@ export default function EspaceClientPage() {
     if (client?.id) {
       getClientVendors(client.id, event?.id)
         .then(vs => setTeamVendors(vs.slice(0, 4)))
-        .catch(() => {});
-      getClientPayments(client.id)
-        .then(ps => setTotalPaid(ps.filter(p => p.status === 'paid' || p.status === 'completed').reduce((s, p) => s + Number(p.amount || 0), 0)))
         .catch(() => {});
     }
   }, [event?.id, client?.id, loading]);
@@ -109,7 +108,18 @@ export default function EspaceClientPage() {
           {/* Search bar */}
           <div className="hidden sm:flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-stone-200 shadow-sm">
             <Search className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
-            <input type="text" placeholder="Rechercher…" className="text-sm text-charcoal-700 placeholder-charcoal-400 bg-transparent outline-none w-32" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  router.push(`/vendors?search=${encodeURIComponent(searchQuery.trim())}`);
+                }
+              }}
+              placeholder="Rechercher…"
+              className="text-sm text-charcoal-700 placeholder-charcoal-400 bg-transparent outline-none w-32"
+            />
           </div>
           {/* CTA */}
           <Link href="/espace-client/prestataires"
@@ -142,19 +152,13 @@ export default function EspaceClientPage() {
               <div className="absolute rounded-full pointer-events-none" style={{
                 width: 150, height: 150,
                 background: 'radial-gradient(circle at 40% 40%, rgba(166,133,64,0.75) 0%, rgba(166,133,64,0.25) 60%, transparent 80%)',
-                right: '5%', top: '-5%',
-              }} />
-              {/* Medium rose blob — dépensé */}
-              <div className="absolute rounded-full pointer-events-none" style={{
-                width: 115, height: 115,
-                background: 'radial-gradient(circle at 40% 40%, rgba(190,96,64,0.72) 0%, rgba(190,96,64,0.22) 60%, transparent 80%)',
-                left: '30%', top: '20%',
+                right: '20%', top: '-5%',
               }} />
               {/* Small dark blob — jours */}
               <div className="absolute rounded-full pointer-events-none" style={{
                 width: 82, height: 82,
                 background: 'radial-gradient(circle at 40% 40%, rgba(45,42,38,0.75) 0%, rgba(45,42,38,0.25) 60%, transparent 80%)',
-                left: '8%', top: '10%',
+                left: '20%', top: '10%',
               }} />
               {/* Text labels centered over blobs */}
               <div className="absolute inset-0 flex items-center justify-around px-6">
@@ -163,12 +167,6 @@ export default function EspaceClientPage() {
                     {daysLeft !== null ? (daysLeft > 0 ? daysLeft : '0') : '—'}
                   </p>
                   <p className="text-[0.6rem] text-white/75 mt-1 uppercase tracking-wider">jours</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-serif leading-none text-white drop-shadow" style={{ fontSize: '1.4rem', fontWeight: 300 }}>
-                    {totalPaid >= 1000 ? `${Math.round(totalPaid / 1000)}k€` : `${totalPaid}€`}
-                  </p>
-                  <p className="text-[0.6rem] text-white/70 mt-1 uppercase tracking-wider">dépensé</p>
                 </div>
                 <div className="text-center">
                   <p className="font-serif leading-none text-white drop-shadow" style={{ fontSize: '1.7rem', fontWeight: 300 }}>
@@ -183,7 +181,6 @@ export default function EspaceClientPage() {
             <div className="flex items-center gap-5 mt-3 flex-wrap">
               {[
                 { color: '#A68540', label: 'Budget total' },
-                { color: '#BE6040', label: 'Budget dépensé' },
                 { color: '#2D2A26', label: 'Jours restants' },
               ].map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
@@ -232,7 +229,7 @@ export default function EspaceClientPage() {
             {/* Quick stats */}
             <div className="grid grid-cols-3 gap-2 mt-4">
               {[
-                { label: 'Services', value: `${teamVendors.length}` },
+                { label: 'Prestataires', value: `${teamVendors.length}` },
                 { label: 'Invités', value: `${guestStats.total || totalGuests || '—'}` },
                 { label: 'Tâches', value: `${checkPct}%` },
               ].map(({ label, value }) => (
@@ -334,9 +331,6 @@ export default function EspaceClientPage() {
                       <p className="text-xs font-medium text-charcoal-900 truncate">{v.name}</p>
                       <p className="text-[0.65rem] text-charcoal-400">{v.category}</p>
                     </div>
-                    <span className={`text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full ${ v.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-500'}`}>
-                      {v.status === 'confirmed' ? 'Confirmé' : '…'}
-                    </span>
                   </div>
                 );
               })}
