@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, XCircle, X, Trash2, MoreVertical, Save, Upload, Clock } from 'lucide-react';
@@ -42,6 +43,7 @@ export default function ContratsPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ bottom: number; left: number; maxHeight: number } | null>(null);
   const [linkedClients, setLinkedClients] = useState<{id: string; name: string; email: string; client_id?: string}[]>([]);
   const [importedPdfUrl, setImportedPdfUrl] = useState<string>('');
   const [form, setForm] = useState({
@@ -50,6 +52,20 @@ export default function ContratsPage() {
   });
 
   const vendorName = user?.displayName || user?.email?.split('@')[0] || 'Prestataire';
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const close = () => { setOpenMenuId(null); setMenuPos(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [openMenuId]);
 
   const load = async () => {
     if (!user) return;
@@ -234,6 +250,7 @@ export default function ContratsPage() {
     c.client_name.toLowerCase().includes(search.toLowerCase()) ||
     c.reference.toLowerCase().includes(search.toLowerCase())
   );
+  const menuContract = openMenuId ? contracts.find(c => c.id === openMenuId) : null;
 
   return (
     <PrestataireDashboardLayout>
@@ -327,64 +344,29 @@ export default function ContratsPage() {
                           <span className="inline-flex items-center gap-1 text-xs text-charcoal-500 bg-charcoal-100 px-2 py-0.5 rounded-full">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right relative">
+                      <td className="px-4 py-3 text-right">
                         <button
-                          onClick={() => setOpenMenuId((p) => p === c.id ? null : c.id)}
+                          onClick={(e) => {
+                            if (openMenuId === c.id) {
+                              setOpenMenuId(null);
+                              setMenuPos(null);
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const menuWidth = 224;
+                              let left = rect.right - menuWidth - 8;
+                              if (left + menuWidth > window.innerWidth - 16) left = window.innerWidth - menuWidth - 16;
+                              if (left < 8) left = 8;
+                              const bottom = window.innerHeight - rect.top + 6;
+                              const maxHeight = Math.max(120, rect.top - 24);
+                              setMenuPos({ bottom, left, maxHeight });
+                              setOpenMenuId(c.id);
+                            }
+                          }}
                           className="p-2 rounded-lg hover:bg-charcoal-50 transition-colors"
                           title="Actions"
                         >
                           <MoreVertical className="w-4 h-4 text-charcoal-600" />
                         </button>
-
-                        {openMenuId === c.id && (
-                          <div className="absolute right-4 top-full z-30 w-56 bg-white border border-charcoal-100 rounded-xl shadow-soft overflow-hidden mt-1">
-                            <div className="py-1">
-                              {c.status !== 'signed' && c.status !== 'cancelled' && c.pdf_url && (
-                                <button
-                                  onClick={() => { setOpenMenuId(null); handleSendToClient(c); }}
-                                  disabled={isSending}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-rose-50 text-rose-700 disabled:opacity-50"
-                                >
-                                  {isSending ? 'Envoi…' : c.status === 'sent' ? 'Renvoyer au client' : 'Envoyer au client'}
-                                </button>
-                              )}
-
-                              <div className="h-px bg-charcoal-100 my-1" />
-
-                              {c.pdf_url && (
-                                <>
-                                  <button
-                                    onClick={() => { setOpenMenuId(null); handleView(c); }}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
-                                  >
-                                    Voir PDF
-                                  </button>
-                                  <button
-                                    onClick={() => { setOpenMenuId(null); handleDownload(c); }}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
-                                  >
-                                    Télécharger
-                                  </button>
-                                </>
-                              )}
-
-                              <button
-                                onClick={() => { setOpenMenuId(null); openEdit(c); }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
-                              >
-                                Modifier
-                              </button>
-
-                              <div className="h-px bg-charcoal-100 my-1" />
-                              <button
-                                onClick={() => { setOpenMenuId(null); handleDelete(c.id); }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
-                              >
-                                Supprimer
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   );
@@ -394,6 +376,60 @@ export default function ContratsPage() {
           </div>
         )}
       </div>
+
+      {typeof document !== 'undefined' && menuContract && menuPos && createPortal(
+        <div
+          style={{ bottom: menuPos.bottom, left: menuPos.left, maxHeight: menuPos.maxHeight }}
+          className="fixed z-[60] w-56 bg-white border border-charcoal-100 rounded-xl shadow-soft overflow-y-auto flex flex-col"
+        >
+          <div className="py-1">
+            {menuContract.status !== 'signed' && menuContract.status !== 'cancelled' && menuContract.pdf_url && (
+              <button
+                onClick={() => { setOpenMenuId(null); setMenuPos(null); handleSendToClient(menuContract); }}
+                disabled={sending === menuContract.id}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-rose-50 text-rose-700 disabled:opacity-50"
+              >
+                {sending === menuContract.id ? 'Envoi…' : menuContract.status === 'sent' ? 'Renvoyer au client' : 'Envoyer au client'}
+              </button>
+            )}
+
+            <div className="h-px bg-charcoal-100 my-1" />
+
+            {menuContract.pdf_url && (
+              <>
+                <button
+                  onClick={() => { setOpenMenuId(null); setMenuPos(null); handleView(menuContract); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
+                >
+                  Voir PDF
+                </button>
+                <button
+                  onClick={() => { setOpenMenuId(null); setMenuPos(null); handleDownload(menuContract); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
+                >
+                  Télécharger
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => { setOpenMenuId(null); setMenuPos(null); openEdit(menuContract); }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal-50 text-charcoal-700"
+            >
+              Modifier
+            </button>
+
+            <div className="h-px bg-charcoal-100 my-1" />
+            <button
+              onClick={() => { setOpenMenuId(null); setMenuPos(null); handleDelete(menuContract.id); }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ===== MODAL ===== */}
       {showModal && (

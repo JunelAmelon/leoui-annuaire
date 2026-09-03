@@ -5,6 +5,7 @@ import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
 import { FileText, Search, Upload, FileCheck, Trash2, ChevronLeft, ChevronRight, X, Eye, Download as DownloadIcon } from 'lucide-react';
+import { TableActionsMenu } from '@/components/TableActionsMenu';
 import { toast } from 'sonner';
 
 interface DocumentItem {
@@ -85,8 +86,8 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDeleteDoc = async (doc: DocumentItem, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteDoc = async (doc: DocumentItem, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (doc.source !== 'documents') { toast.error('Impossible de supprimer ce document'); return; }
     if (!confirm(`Supprimer « ${doc.name} » ?`)) return;
     try {
@@ -203,27 +204,20 @@ export default function DocumentsPage() {
                   </td>
                   <td className="px-5 py-3.5 text-charcoal-600">{doc.uploaded_at || '—'}</td>
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-end gap-0.5">
-                      {doc.file_url && (
-                        <>
-                          <a href={doc.file_url} target="_blank" rel="noreferrer" title="Ouvrir"
-                            className="p-2 rounded-lg hover:bg-charcoal-100 text-charcoal-500 transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <a href={doc.file_url} download={doc.name} target="_blank" rel="noreferrer" title="Télécharger"
-                            className="p-2 rounded-lg hover:bg-charcoal-100 text-charcoal-500 transition-colors">
-                            <DownloadIcon className="w-4 h-4" />
-                          </a>
-                        </>
-                      )}
-                      {doc.source === 'documents' && (
-                        <button onClick={(e) => handleDeleteDoc(doc, e)} title="Supprimer"
-                          className="p-2 rounded-lg hover:bg-rose-50 text-charcoal-500 hover:text-rose-600 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                  <TableActionsMenu
+                    items={[
+                      { label: 'Ouvrir', icon: Eye, hidden: !doc.file_url, onClick: () => window.open(doc.file_url || '', '_blank') },
+                      { label: 'Télécharger', icon: DownloadIcon, hidden: !doc.file_url, onClick: () => {
+                        if (!doc.file_url) return;
+                        const a = document.createElement('a');
+                        a.href = doc.file_url;
+                        a.download = doc.name;
+                        a.click();
+                      } },
+                      { label: 'Supprimer', icon: Trash2, danger: true, hidden: doc.source !== 'documents', onClick: () => handleDeleteDoc(doc) },
+                    ]}
+                  />
+                </td>
                 </tr>
               ))}
             </tbody>

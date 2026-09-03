@@ -5,6 +5,7 @@ import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Trash2, User, X, Building2 } from 'lucide-react';
+import { TableActionsMenu } from '@/components/TableActionsMenu';
 
 interface Appointment {
   id: string;
@@ -56,7 +57,7 @@ function EventsTable({
 }: {
   events: CalendarEvent[];
   onSelect: (ev: CalendarEvent) => void;
-  onDelete: (ev: CalendarEvent, e: React.MouseEvent) => void;
+  onDelete: (ev: CalendarEvent, e?: React.MouseEvent) => void;
 }) {
   if (events.length === 0) {
     return (
@@ -110,24 +111,12 @@ function EventsTable({
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-0.5">
-                    <button
-                      onClick={() => onSelect(ev)}
-                      className="p-2 rounded-lg hover:bg-charcoal-100 text-charcoal-500 transition-colors"
-                      title="Voir"
-                    >
-                      <CalendarIcon className="w-4 h-4" />
-                    </button>
-                    {ev.source === 'couple' && (
-                      <button
-                        onClick={(e) => onDelete(ev, e)}
-                        className="p-2 rounded-lg hover:bg-rose-50 text-charcoal-500 hover:text-rose-600 transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <TableActionsMenu
+                    items={[
+                      { label: 'Voir', icon: CalendarIcon, onClick: () => onSelect(ev) },
+                      { label: 'Supprimer', icon: Trash2, danger: true, hidden: ev.source !== 'couple', onClick: () => onDelete(ev) },
+                    ]}
+                  />
                 </td>
               </tr>
             );
@@ -259,8 +248,8 @@ export default function PlanningPage() {
     }
   };
 
-  const handleDeleteEvent = async (ev: CalendarEvent, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteEvent = async (ev: CalendarEvent, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (ev.source !== 'couple') {
       toast.error('Impossible de supprimer cet événement');
       return;
