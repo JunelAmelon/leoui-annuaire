@@ -49,6 +49,8 @@ export default function MariagePage() {
   const [saving, setSaving] = useState(false);
   const [infoForm, setInfoForm] = useState({ event_date: '', ceremony_time: '', venue: '', reception_venue: '', guest_count: '', budget: '' });
   const [themeForm, setThemeForm] = useState({ theme_style: '', theme_colors: '' });
+  const [showVenueEdit, setShowVenueEdit] = useState(false);
+  const [venueForm, setVenueForm] = useState({ venue: '', reception_venue: '' });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoDirty, setPhotoDirty] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -132,9 +134,14 @@ export default function MariagePage() {
       const data: any = {
         event_date: infoForm.event_date || null,
         ceremony_time: infoForm.ceremony_time || null,
+        reception_venue: infoForm.reception_venue || null,
         guest_count: Number(infoForm.guest_count) || 0,
         budget: Number(infoForm.budget) || 0,
       };
+      // Ne pas écraser un lieu qui vient d’un prestataire (lié via venue_vendor_id)
+      if (!venueLocked) {
+        data.venue = infoForm.venue || null;
+      }
       if (event?.id) {
         await updateDocument('events', event.id, data);
       } else if (client?.id) {
@@ -166,6 +173,32 @@ export default function MariagePage() {
   const openThemeEdit = () => {
     setThemeForm({ theme_style: themeStyle, theme_colors: themeColors.join(', ') });
     setShowThemeEdit(true);
+  };
+
+  const openVenueEdit = () => {
+    setVenueForm({ venue, reception_venue: receptionVenue });
+    setShowVenueEdit(true);
+  };
+
+  const handleSaveVenue = async () => {
+    setSaving(true);
+    try {
+      const data: any = {
+        venue: venueForm.venue || null,
+        reception_venue: venueForm.reception_venue || null,
+        venue_vendor_id: null,
+      };
+      if (event?.id) {
+        await updateDocument('events', event.id, data);
+      } else if (client?.id) {
+        await updateDocument('clients', client.id, data);
+      }
+      await refresh();
+      toast.success('Lieu enregistré');
+      setShowVenueEdit(false);
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de l\'enregistrement');
+    } finally { setSaving(false); }
   };
 
   const handleSaveTheme = async () => {
@@ -294,9 +327,14 @@ export default function MariagePage() {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                        <span className={`absolute top-2 left-2 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${ v.status === 'confirmed' ? 'bg-green-600' : 'bg-champagne-600'}`}>
-                          {v.status === 'confirmed' ? 'Confirmé' : 'En attente'}
-                        </span>
+                        {(() => {
+                          const confirmed = /^(confirmed|active)$/i.test(v.status || '');
+                          return (
+                            <span className={`absolute top-2 left-2 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${confirmed ? 'bg-green-600' : 'bg-champagne-600'}`}>
+                              {confirmed ? 'Confirmé' : (v.status === 'pending' ? 'En attente' : 'En attente')}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="p-2.5">
                         <p className="text-xs font-semibold text-charcoal-900 truncate">{v.name}</p>
@@ -362,16 +400,16 @@ export default function MariagePage() {
       </div>
 
       {/* ── LIEU DE MARIAGE ── */}
-      <div id="lieu" className="bg-white rounded-2xl border border-charcoal-100 shadow-soft overflow-hidden">
+        <div id="lieu" className="bg-white rounded-2xl border border-charcoal-100 shadow-soft overflow-hidden">
         <div className="px-5 py-4 border-b border-charcoal-100 flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-charcoal-900 text-sm">Votre lieu de mariage</h2>
             {venue ? <p className="text-xs text-rose-600 mt-0.5">Félicitations pour ce choix !</p>
               : <p className="text-xs text-charcoal-400 mt-0.5">Aucun lieu choisi</p>}
           </div>
-          <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
-            <Pencil className="w-3 h-3" /> {venue ? 'Remplacer' : 'Choisir'}
-          </Link>
+          <button onClick={openVenueEdit} className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 transition-colors">
+            <Pencil className="w-3 h-3" /> {venue ? 'Modifier' : 'Choisir'}
+          </button>
         </div>
         {venue ? (
           <div className="flex items-center gap-4 p-5">
@@ -381,16 +419,19 @@ export default function MariagePage() {
             <div className="flex-1">
               <p className="font-semibold text-charcoal-900 text-sm">{venue}</p>
               {receptionVenue && <p className="text-xs text-charcoal-500 mt-0.5">{receptionVenue}</p>}
-              <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="text-xs text-rose-600 hover:underline mt-1 block">Remplacer le lieu →</Link>
             </div>
           </div>
         ) : (
           <div className="px-5 py-6 text-center">
             <MapPin className="w-8 h-8 text-charcoal-200 mx-auto mb-2" />
             <p className="text-xs text-charcoal-400 mb-3">Ajoutez votre lieu pour le voir apparaître ici</p>
-            <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="inline-block text-xs text-white bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-xl font-medium transition-colors">
-              Choisir un lieu
-            </Link>
+            <button onClick={openVenueEdit} className="inline-block text-xs text-white bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-xl font-medium transition-colors">
+              Ajouter un lieu
+            </button>
+            <p className="text-[0.65rem] text-charcoal-400 mt-2">
+              ou{' '}
+              <Link href="/espace-client/prestataires?cat=Lieux%20de%20r%C3%A9ception" className="text-rose-600 hover:underline">parcourir les lieux de réception</Link>
+            </p>
           </div>
         )}
       </div>
@@ -533,11 +574,17 @@ export default function MariagePage() {
               </div>
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Lieu de la cérémonie</label>
-                <input type="text" value={infoForm.venue} onChange={e => setInfoForm(f => ({ ...f, venue: e.target.value }))} placeholder="Lieu du mariage" disabled className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50 disabled:opacity-60" />
+                <input type="text" value={infoForm.venue} onChange={e => setInfoForm(f => ({ ...f, venue: e.target.value }))} placeholder="Lieu du mariage" disabled={venueLocked} className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50 disabled:opacity-60" />
+                {venueLocked && (
+                  <p className="text-[0.65rem] text-charcoal-400 mt-1">
+                    Lieu choisi via un prestataire.{' '}
+                    <button onClick={() => { setShowInfoEdit(false); openVenueEdit(); }} className="text-rose-600 hover:underline">Remplacer / modifier</button>
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Lieu de la réception</label>
-                <input type="text" value={infoForm.reception_venue} onChange={e => setInfoForm(f => ({ ...f, reception_venue: e.target.value }))} placeholder="Si différent du lieu de cérémonie" disabled className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50 disabled:opacity-60" />
+                <input type="text" value={infoForm.reception_venue} onChange={e => setInfoForm(f => ({ ...f, reception_venue: e.target.value }))} placeholder="Si différent du lieu de cérémonie" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -553,6 +600,36 @@ export default function MariagePage() {
             <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex flex-col-reverse sm:flex-row justify-end gap-3 flex-shrink-0 bg-white">
               <button onClick={() => setShowInfoEdit(false)} className="w-full sm:w-auto px-4 py-3 text-sm text-charcoal-600 hover:bg-charcoal-50 rounded-xl transition-colors min-h-[44px]">Annuler</button>
               <button onClick={handleSaveInfo} disabled={saving} className="w-full sm:w-auto px-6 py-3 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors min-h-[44px] font-semibold">
+                {saving ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVenueEdit && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowVenueEdit(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
+            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
+              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
+              <h3 className="font-semibold text-charcoal-900 text-base">Votre lieu de mariage</h3>
+              <button onClick={() => setShowVenueEdit(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+            </div>
+            <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
+              <div>
+                <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Lieu de la cérémonie</label>
+                <input type="text" value={venueForm.venue} onChange={e => setVenueForm(f => ({ ...f, venue: e.target.value }))} placeholder="Lieu du mariage" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
+              </div>
+              <div>
+                <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Lieu de la réception</label>
+                <input type="text" value={venueForm.reception_venue} onChange={e => setVenueForm(f => ({ ...f, reception_venue: e.target.value }))} placeholder="Si différent du lieu de cérémonie" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
+              </div>
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-charcoal-100 flex flex-col-reverse sm:flex-row justify-end gap-3 flex-shrink-0 bg-white">
+              <button onClick={() => setShowVenueEdit(false)} className="w-full sm:w-auto px-4 py-3 text-sm text-charcoal-600 hover:bg-charcoal-50 rounded-xl transition-colors min-h-[44px]">Annuler</button>
+              <button onClick={handleSaveVenue} disabled={saving} className="w-full sm:w-auto px-6 py-3 text-sm bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors min-h-[44px] font-semibold">
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </button>
             </div>

@@ -14,6 +14,7 @@ export interface ClientData {
   theme_style?: string;
   theme_colors?: string[];
   moodboard_images?: string[];
+  favorite_vendor_ids?: string[];
   created_at?: string;
 }
 

@@ -42,6 +42,7 @@ export default function ContratsPage() {
   const [editItem, setEditItem] = useState<Contract | null>(null);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ bottom: number; left: number; maxHeight: number } | null>(null);
   const [linkedClients, setLinkedClients] = useState<{id: string; name: string; email: string; client_id?: string}[]>([]);
@@ -231,7 +232,7 @@ export default function ContratsPage() {
 
   const handleView = (c: Contract) => {
     if (!c.pdf_url) { toast.error('Aucun PDF disponible'); return; }
-    window.open(c.pdf_url, '_blank');
+    setPreviewUrl(c.pdf_url);
   };
 
   const handleDownload = (c: Contract) => {
@@ -491,14 +492,13 @@ export default function ContratsPage() {
                 <p className="text-xs text-charcoal-500 mt-1">Importez votre document officiel signé ou à signer.</p>
                 {importedPdfUrl ? (
                   <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
-                    <a
-                      href={importedPdfUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setPreviewUrl(importedPdfUrl)}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-charcoal-200 rounded-xl text-sm hover:bg-charcoal-50 transition-colors w-fit"
                     >
                       <Eye className="w-4 h-4" /> Ouvrir le PDF
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setImportedPdfUrl('')}
@@ -549,6 +549,21 @@ export default function ContratsPage() {
                 <Save className="w-4 h-4" /> {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : 'Sauvegarder'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF preview modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-[60] bg-charcoal-900/90 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+          <button
+            className="absolute top-4 right-4 w-9 h-9 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-xl"
+            onClick={() => setPreviewUrl(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <div className="w-full max-w-4xl h-[85vh] bg-white rounded-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <embed src={previewUrl} type="application/pdf" className="w-full h-full" />
           </div>
         </div>
       )}

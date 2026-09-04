@@ -44,6 +44,7 @@ export default function DocumentsPage() {
   const [docType, setDocType] = useState('autre');
   const [customType, setCustomType] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
 
   const fetchDocs = async () => {
     if (!client?.id) { setLoading(false); return; }
@@ -203,10 +204,10 @@ export default function DocumentsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-charcoal-600">{doc.uploaded_at || '—'}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3.5 text-right">
                   <TableActionsMenu
                     items={[
-                      { label: 'Ouvrir', icon: Eye, hidden: !doc.file_url, onClick: () => window.open(doc.file_url || '', '_blank') },
+                      { label: 'Ouvrir', icon: Eye, hidden: !doc.file_url, onClick: () => setPreviewDoc({ url: doc.file_url || '', name: doc.name }) },
                       { label: 'Télécharger', icon: DownloadIcon, hidden: !doc.file_url, onClick: () => {
                         if (!doc.file_url) return;
                         const a = document.createElement('a');
@@ -284,6 +285,27 @@ export default function DocumentsPage() {
                 {uploading ? 'Ajout…' : 'Ajouter'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document preview modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[60] bg-charcoal-900/90 flex items-center justify-center p-4" onClick={() => setPreviewDoc(null)}>
+          <button
+            className="absolute top-4 right-4 w-9 h-9 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-xl"
+            onClick={() => setPreviewDoc(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <div className="w-full max-w-4xl h-[85vh] bg-white rounded-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {previewDoc.url.toLowerCase().endsWith('.pdf') ? (
+              <embed src={previewDoc.url} type="application/pdf" className="w-full h-full" />
+            ) : /\.(jpg|jpeg|png|gif|webp)$/i.test(previewDoc.url) ? (
+              <img src={previewDoc.url} alt={previewDoc.name} className="w-full h-full object-contain" />
+            ) : (
+              <iframe src={previewDoc.url} className="w-full h-full" title={previewDoc.name} />
+            )}
           </div>
         </div>
       )}

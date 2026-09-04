@@ -261,9 +261,6 @@ export default function EspaceClientPage() {
           <div className="mt-2 mb-1">
             <GaugeChart value={guestStats.confirmed} max={Math.max(guestStats.total, totalGuests, 1)} color="#A34E30" />
           </div>
-          <p className="text-center text-xs text-charcoal-500 mb-4">
-            Objectif : <span className="font-semibold text-charcoal-900">{guestStats.total || totalGuests || '—'}</span>
-          </p>
           <Link href="/espace-client/invites"
             className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-stone-100 hover:bg-stone-200 text-charcoal-700 text-sm font-medium rounded-xl transition-colors">
             <Plus className="w-3.5 h-3.5" /> Ajouter un invité

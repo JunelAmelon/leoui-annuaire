@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getDocuments } from '@/lib/db';
+import { getDocuments, updateDocument } from '@/lib/db';
 import {
   Star, MapPin, Camera, ChevronLeft, ChevronRight,
   Heart, List, Grid3X3,
@@ -46,7 +46,7 @@ const PER_PAGE = 6;
 export default function PrestatairesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { client, loading: dataLoading } = useClientData();
+  const { client, loading: dataLoading, refresh } = useClientData();
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +63,25 @@ export default function PrestatairesPage() {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [selectedVendorIds, setSelectedVendorIds] = useState<Set<string>>(new Set());
   const [selectedVendors, setSelectedVendors] = useState<Vendor[]>([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const togglePrice = (v: string) => setPriceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
   const toggleService = (v: string) => setServiceFilters(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
+
+  const toggleFavorite = useCallback(async (id: string) => {
+    const next = new Set(favorites);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setFavorites(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('favorite_vendor_ids', JSON.stringify(Array.from(next)));
+    }
+    if (client?.id) {
+      try {
+        await updateDocument('clients', client.id, { favorite_vendor_ids: Array.from(next) } as any);
+        await refresh();
+      } catch { /* ignore */ }
+    }
+  }, [favorites, client?.id, refresh]);
 
   useEffect(() => {
     const cat = searchParams.get('cat');
@@ -106,12 +122,24 @@ export default function PrestatairesPage() {
       .catch(() => {});
   }, [client?.id]);
 
+  // Charger les favoris (clients puis localStorage)
+  useEffect(() => {
+    const fromClient = client?.favorite_vendor_ids;
+    if (fromClient && fromClient.length > 0) {
+      setFavorites(new Set(fromClient));
+      return;
+    }
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('favorite_vendor_ids') : null;
+    if (stored) {
+      try { setFavorites(new Set(JSON.parse(stored))); } catch {}
+    }
+  }, [client?.favorite_vendor_ids]);
+
   const parsePrice = (s: string) => { const n = (s || '').replace(/[^\d]/g, ''); return n ? parseInt(n) : 0; };
 
   // 🔄 Filtrer les vendors (déjà triés par l'API selon la formule)
-  const filtered = vendors
-    .filter(v => {
-      const matchCat = category === 'Tous' || v.category === category;
+  const baseVendors = useMemo(() => {
+    return vendors.filter(v => {
       const q = search.toLowerCase();
       const matchSearch = !q || v.name.toLowerCase().includes(q) || v.category.toLowerCase().includes(q);
       const matchCity = !citySearch || (v.location || v.address || '').toLowerCase().includes(citySearch.toLowerCase());
@@ -127,16 +155,33 @@ export default function PrestatairesPage() {
       const matchService = serviceFilters.length === 0 ||
         serviceFilters.some(s => (v as any).services?.includes(s) || (v as any).tags?.includes(s));
       const matchSelected = !showSelectedOnly || selectedVendorIds.has(v.id) || selectedVendorIds.has((v as any).uid);
-      return matchCat && matchSearch && matchCity && matchPromo && matchPrice && matchService && matchSelected;
-    })
-    // Tri secondaire selon la sélection utilisateur
-    .sort((a, b) => {
-      if (sortBy === 'note') return ((b as any).rating || 0) - ((a as any).rating || 0);
-      if (sortBy === 'prix-asc') return parsePrice(a.startingPrice || '') - parsePrice(b.startingPrice || '');
-      if (sortBy === 'prix-desc') return parsePrice(b.startingPrice || '') - parsePrice(a.startingPrice || '');
-      // Par défaut: garder l'ordre de l'API (vendorScore = formule + note + avis)
-      return (b.vendorScore || 0) - (a.vendorScore || 0);
+      const matchFavorites = !showFavoritesOnly || favorites.has(v.id) || favorites.has((v as any).uid);
+      return matchSearch && matchCity && matchPromo && matchPrice && matchService && matchSelected && matchFavorites;
     });
+  }, [vendors, search, citySearch, hasPromo, priceFilters, serviceFilters, showSelectedOnly, showFavoritesOnly, selectedVendorIds, favorites]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    baseVendors.forEach(v => { counts[v.category] = (counts[v.category] || 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr'));
+  }, [baseVendors]);
+
+  const stats = useMemo(() => {
+    const top = categoryCounts.slice(0, 3);
+    return [{ label: 'Prestataires', value: baseVendors.length }, ...top.map(([label, value]) => ({ label, value }))];
+  }, [baseVendors, categoryCounts]);
+
+  const filtered = useMemo(() => {
+    return baseVendors
+      .filter(v => category === 'Tous' || v.category === category)
+      .sort((a, b) => {
+        if (sortBy === 'note') return ((b as any).rating || 0) - ((a as any).rating || 0);
+        if (sortBy === 'prix-asc') return parsePrice(a.startingPrice || '') - parsePrice(b.startingPrice || '');
+        if (sortBy === 'prix-desc') return parsePrice(b.startingPrice || '') - parsePrice(a.startingPrice || '');
+        // Par défaut: garder l'ordre de l'API (vendorScore = formule + note + avis)
+        return (b.vendorScore || 0) - (a.vendorScore || 0);
+      });
+  }, [baseVendors, category, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -169,10 +214,10 @@ export default function PrestatairesPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>
-            {showSelectedOnly ? 'Mes prestataires sélectionnés' : category === 'Tous' ? 'Vos prestataires' : category}
+            {showFavoritesOnly ? 'Mes prestataires favoris' : showSelectedOnly ? 'Mes prestataires sélectionnés' : category === 'Tous' ? 'Vos prestataires' : category}
           </h1>
           <p className="text-sm text-charcoal-500 mt-0.5">
-            {filtered.length} prestataire{filtered.length !== 1 ? 's' : ''} {showSelectedOnly ? 'sélectionné' : 'disponible'}{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} prestataire{filtered.length !== 1 ? 's' : ''} {showFavoritesOnly ? 'favori' : showSelectedOnly ? 'sélectionné' : 'disponible'}{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
         {/* Search row */}
@@ -194,7 +239,7 @@ export default function PrestatairesPage() {
             inputClassName="border border-stone-200 rounded-xl shadow-sm w-full"
           />
           <button
-            onClick={() => { setShowSelectedOnly(p => !p); setPage(1); }}
+            onClick={() => { setShowSelectedOnly(p => !p); setShowFavoritesOnly(false); setPage(1); }}
             disabled={selectedVendorIds.size === 0}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
               showSelectedOnly
@@ -211,16 +256,15 @@ export default function PrestatairesPage() {
 
       {/* ── STATS STRIP ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Prestataires', value: vendors.length },
-          { label: 'Photographes', value: vendors.filter(v => v.category === 'Photographes').length },
-          { label: 'Traiteurs', value: vendors.filter(v => v.category === 'Traiteurs').length },
-          { label: 'Fleuristes', value: vendors.filter(v => v.category === 'Fleuristes').length },
-        ].map(({ label, value }) => (
-          <div key={label} className="bg-white rounded-2xl shadow-sm p-4">
+        {stats.map(({ label, value }) => (
+          <button
+            key={label}
+            onClick={() => { if (label !== 'Prestataires') { setCategory(label); setPage(1); } }}
+            className="bg-white rounded-2xl shadow-sm p-4 text-left hover:shadow-md transition-shadow"
+          >
             <p className="font-serif text-charcoal-900 leading-none" style={{ fontSize: '1.75rem', fontWeight: 300 }}>{value}</p>
             <p className="text-xs text-charcoal-500 mt-1">{label}</p>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -248,6 +292,12 @@ export default function PrestatairesPage() {
                 <span className="text-sm text-charcoal-700 flex items-center gap-2"><Tag className="w-3.5 h-3.5 text-rose-500" /> Promotions</span>
                 <div onClick={() => setHasPromo(p => !p)} className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${hasPromo ? 'bg-charcoal-900' : 'bg-stone-200'}`}>
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${hasPromo ? 'left-5' : 'left-0.5'}`} />
+                </div>
+              </label>
+              <label className="flex items-center justify-between cursor-pointer mt-3">
+                <span className="text-sm text-charcoal-700 flex items-center gap-2"><Heart className="w-3.5 h-3.5 text-rose-500" /> Mes favoris</span>
+                <div onClick={() => { setShowFavoritesOnly(p => !p); setShowSelectedOnly(false); setPage(1); }} className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${showFavoritesOnly ? 'bg-charcoal-900' : 'bg-stone-200'}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${showFavoritesOnly ? 'left-5' : 'left-0.5'}`} />
                 </div>
               </label>
             </div>
@@ -325,11 +375,7 @@ export default function PrestatairesPage() {
                   variant="horizontal"
                   showFavorite
                   isFavorite={favorites.has(vendor.id)}
-                  onFavoriteToggle={(id) => setFavorites(prev => {
-                    const n = new Set(prev);
-                    n.has(id) ? n.delete(id) : n.add(id);
-                    return n;
-                  })}
+                  onFavoriteToggle={toggleFavorite}
                 />
               ))}
             </div>
@@ -353,11 +399,7 @@ export default function PrestatairesPage() {
                   variant="compact"
                   showFavorite
                   isFavorite={favorites.has(vendor.id)}
-                  onFavoriteToggle={(id) => setFavorites(prev => {
-                    const n = new Set(prev);
-                    n.has(id) ? n.delete(id) : n.add(id);
-                    return n;
-                  })}
+                  onFavoriteToggle={toggleFavorite}
                 />
               ))}
             </div>

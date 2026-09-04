@@ -154,6 +154,14 @@ export default function ChecklistPage() {
     return true;
   });
 
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    if (!a.deadline && !b.deadline) return 0;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
+
   const completedCount = items.filter((i) => i.completed).length;
   const progress = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
 
@@ -221,7 +229,7 @@ export default function ChecklistPage() {
 
       {/* Items — editorial list */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        {filtered.length === 0 ? (
+        {sortedFiltered.length === 0 ? (
           <div className="py-16 text-center">
             <CheckCircle className="w-8 h-8 mx-auto mb-3 text-charcoal-200" />
             <p className="font-serif text-charcoal-400 text-base font-light">
@@ -230,7 +238,7 @@ export default function ChecklistPage() {
           </div>
         ) : (
           <div className="divide-y divide-charcoal-100">
-            {filtered.map((item) => (
+            {sortedFiltered.map((item) => (
               <div
                 key={item.id}
                 className={`flex items-start gap-4 px-6 py-4 transition-colors duration-150 group ${

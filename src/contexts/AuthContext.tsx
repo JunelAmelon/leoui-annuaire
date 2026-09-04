@@ -7,7 +7,7 @@ import {
   User,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { getDocument, setDocument } from '@/lib/db';
 
 interface AuthUser {
@@ -38,6 +38,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const PROTECTED_PREFIXES = ['/espace-client', '/espace-prestataire', '/admin'];
+
+  useEffect(() => {
+    if (loading || !user || !pathname) return;
+    const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p));
+    if (isProtected) return;
+    const role = user.role || 'client';
+    if (role === 'admin') router.replace('/admin');
+    else if (role === 'planner' || role === 'vendor') router.replace('/espace-prestataire');
+    else router.replace('/espace-client');
+  }, [loading, user, pathname, router]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {

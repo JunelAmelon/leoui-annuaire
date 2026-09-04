@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
+import { getDocuments, addDocument, deleteDocument, updateDocument } from '@/lib/db';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Trash2, User, X, Building2 } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2, User, X, Building2 } from 'lucide-react';
 import { TableActionsMenu } from '@/components/TableActionsMenu';
 
 interface Appointment {
@@ -25,6 +25,8 @@ interface Appointment {
 interface CalendarEvent extends Appointment {
   source: 'couple' | 'provider';
 }
+
+const TYPE_OPTIONS = ['RDV', 'Visite', 'Appel', 'Essai', 'Répétition', 'Autre'];
 
 const parseDate = (v: string | undefined): Date | null => {
   if (!v) return null;
@@ -47,10 +49,12 @@ function EventsTable({
   events,
   onSelect,
   onDelete,
+  onEdit,
 }: {
   events: CalendarEvent[];
   onSelect: (ev: CalendarEvent) => void;
   onDelete: (ev: CalendarEvent, e?: React.MouseEvent) => void;
+  onEdit?: (ev: CalendarEvent) => void;
 }) {
   if (events.length === 0) {
     return (
@@ -100,13 +104,14 @@ function EventsTable({
                         : 'bg-champagne-100 text-champagne-700 border-champagne-200'
                     }`}
                   >
-                    {ev.source === 'couple' ? 'Avec client' : 'Sans client'}
+                    {ev.source === 'couple' ? (ev.client_name || 'Client') : 'Personnel'}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <TableActionsMenu
                     items={[
                       { label: 'Voir', icon: CalendarIcon, onClick: () => onSelect(ev) },
+                      { label: 'Modifier', icon: Pencil, hidden: !onEdit, onClick: () => onEdit?.(ev) },
                       { label: 'Supprimer', icon: Trash2, danger: true, onClick: () => onDelete(ev) },
                     ]}
                   />
@@ -128,11 +133,11 @@ export default function PlanningPage() {
   const [linkedClients, setLinkedClients] = useState<{ id: string; name: string; email: string }[]>([]);
   const [vendorName, setVendorName] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [filter, setFilter] = useState<'all' | 'couple' | 'provider'>('all');
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '',
     date: '',
@@ -143,6 +148,13 @@ export default function PlanningPage() {
     description: '',
     type: 'RDV',
   });
+
+  useEffect(() => {
+    if (!showAdd) {
+      setForm({ title: '', date: '', time: '', location: '', with_whom: '', client_id: '', description: '', type: 'RDV' });
+      setEditingId(null);
+    }
+  }, [showAdd]);
 
   useEffect(() => {
     if (!user) return;
@@ -187,12 +199,18 @@ export default function PlanningPage() {
       .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0));
   }, [appointments]);
 
-  const filteredEvents = useMemo(() => {
-    if (filter === 'all') return allEvents;
-    return allEvents.filter((ev) => ev.source === filter);
-  }, [allEvents, filter]);
+  const listEvents = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return allEvents.filter((ev) => {
+      const d = parseDate(ev.date);
+      if (!d) return true;
+      const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return eventDay.getTime() >= today.getTime();
+    });
+  }, [allEvents]);
 
-  const handleAddAppointment = async () => {
+  const handleSaveAppointment = async () => {
     if (!user) {
       toast.error('Non connecté');
       return;
@@ -219,36 +237,73 @@ export default function PlanningPage() {
         uid: user.uid,
         vendor_id: user.uid,
         vendor_name: vendorName,
-        created_at: new Date().toISOString(),
       };
-      const ref = await addDocument('planning_events', payload);
-      const newId = ref.id;
-      if (form.client_id) {
-        await addDocument('client_planning_events', {
+      if (editingId) {
+        await updateDocument('planning_events', editingId, payload);
+        const linked = await getDocuments('client_planning_events', [
+          { field: 'planning_event_id', operator: '==', value: editingId },
+        ]);
+        const linkedDocs = linked as any[];
+        const clientEventData = {
           client_id: form.client_id,
           client_name: clientName,
           vendor_id: user.uid,
           vendor_name: vendorName,
-          planning_event_id: newId,
+          planning_event_id: editingId,
           date: form.date,
           title: form.title.trim(),
           location: form.location || null,
           type: form.type || null,
           notes: form.description || null,
           source: 'vendor',
-          created_at: new Date().toISOString(),
-        });
+        };
+        if (form.client_id) {
+          if (linkedDocs.length > 0) {
+            await updateDocument('client_planning_events', linkedDocs[0].id, clientEventData);
+          } else {
+            await addDocument('client_planning_events', { ...clientEventData, created_at: new Date().toISOString() });
+          }
+        } else {
+          await Promise.all(linkedDocs.map((ce) => deleteDocument('client_planning_events', ce.id)));
+        }
+        setAppointments((prev) =>
+          prev.map((a) => (a.id === editingId ? { ...a, ...payload } : a)).sort(
+            (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
+          )
+        );
+        toast.success('Événement mis à jour');
+      } else {
+        const ref = await addDocument('planning_events', { ...payload, created_at: new Date().toISOString() });
+        const newId = ref.id;
+        if (form.client_id) {
+          await addDocument('client_planning_events', {
+            client_id: form.client_id,
+            client_name: clientName,
+            vendor_id: user.uid,
+            vendor_name: vendorName,
+            planning_event_id: newId,
+            date: form.date,
+            title: form.title.trim(),
+            location: form.location || null,
+            type: form.type || null,
+            notes: form.description || null,
+            source: 'vendor',
+            created_at: new Date().toISOString(),
+          });
+        }
+        setAppointments((prev) =>
+          [...prev, { id: newId, ...payload }].sort(
+            (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
+          )
+        );
+        toast.success('Événement ajouté');
       }
-      setAppointments((prev) =>
-        [...prev, { id: newId, ...payload }].sort(
-          (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
-        )
-      );
-      toast.success('Événement ajouté');
       setShowAdd(false);
       setForm({ title: '', date: '', time: '', location: '', with_whom: '', client_id: '', description: '', type: 'RDV' });
-    } catch {
-      toast.error('Erreur lors de l\'ajout');
+      setEditingId(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
@@ -271,6 +326,21 @@ export default function PlanningPage() {
     }
   };
 
+  const handleEdit = (ev: CalendarEvent) => {
+    setForm({
+      title: ev.title,
+      date: ev.date,
+      time: ev.time || '',
+      location: ev.location || '',
+      with_whom: ev.with_whom || '',
+      client_id: (ev as any).client_id || '',
+      description: ev.description || '',
+      type: ev.type || 'RDV',
+    });
+    setEditingId(ev.id);
+    setShowAdd(true);
+  };
+
   // Calendar data
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -286,7 +356,7 @@ export default function PlanningPage() {
   const today = new Date();
 
   const getDayEvents = (day: Date) =>
-    filteredEvents.filter((ev) => {
+    allEvents.filter((ev) => {
       const d = parseDate(ev.date);
       return d ? isSameDay(d, day) : false;
     });
@@ -342,22 +412,6 @@ export default function PlanningPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center bg-charcoal-100 rounded-xl p-1">
-              {(['all', 'couple', 'provider'] as const).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setFilter(key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    filter === key
-                      ? 'bg-white text-charcoal-900 shadow-sm'
-                      : 'text-charcoal-500 hover:text-charcoal-700'
-                  }`}
-                >
-                  {key === 'all' ? 'Tous' : key === 'couple' ? 'Avec client' : 'Sans client'}
-                </button>
-              ))}
-            </div>
-
             <div className="flex items-center bg-charcoal-100 rounded-xl p-1">
               <button
                 onClick={() => setView('calendar')}
@@ -445,7 +499,7 @@ export default function PlanningPage() {
             </div>
           </>
         ) : (
-          <EventsTable events={filteredEvents} onSelect={setSelectedEvent} onDelete={handleDeleteEvent} />
+          <EventsTable events={listEvents} onSelect={setSelectedEvent} onDelete={handleDeleteEvent} onEdit={handleEdit} />
         )}
       </div>
 
@@ -472,7 +526,7 @@ export default function PlanningPage() {
                         : 'bg-champagne-100 text-champagne-700 border-champagne-200'
                     }`}
                   >
-                    {selectedEvent.source === 'couple' ? (selectedEvent.client_name ? `Avec client : ${selectedEvent.client_name}` : 'Avec client') : 'Sans client'}
+                    {selectedEvent.source === 'couple' ? (selectedEvent.client_name || 'Client') : 'Personnel'}
                   </span>
                 </div>
                 <button
@@ -549,7 +603,7 @@ export default function PlanningPage() {
               <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
             <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-display text-lg font-semibold text-charcoal-900">Nouvel événement</h3>
+              <h3 className="font-display text-lg font-semibold text-charcoal-900">{editingId ? 'Modifier l\'événement' : 'Nouvel événement'}</h3>
               <button
                 onClick={() => setShowAdd(false)}
                 className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"
@@ -602,10 +656,10 @@ export default function PlanningPage() {
                 <div>
                   <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Heure</label>
                   <input
+                    type="time"
                     value={form.time}
                     onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
                     className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
-                    placeholder="18:30"
                   />
                 </div>
               </div>
@@ -627,12 +681,16 @@ export default function PlanningPage() {
               </div>
               <div>
                 <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Type</label>
-                <input
+                <select
                   value={form.type}
                   onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
-                  placeholder="RDV"
-                />
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 bg-white"
+                >
+                  <option value="">— Type —</option>
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Notes</label>
@@ -652,11 +710,11 @@ export default function PlanningPage() {
                 Annuler
               </button>
               <button
-                onClick={handleAddAppointment}
+                onClick={handleSaveAppointment}
                 disabled={saving}
                 className="w-full sm:flex-1 py-3 bg-charcoal-900 text-white text-sm font-semibold hover:bg-charcoal-700 disabled:opacity-50 transition-colors rounded-xl min-h-[48px]"
               >
-                {saving ? 'Ajout…' : 'Ajouter'}
+                {saving ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Ajouter')}
               </button>
             </div>
           </div>

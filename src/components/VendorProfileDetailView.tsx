@@ -59,6 +59,8 @@ export type VendorProfileDetailViewProps = {
   existingClientReview?: { rating: number; comment: string } | null;
   clientName?: string;
   onSubmitReview?: (review: { rating: number; comment: string }) => Promise<void>;
+  isFavorite?: boolean;
+  onFavoriteToggle?: () => void;
 };
 
 export default function VendorProfileDetailView({
@@ -78,10 +80,13 @@ export default function VendorProfileDetailView({
   existingClientReview = null,
   clientName = '',
   onSubmitReview,
+  isFavorite: isFavoriteProp,
+  onFavoriteToggle,
 }: VendorProfileDetailViewProps) {
   const [activeTab, setActiveTab] = useState('informations');
   const [showContactModal, setShowContactModal] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [internalFavorite, setInternalFavorite] = useState(false);
+  const isFavorite = isFavoriteProp !== undefined ? isFavoriteProp : internalFavorite;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [contactForm, setContactForm] = useState<ContactForm>({
     name: '',
@@ -184,7 +189,7 @@ export default function VendorProfileDetailView({
                   <div className="overflow-hidden relative h-full">
                     <img src={photos[1] || photos[0]} alt="Photo 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     <button
-                      onClick={() => setIsFavorite((f) => !f)}
+                      onClick={() => onFavoriteToggle ? onFavoriteToggle() : setInternalFavorite((f) => !f)}
                       className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors z-10"
                     >
                       <Heart className={`w-4 h-4 ${isFavorite ? 'text-rose-600 fill-rose-600' : 'text-ivory-700'}`} />

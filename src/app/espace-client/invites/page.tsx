@@ -60,8 +60,8 @@ export default function InvitesPage() {
     rsvp: 'pending' as Guest['rsvp'],
     side: 'commun' as Guest['side'],
     table: '', menu: 'Standard', menu_other: '', plus_one: false,
-    has_children: false, children_count: 0,
-    has_pets: false, pets_count: 0, pet_type: '',
+    has_children: false, children_count: undefined as number | undefined,
+    has_pets: false, pets_count: undefined as number | undefined, pet_type: '',
     notes: '',
   });
 
@@ -85,7 +85,7 @@ export default function InvitesPage() {
     setForm({
       first_name: '', last_name: '', email: '', phone: '',
       rsvp: 'pending', side: 'commun', table: '', menu: 'Standard', menu_other: '', plus_one: false,
-      has_children: false, children_count: 0, has_pets: false, pets_count: 0, pet_type: '',
+      has_children: false, children_count: undefined, has_pets: false, pets_count: undefined, pet_type: '',
       notes: '',
     });
     setShowModal(true);
@@ -96,8 +96,8 @@ export default function InvitesPage() {
       first_name: g.first_name, last_name: g.last_name, email: g.email || '', phone: g.phone || '',
       rsvp: g.rsvp, side: g.side, table: g.table || '', menu: g.menu || 'Standard',
       menu_other: g.menu_other || '', plus_one: g.plus_one || false,
-      has_children: g.has_children || false, children_count: g.children_count || 0,
-      has_pets: g.has_pets || false, pets_count: g.pets_count || 0, pet_type: g.pet_type || '',
+      has_children: g.has_children || false, children_count: g.children_count,
+      has_pets: g.has_pets || false, pets_count: g.pets_count, pet_type: g.pet_type || '',
       notes: g.notes || '',
     });
     setShowModal(true);
@@ -107,7 +107,13 @@ export default function InvitesPage() {
     if (!form.first_name.trim() || !form.last_name.trim()) { toast.error('Prénom et nom requis'); return; }
     setSaving(true);
     try {
-      const payload: any = { ...form, event_id: event?.id || null, client_id: client?.id || null };
+      const payload: any = {
+        ...form,
+        children_count: form.children_count ?? null,
+        pets_count: form.pets_count ?? null,
+        event_id: event?.id || null,
+        client_id: client?.id || null,
+      };
       if (editGuest) {
         await updateDocument('guests', editGuest.id, payload);
         setGuests(prev => prev.map(g => g.id === editGuest.id ? { ...g, ...payload } : g));
@@ -211,7 +217,7 @@ export default function InvitesPage() {
           ))}
           <div className="relative">
             <select value={sideFilter} onChange={e => setSideFilter(e.target.value as any)}
-              className="appearance-none pl-3 pr-8 py-2 bg-white border border-charcoal-200 text-xs font-medium tracking-wide uppercase text-charcoal-500 focus:outline-none cursor-pointer">
+              className="appearance-none pl-3 pr-8 py-2 bg-white border border-charcoal-200 text-xs font-medium tracking-[0.06em] uppercase text-charcoal-500 focus:outline-none cursor-pointer">
               <option value="all">Côté</option>
               <option value="mariée">Mariée</option>
               <option value="marié">Marié</option>
@@ -237,11 +243,11 @@ export default function InvitesPage() {
         ) : (
           <>
             {/* Table header */}
-            <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-4 px-6 py-3 border-b border-charcoal-100 bg-ivory-50">
+            <div className="hidden sm:grid grid-cols-[1fr_6rem_6rem_7rem] gap-4 px-6 py-3 border-b border-charcoal-100 bg-ivory-50">
               <p className="label-xs text-charcoal-400 tracking-[0.1em]">Invité</p>
-              <p className="label-xs text-charcoal-400 tracking-[0.1em] w-24 text-center">Côté</p>
-              <p className="label-xs text-charcoal-400 tracking-[0.1em] w-24 text-center">Table</p>
-              <p className="label-xs text-charcoal-400 tracking-[0.1em] w-28 text-center">RSVP</p>
+              <p className="label-xs text-charcoal-400 tracking-[0.1em] text-center">Côté</p>
+              <p className="label-xs text-charcoal-400 tracking-[0.1em] text-center">Table</p>
+              <p className="label-xs text-charcoal-400 tracking-[0.1em] text-center">Présence</p>
             </div>
             <div className="divide-y divide-charcoal-100">
               {filtered.map(guest => {
@@ -249,7 +255,7 @@ export default function InvitesPage() {
                 const RsvpIcon = rsvp.icon;
                 return (
                   <div key={guest.id} className="group px-6 py-3.5 hover:bg-ivory-50 transition-colors cursor-pointer" onClick={() => openEdit(guest)}>
-                    <div className="sm:grid sm:grid-cols-[1fr_auto_auto_auto] sm:gap-4 sm:items-center">
+                    <div className="sm:grid sm:grid-cols-[1fr_6rem_6rem_7rem] sm:gap-4 sm:items-center">
                       <div className="flex items-start gap-3">
                         {/* Avatar */}
                         <div className="w-8 h-8 border border-charcoal-200 flex items-center justify-center flex-shrink-0 group-hover:border-champagne-400 transition-colors">
@@ -269,18 +275,18 @@ export default function InvitesPage() {
                         </div>
                       </div>
                       {/* Côté */}
-                      <div className="mt-2 sm:mt-0 sm:w-24 sm:text-center">
+                      <div className="mt-2 sm:mt-0 sm:text-center">
                         <span className="label-xs text-charcoal-500 capitalize">{guest.side}</span>
                       </div>
                       {/* Table */}
-                      <div className="sm:w-24 sm:text-center">
+                      <div className="sm:text-center">
                         <span className="label-xs text-charcoal-500">{guest.table || '—'}</span>
                       </div>
-                      {/* RSVP */}
-                      <div className="mt-2 sm:mt-0 sm:w-28 sm:flex sm:justify-center">
+                      {/* Présence */}
+                      <div className="mt-2 sm:mt-0 sm:flex sm:justify-center">
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.65rem] font-semibold tracking-[0.06em] uppercase ${rsvp.cls}`}>
-                            <RsvpIcon className="w-3 h-3" />
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[0.55rem] font-semibold tracking-[0.05em] uppercase whitespace-nowrap shrink-0 ${rsvp.cls}`}>
+                            <RsvpIcon className="w-2.5 h-2.5" />
                             {rsvp.label}
                           </span>
                           <button
@@ -350,7 +356,10 @@ export default function InvitesPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Réponse RSVP</label>
+                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">
+                    <span className="hidden sm:inline">Présence</span>
+                    <span className="sm:hidden">Confirmation de présence</span>
+                  </label>
                   <select value={form.rsvp} onChange={e => setForm(f => ({ ...f, rsvp: e.target.value as Guest['rsvp'] }))}
                     className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors cursor-pointer">
                     <option value="pending">En attente de réponse</option>
@@ -359,7 +368,7 @@ export default function InvitesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Entourage</label>
+                  <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Côté du couple</label>
                   <select value={form.side} onChange={e => setForm(f => ({ ...f, side: e.target.value as Guest['side'] }))}
                     className="w-full px-3 py-2.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors cursor-pointer">
                     {SIDES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -407,9 +416,12 @@ export default function InvitesPage() {
                       <label className="text-xs text-charcoal-500">Nombre d'enfants</label>
                       <input
                         type="number"
-                        min={1}
-                        value={form.children_count}
-                        onChange={e => setForm(f => ({ ...f, children_count: Math.max(0, parseInt(e.target.value || '0', 10)) }))}
+                        value={form.children_count ?? ''}
+                        onChange={e => {
+                          const val = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                          setForm(f => ({ ...f, children_count: val && !Number.isNaN(val) ? val : undefined }));
+                        }}
+                        placeholder="Ex: 2"
                         className="w-20 px-2 py-1.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
                       />
                     </div>
@@ -429,9 +441,12 @@ export default function InvitesPage() {
                         <label className="text-xs text-charcoal-500">Nombre d'animaux</label>
                         <input
                           type="number"
-                          min={1}
-                          value={form.pets_count}
-                          onChange={e => setForm(f => ({ ...f, pets_count: Math.max(0, parseInt(e.target.value || '0', 10)) }))}
+                          value={form.pets_count ?? ''}
+                          onChange={e => {
+                            const val = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                            setForm(f => ({ ...f, pets_count: val && !Number.isNaN(val) ? val : undefined }));
+                          }}
+                          placeholder="Ex: 1"
                           className="w-20 px-2 py-1.5 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 transition-colors"
                         />
                       </div>

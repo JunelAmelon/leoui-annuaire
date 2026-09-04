@@ -26,6 +26,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   const [collabLoading, setCollabLoading] = useState(false);
   const [existingClientReview, setExistingClientReview] = useState<{ rating: number; comment: string } | null>(null);
   const [venueLoading, setVenueLoading] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   const coupleName = client
     ? (client.name || '') + (client.name && client.partner ? ' & ' : '') + (client.partner || '')
@@ -96,6 +97,36 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
     };
     load();
   }, [id, client?.id]);
+
+  // Charger les favoris du client
+  useEffect(() => {
+    const fromClient = client?.favorite_vendor_ids;
+    if (fromClient && fromClient.length > 0) {
+      setFavorites(new Set(fromClient));
+      return;
+    }
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('favorite_vendor_ids') : null;
+    if (stored) {
+      try { setFavorites(new Set(JSON.parse(stored))); } catch {}
+    }
+  }, [client?.favorite_vendor_ids]);
+
+  const handleToggleFavorite = async () => {
+    if (!client?.id || !resolvedVendorId) return;
+    const next = new Set(favorites);
+    if (next.has(resolvedVendorId)) next.delete(resolvedVendorId); else next.add(resolvedVendorId);
+    setFavorites(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('favorite_vendor_ids', JSON.stringify(Array.from(next)));
+    }
+    try {
+      await updateDocument('clients', client.id, { favorite_vendor_ids: Array.from(next) } as any);
+      await refresh();
+      toast.success(next.has(resolvedVendorId) ? 'Ajouté aux favoris' : 'Retiré des favoris');
+    } catch {
+      toast.error('Erreur lors de l\'enregistrement du favori');
+    }
+  };
 
   const isVenueVendor = String(vendor?.category || '') === 'Lieux de réception';
   const currentVenueVendorId = String((event as any)?.venue_vendor_id || (client as any)?.venue_vendor_id || '');
@@ -302,6 +333,8 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
         canReview={Boolean(collab) && !existingClientReview}
         existingClientReview={existingClientReview}
         onSubmitReview={handleSubmitReview}
+        isFavorite={favorites.has(resolvedVendorId || (vendor as any)?.uid || (vendor as any)?.id || '')}
+        onFavoriteToggle={handleToggleFavorite}
       />
     </div>
   );

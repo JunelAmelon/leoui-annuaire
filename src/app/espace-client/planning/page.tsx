@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
-import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
+import { getDocuments, addDocument, deleteDocument, updateDocument } from '@/lib/db';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Trash2, User, X, Building2 } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Plus, Trash2, User, X, Building2 } from 'lucide-react';
 import { TableActionsMenu } from '@/components/TableActionsMenu';
 
 interface Appointment {
@@ -33,6 +33,8 @@ interface CalendarEvent extends Appointment {
   vendor_name?: string;
 }
 
+const TYPE_OPTIONS = ['RDV', 'Visite', 'Appel', 'Essai', 'Répétition', 'Autre'];
+
 const parseDate = (v: string | undefined): Date | null => {
   if (!v) return null;
   if (v.includes('T')) {
@@ -54,10 +56,12 @@ function EventsTable({
   events,
   onSelect,
   onDelete,
+  onEdit,
 }: {
   events: CalendarEvent[];
   onSelect: (ev: CalendarEvent) => void;
   onDelete: (ev: CalendarEvent, e?: React.MouseEvent) => void;
+  onEdit?: (ev: CalendarEvent) => void;
 }) {
   if (events.length === 0) {
     return (
@@ -114,6 +118,7 @@ function EventsTable({
                   <TableActionsMenu
                     items={[
                       { label: 'Voir', icon: CalendarIcon, onClick: () => onSelect(ev) },
+                      { label: 'Modifier', icon: Pencil, hidden: !onEdit || ev.source !== 'couple', onClick: () => onEdit?.(ev) },
                       { label: 'Supprimer', icon: Trash2, danger: true, hidden: ev.source !== 'couple', onClick: () => onDelete(ev) },
                     ]}
                   />
@@ -138,6 +143,7 @@ export default function PlanningPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '',
     date: '',
@@ -147,6 +153,13 @@ export default function PlanningPage() {
     description: '',
     type: 'RDV',
   });
+
+  useEffect(() => {
+    if (!showAdd) {
+      setForm({ title: '', date: '', time: '', location: '', with_whom: '', description: '', type: 'RDV' });
+      setEditingId(null);
+    }
+  }, [showAdd]);
 
   useEffect(() => {
     async function fetchData() {
@@ -206,7 +219,18 @@ export default function PlanningPage() {
     return allEvents.filter((ev) => ev.source === filter);
   }, [allEvents, filter]);
 
-  const handleAddAppointment = async () => {
+  const listEvents = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return filteredEvents.filter((ev) => {
+      const d = parseDate(ev.date);
+      if (!d) return true;
+      const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return eventDay.getTime() >= today.getTime();
+    });
+  }, [filteredEvents]);
+
+  const handleSaveAppointment = async () => {
     const eventId = event?.id;
     const clientId = client?.id;
     if (!eventId && !clientId) {
@@ -230,19 +254,29 @@ export default function PlanningPage() {
         type: form.type || null,
         event_id: eventId || null,
         client_id: clientId || null,
-        created_at: new Date().toISOString(),
       };
-      const ref = await addDocument('tasks', payload);
-      setAppointments((prev) =>
-        [...prev, { id: ref.id, title: payload.title, date: payload.date, time: payload.time || undefined, location: payload.location || undefined, with_whom: payload.with_whom || undefined, description: payload.description || undefined, type: payload.type || undefined }].sort(
-          (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
-        )
-      );
-      toast.success('Rendez-vous ajouté');
+      if (editingId) {
+        await updateDocument('tasks', editingId, payload);
+        setAppointments((prev) =>
+          prev.map((a) => (a.id === editingId ? { ...a, ...payload } : a)).sort(
+            (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
+          )
+        );
+        toast.success('Rendez-vous mis à jour');
+      } else {
+        const ref = await addDocument('tasks', { ...payload, created_at: new Date().toISOString() });
+        setAppointments((prev) =>
+          [...prev, { id: ref.id, title: payload.title, date: payload.date, time: payload.time || undefined, location: payload.location || undefined, with_whom: payload.with_whom || undefined, description: payload.description || undefined, type: payload.type || undefined }].sort(
+            (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
+          )
+        );
+        toast.success('Rendez-vous ajouté');
+      }
       setShowAdd(false);
       setForm({ title: '', date: '', time: '', location: '', with_whom: '', description: '', type: 'RDV' });
+      setEditingId(null);
     } catch {
-      toast.error('Erreur lors de l\'ajout');
+      toast.error('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
@@ -263,6 +297,20 @@ export default function PlanningPage() {
     } catch {
       toast.error('Erreur lors de la suppression');
     }
+  };
+
+  const handleEdit = (ev: CalendarEvent) => {
+    setForm({
+      title: ev.title,
+      date: ev.date,
+      time: ev.time || '',
+      location: ev.location || '',
+      with_whom: ev.with_whom || '',
+      description: ev.description || '',
+      type: ev.type || 'RDV',
+    });
+    setEditingId(ev.id);
+    setShowAdd(true);
   };
 
   // Calendar data
@@ -436,7 +484,7 @@ export default function PlanningPage() {
             </div>
           </>
         ) : (
-          <EventsTable events={filteredEvents} onSelect={setSelectedEvent} onDelete={handleDeleteEvent} />
+          <EventsTable events={listEvents} onSelect={setSelectedEvent} onDelete={handleDeleteEvent} onEdit={handleEdit} />
         )}
       </div>
 
@@ -549,7 +597,7 @@ export default function PlanningPage() {
               <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
             </div>
             <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-display text-lg font-semibold text-charcoal-900">Nouveau rendez-vous</h3>
+              <h3 className="font-display text-lg font-semibold text-charcoal-900">{editingId ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}</h3>
               <button
                 onClick={() => setShowAdd(false)}
                 className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"
@@ -579,10 +627,10 @@ export default function PlanningPage() {
                 <div>
                   <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Heure</label>
                   <input
+                    type="time"
                     value={form.time}
                     onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
                     className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
-                    placeholder="18:30"
                   />
                 </div>
               </div>
@@ -604,12 +652,16 @@ export default function PlanningPage() {
               </div>
               <div>
                 <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Type</label>
-                <input
+                <select
                   value={form.type}
                   onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400"
-                  placeholder="RDV"
-                />
+                  className="w-full px-3 py-2 border border-charcoal-200 text-sm focus:outline-none focus:border-charcoal-400 bg-white"
+                >
+                  <option value="">— Type —</option>
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs text-charcoal-500 uppercase tracking-wider mb-1 block">Notes</label>
@@ -629,11 +681,11 @@ export default function PlanningPage() {
                 Annuler
               </button>
               <button
-                onClick={handleAddAppointment}
+                onClick={handleSaveAppointment}
                 disabled={saving}
                 className="w-full sm:flex-1 py-3 bg-charcoal-900 text-white text-sm font-semibold hover:bg-charcoal-700 disabled:opacity-50 transition-colors rounded-xl min-h-[48px]"
               >
-                {saving ? 'Ajout…' : 'Ajouter'}
+                {saving ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Ajouter')}
               </button>
             </div>
           </div>
