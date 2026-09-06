@@ -309,9 +309,9 @@ export default function InvitesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/50">
-          <div className="w-full sm:max-w-lg bg-white shadow-2xl overflow-hidden">
+          <div className="w-full sm:max-w-lg bg-white shadow-2xl overflow-hidden rounded-t-2xl sm:rounded-2xl max-h-[92dvh] flex flex-col">
             {/* Header */}
-            <div className="relative h-32">
+            <div className="relative h-32 flex-shrink-0">
               <img src="/mariage (4).jpg" alt="Invité" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <button onClick={() => setShowModal(false)} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg text-charcoal-500 transition-colors">
@@ -325,7 +325,7 @@ export default function InvitesPage() {
             </div>
 
             {/* Form */}
-            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Prénom *</label>
@@ -472,7 +472,7 @@ export default function InvitesPage() {
             </div>
 
             {/* Actions */}
-            <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3">
+            <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3 flex-shrink-0 bg-white">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">
                 Annuler
               </button>

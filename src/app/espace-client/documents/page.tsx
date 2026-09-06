@@ -243,8 +243,8 @@ export default function DocumentsPage() {
 
       {isUploadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md overflow-hidden">
-            <div className="relative h-32">
+          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md overflow-hidden max-h-[92dvh] flex flex-col">
+            <div className="relative h-32 flex-shrink-0">
               <img src="/mariage (3).jpg" alt="Document" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <button onClick={() => setIsUploadOpen(false)} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
@@ -252,7 +252,7 @@ export default function DocumentsPage() {
                 <h3 className="font-display text-heading-sm text-white">Ajouter un document</h3>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               <div>
                 <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Nom du document</label>
                 <input type="text" value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Ex: Contrat photographe"

@@ -285,8 +285,8 @@ export default function ChecklistPage() {
       {/* ── ADD / EDIT TASK MODAL ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-charcoal-900/50 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md bg-white shadow-2xl overflow-hidden">
-            <div className="relative h-32">
+          <div className="w-full sm:max-w-md bg-white shadow-2xl overflow-hidden rounded-t-2xl sm:rounded-2xl max-h-[92dvh] flex flex-col">
+            <div className="relative h-32 flex-shrink-0">
               <img src="/mariage (2).jpg" alt="Tâche" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <button onClick={() => { setShowModal(false); setEditItem(null); }} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg text-charcoal-500 transition-colors"><X className="w-4 h-4" /></button>
@@ -294,7 +294,7 @@ export default function ChecklistPage() {
                 <h2 className="font-serif text-white text-lg font-light">{editItem ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
               </div>
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               <div>
                 <label className="label-xs text-charcoal-500 mb-1.5 block tracking-[0.08em]">Titre *</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -318,7 +318,7 @@ export default function ChecklistPage() {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3">
+            <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3 flex-shrink-0">
               <button onClick={() => { setShowModal(false); setEditItem(null); }} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">Annuler</button>
               <button onClick={handleSave} disabled={saving}
                 className="flex-1 py-2.5 bg-rose-600 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
