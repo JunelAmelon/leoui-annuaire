@@ -243,12 +243,16 @@ export default function DocumentsPage() {
 
       {isUploadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-display text-heading-sm text-charcoal-900">Ajouter un document</h3>
-              <button onClick={() => setIsUploadOpen(false)} className="p-1.5 hover:bg-charcoal-100 rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
+          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md overflow-hidden">
+            <div className="relative h-32">
+              <img src="/mariage (3).jpg" alt="Document" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <button onClick={() => setIsUploadOpen(false)} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
+              <div className="absolute bottom-3 left-6 right-6">
+                <h3 className="font-display text-heading-sm text-white">Ajouter un document</h3>
+              </div>
             </div>
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Nom du document</label>
                 <input type="text" value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Ex: Contrat photographe"
@@ -276,14 +280,14 @@ export default function DocumentsPage() {
                 <input type="file" onChange={(e) => { const f = e.target.files?.[0]||null; setSelectedFile(f); if (f&&!docName) setDocName(f.name.replace(/\.[^/.]+$/, '')); }}
                   className="w-full text-sm text-charcoal-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-charcoal-100 file:text-charcoal-700 file:text-sm file:font-medium hover:file:bg-charcoal-200 transition-all" />
               </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setIsUploadOpen(false)}
-                className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-medium rounded-xl hover:bg-charcoal-50 transition-colors">Annuler</button>
-              <button onClick={handleUpload} disabled={uploading||!selectedFile||!docName}
-                className="flex-1 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-all">
-                {uploading ? 'Ajout…' : 'Ajouter'}
-              </button>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setIsUploadOpen(false)}
+                  className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-medium rounded-xl hover:bg-charcoal-50 transition-colors">Annuler</button>
+                <button onClick={handleUpload} disabled={uploading||!selectedFile||!docName}
+                  className="flex-1 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-all">
+                  {uploading ? 'Ajout…' : 'Ajouter'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

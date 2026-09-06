@@ -509,33 +509,35 @@ export default function PlanningPage() {
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[85dvh] flex flex-col animate-slide-up sm:animate-none"
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[85dvh] flex flex-col animate-slide-up sm:animate-none overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
+            <div className="relative h-32 flex-shrink-0">
+              <img src="/mariage (5).jpg" alt="Événement" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="w-full pt-3 sm:hidden flex justify-center absolute top-0">
+                <div className="w-12 h-1.5 bg-white/70 rounded-full" />
+              </div>
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-charcoal-500" />
+              </button>
+              <div className="absolute bottom-3 left-4 sm:left-6 right-4">
+                <h3 className="font-display text-lg font-semibold text-white">{selectedEvent.title}</h3>
+                <span
+                  className={`inline-flex items-center gap-1 mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium border ${
+                    selectedEvent.source === 'couple'
+                      ? 'bg-rose-100 text-rose-700 border-rose-200'
+                      : 'bg-champagne-100 text-champagne-700 border-champagne-200'
+                  }`}
+                >
+                  {selectedEvent.source === 'couple' ? (selectedEvent.client_name || 'Client') : 'Personnel'}
+                </span>
+              </div>
             </div>
             <div className="px-4 sm:px-6 py-4 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="pr-4">
-                  <h3 className="font-display text-lg font-semibold text-charcoal-900">{selectedEvent.title}</h3>
-                  <span
-                    className={`inline-flex items-center gap-1 mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium border ${
-                      selectedEvent.source === 'couple'
-                        ? 'bg-rose-100 text-rose-700 border-rose-200'
-                        : 'bg-champagne-100 text-champagne-700 border-champagne-200'
-                    }`}
-                  >
-                    {selectedEvent.source === 'couple' ? (selectedEvent.client_name || 'Client') : 'Personnel'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors flex-shrink-0"
-                >
-                  <X className="w-5 h-5 text-charcoal-500" />
-                </button>
-              </div>
               <div className="space-y-3 text-sm">
                 <p className="flex items-center gap-3 text-charcoal-600">
                   <CalendarIcon className="w-5 h-5 text-charcoal-400" />
@@ -596,20 +598,24 @@ export default function PlanningPage() {
           onClick={() => setShowAdd(false)}
         >
           <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[90dvh] flex flex-col animate-slide-up sm:animate-none"
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-soft-xl w-full max-w-md max-h-[90dvh] flex flex-col animate-slide-up sm:animate-none overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
-            </div>
-            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-display text-lg font-semibold text-charcoal-900">{editingId ? 'Modifier l\'événement' : 'Nouvel événement'}</h3>
+            <div className="relative h-32 flex-shrink-0">
+              <img src="/mariage (1).jpg" alt="Événement" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="w-full pt-3 sm:hidden flex justify-center absolute top-0">
+                <div className="w-12 h-1.5 bg-white/70 rounded-full" />
+              </div>
               <button
                 onClick={() => setShowAdd(false)}
-                className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"
+                className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white rounded-xl transition-colors"
               >
                 <X className="w-5 h-5 text-charcoal-500" />
               </button>
+              <div className="absolute bottom-3 left-4 sm:left-6 right-4">
+                <h3 className="font-display text-lg font-semibold text-white">{editingId ? 'Modifier l\'événement' : 'Nouvel événement'}</h3>
+              </div>
             </div>
             <div className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto flex-1 overscroll-contain">
               {linkedClients.length > 0 && (

@@ -445,14 +445,18 @@ export default function ContratsPage() {
       {/* ===== MODAL ===== */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden">
 
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 flex-shrink-0">
-              <h2 className="font-serif text-charcoal-900 text-xl" style={{ fontWeight: 400 }}>
-                {editItem ? 'Modifier le contrat' : 'Nouveau contrat'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-stone-100 text-charcoal-400"><X className="w-4 h-4" /></button>
+            <div className="relative h-36 flex-shrink-0">
+              <img src="/mariage (3).jpg" alt="Contrat" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <button onClick={() => setShowModal(false)} className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/90 hover:bg-white text-charcoal-500 transition-colors"><X className="w-4 h-4" /></button>
+              <div className="absolute bottom-3 left-6 right-6">
+                <h2 className="font-serif text-white text-xl" style={{ fontWeight: 400 }}>
+                  {editItem ? 'Modifier le contrat' : 'Nouveau contrat'}
+                </h2>
+              </div>
             </div>
 
             {/* Modal body */}

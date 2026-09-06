@@ -285,10 +285,14 @@ export default function ChecklistPage() {
       {/* ── ADD / EDIT TASK MODAL ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-charcoal-900/50 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md bg-white shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100">
-              <h2 className="font-serif text-charcoal-900 text-base font-light">{editItem ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
-              <button onClick={() => { setShowModal(false); setEditItem(null); }} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 transition-colors"><X className="w-4 h-4" /></button>
+          <div className="w-full sm:max-w-md bg-white shadow-2xl overflow-hidden">
+            <div className="relative h-32">
+              <img src="/mariage (2).jpg" alt="Tâche" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <button onClick={() => { setShowModal(false); setEditItem(null); }} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg text-charcoal-500 transition-colors"><X className="w-4 h-4" /></button>
+              <div className="absolute bottom-3 left-6 right-6">
+                <h2 className="font-serif text-white text-lg font-light">{editItem ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
+              </div>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>

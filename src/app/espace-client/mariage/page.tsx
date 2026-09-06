@@ -532,14 +532,17 @@ export default function MariagePage() {
       {/* ── MODALES D'ÉDITION ── */}
       {showInfoEdit && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowInfoEdit(false)}>
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
-            {/* Mobile drag handle */}
-            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
-            </div>
-            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-semibold text-charcoal-900 text-base">Informations générales</h3>
-              <button onClick={() => setShowInfoEdit(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="relative h-32 flex-shrink-0">
+              <img src="/mariage (1).jpg" alt="Informations générales" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="w-full pt-3 sm:hidden flex justify-center absolute top-0">
+                <div className="w-12 h-1.5 bg-white/70 rounded-full" />
+              </div>
+              <button onClick={() => setShowInfoEdit(false)} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+              <div className="absolute bottom-3 left-4 sm:left-6 right-4">
+                <h3 className="font-semibold text-white text-base">Informations générales</h3>
+              </div>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               {/* Photo du couple */}
@@ -609,13 +612,17 @@ export default function MariagePage() {
 
       {showVenueEdit && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowVenueEdit(false)}>
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
-            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
-            </div>
-            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-semibold text-charcoal-900 text-base">Votre lieu de mariage</h3>
-              <button onClick={() => setShowVenueEdit(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="relative h-32 flex-shrink-0">
+              <img src="/mariage (2).jpg" alt="Lieu de mariage" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="w-full pt-3 sm:hidden flex justify-center absolute top-0">
+                <div className="w-12 h-1.5 bg-white/70 rounded-full" />
+              </div>
+              <button onClick={() => setShowVenueEdit(false)} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+              <div className="absolute bottom-3 left-4 sm:left-6 right-4">
+                <h3 className="font-semibold text-white text-base">Votre lieu de mariage</h3>
+              </div>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               <div>
@@ -639,14 +646,17 @@ export default function MariagePage() {
 
       {showThemeEdit && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowThemeEdit(false)}>
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none" onClick={e => e.stopPropagation()}>
-            {/* Mobile drag handle */}
-            <div className="w-full pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-12 h-1.5 bg-charcoal-200 rounded-full" />
-            </div>
-            <div className="px-4 sm:px-6 py-4 border-b border-charcoal-100 flex items-center justify-between flex-shrink-0">
-              <h3 className="font-semibold text-charcoal-900 text-base">Thème & style</h3>
-              <button onClick={() => setShowThemeEdit(false)} className="w-10 h-10 flex items-center justify-center hover:bg-charcoal-100 rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] flex flex-col animate-slide-up sm:animate-none overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="relative h-32 flex-shrink-0">
+              <img src="/mariage (4).jpg" alt="Thème et style" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="w-full pt-3 sm:hidden flex justify-center absolute top-0">
+                <div className="w-12 h-1.5 bg-white/70 rounded-full" />
+              </div>
+              <button onClick={() => setShowThemeEdit(false)} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-charcoal-500" /></button>
+              <div className="absolute bottom-3 left-4 sm:left-6 right-4">
+                <h3 className="font-semibold text-white text-base">Thème & style</h3>
+              </div>
             </div>
             <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
               <div>

@@ -202,9 +202,13 @@ export default function PromotionsPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-stone-100">
-              <h2 className="font-serif text-charcoal-900 text-xl" style={{ fontWeight: 400 }}>{editItem ? 'Modifier la promotion' : 'Nouvelle promotion'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-stone-100 text-charcoal-400"><X className="w-4 h-4" /></button>
+            <div className="relative h-36">
+              <img src="/mariage (4).jpg" alt="Promotion" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <button onClick={() => setShowModal(false)} className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/90 hover:bg-white text-charcoal-500 transition-colors"><X className="w-4 h-4" /></button>
+              <div className="absolute bottom-3 left-6 right-6">
+                <h2 className="font-serif text-white text-xl" style={{ fontWeight: 400 }}>{editItem ? 'Modifier la promotion' : 'Nouvelle promotion'}</h2>
+              </div>
             </div>
             <div className="p-6 space-y-4">
               <div>

@@ -391,10 +391,14 @@ export default function AvisPage() {
       {/* Invite modal */}
       {inviteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-stone-100">
-              <h2 className="font-serif text-charcoal-900 text-lg" style={{ fontWeight: 400 }}>Inviter à laisser un avis</h2>
-              <button onClick={() => setInviteModal(false)} className="p-1.5 rounded-lg hover:bg-stone-100 text-charcoal-400"><X className="w-4 h-4" /></button>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="relative h-36">
+              <img src="/mariage (2).jpg" alt="Invitation avis" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <button onClick={() => setInviteModal(false)} className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/90 hover:bg-white text-charcoal-500 transition-colors"><X className="w-4 h-4" /></button>
+              <div className="absolute bottom-3 left-5 right-5">
+                <h2 className="font-serif text-white text-xl" style={{ fontWeight: 400 }}>Inviter à laisser un avis</h2>
+              </div>
             </div>
             <div className="p-6">
               <p className="text-sm text-charcoal-500 mb-3">Saisissez une ou plusieurs adresses email (séparées par des virgules, points-virgules ou retours à la ligne).</p>

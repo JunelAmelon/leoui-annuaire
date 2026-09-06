@@ -307,18 +307,21 @@ export default function InvitesPage() {
         )}
       </div>
 
-      {/* ── ADD / EDIT MODAL ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/50">
           <div className="w-full sm:max-w-lg bg-white shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100">
-              <h2 className="font-serif text-charcoal-900 text-base font-light">
-                {editGuest ? 'Modifier l\u2019invité' : 'Ajouter un invité'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 text-charcoal-400 hover:text-charcoal-700 transition-colors">
+            <div className="relative h-32">
+              <img src="/mariage (4).jpg" alt="Invité" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <button onClick={() => setShowModal(false)} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg text-charcoal-500 transition-colors">
                 <X className="w-4 h-4" />
               </button>
+              <div className="absolute bottom-3 left-6 right-6">
+                <h2 className="font-serif text-white text-lg font-light">
+                  {editGuest ? 'Modifier l’invité' : 'Ajouter un invité'}
+                </h2>
+              </div>
             </div>
 
             {/* Form */}
