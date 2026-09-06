@@ -3,7 +3,24 @@ import { adminDb } from '@/lib/firebase-admin';
 import { stripe } from '@/lib/stripe';
 import { syncVendorSubscriptionFromStripe } from '@/lib/stripe-sync';
 import { syncStripeSubscription, cleanupActiveSubscriptions } from '@/lib/subscription-manager';
+import { sendEmailServer } from '@/lib/email.server';
+import { renderSubscriptionConfirmedEmail, renderSubscriptionCanceledEmail, renderPaymentFailedEmail } from '@/lib/email-template';
 import Stripe from 'stripe';
+
+/** Récupère email + nom du prestataire (vendors puis profiles). */
+async function getVendorContact(uid: string): Promise<{ email: string; name: string }> {
+  try {
+    const v = await adminDb.collection('vendors').doc(uid).get();
+    const vd = v.data() as any;
+    if (vd?.email) return { email: vd.email, name: vd.name || '' };
+  } catch {}
+  try {
+    const p = await adminDb.collection('profiles').doc(uid).get();
+    const pd = p.data() as any;
+    if (pd?.email) return { email: pd.email, name: pd.name || '' };
+  } catch {}
+  return { email: '', name: '' };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -104,7 +121,18 @@ export async function POST(req: Request) {
           });
         });
         await batch.commit();
-        
+
+        // Email de confirmation d'abonnement
+        const contact = await getVendorContact(uid);
+        if (contact.email) {
+          const planName = session.metadata?.planId || (sub.items?.data?.[0]?.price?.nickname) || 'Premium';
+          sendEmailServer({
+            to: contact.email,
+            subject: 'Votre abonnement LeOui.net est actif',
+            html: renderSubscriptionConfirmedEmail({ name: contact.name || 'Prestataire', planName, provider: 'Stripe' }),
+          }).catch(() => {});
+        }
+
         break;
       }
 
@@ -134,7 +162,24 @@ export async function POST(req: Request) {
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
         const uid = sub.metadata?.uid || '';
-        
+
+        // Email de résiliation (résoudre uid si absent)
+        const resolvedUid = uid || await (async () => {
+          const snap = await adminDb.collection('vendors')
+            .where('stripeSubscriptionId', '==', sub.id).limit(1).get();
+          return snap.empty ? '' : snap.docs[0].id;
+        })();
+        if (resolvedUid) {
+          const contact = await getVendorContact(resolvedUid);
+          if (contact.email) {
+            sendEmailServer({
+              to: contact.email,
+              subject: 'Votre abonnement LeOui.net a été résilié',
+              html: renderSubscriptionCanceledEmail({ name: contact.name || 'Prestataire' }),
+            }).catch(() => {});
+          }
+        }
+
         // 🔄 SYNC VERS SUBSCRIPTIONS COLLECTION - marquer comme canceled
         if (uid || sub.id) {
           const subSnapshot = await adminDb
@@ -209,10 +254,19 @@ export async function POST(req: Request) {
         const snap = await adminDb.collection('vendors')
           .where('stripeSubscriptionId', '==', subId).limit(1).get();
         if (!snap.empty) {
-          await adminDb.collection('vendors').doc(snap.docs[0].id).set({
+          const vendorDocId = snap.docs[0].id;
+          await adminDb.collection('vendors').doc(vendorDocId).set({
             subscriptionStatus: 'past_due',
             updatedAt: new Date().toISOString(),
           }, { merge: true });
+          const contact = await getVendorContact(vendorDocId);
+          if (contact.email) {
+            sendEmailServer({
+              to: contact.email,
+              subject: 'Un paiement LeOui.net a échoué',
+              html: renderPaymentFailedEmail({ name: contact.name || 'Prestataire' }),
+            }).catch(() => {});
+          }
         }
         break;
       }

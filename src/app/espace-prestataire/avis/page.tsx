@@ -6,6 +6,8 @@ import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { Star, MessageCircle, ThumbsUp, X, Send, TrendingUp, Copy, Check, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDocument, getDocuments, setDocument, updateDocument } from '@/lib/db';
 import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
+import { renderReviewInvitationEmail, renderReviewReplyEmail } from '@/lib/email-template';
+import { sendEmail } from '@/lib/email';
 import { toast } from 'sonner';
 
 interface Review {
@@ -119,6 +121,20 @@ export default function AvisPage() {
             link: `/vendors/${replyModal.vendor_id}`,
           }))
           .catch(() => {});
+        // Email au client
+        const vendorName = user?.displayName || 'Le prestataire';
+        const sendReplyEmail = (to: string, clientName: string) => sendEmail({
+          to,
+          subject: `${vendorName} a répondu à votre avis`,
+          html: renderReviewReplyEmail({ clientName, vendorName, reply: replyText }),
+        });
+        if (replyModal.client_email) {
+          sendReplyEmail(replyModal.client_email, replyModal.client_name || '');
+        } else {
+          getDocument('clients', replyModal.client_id)
+            .then((c: any) => { if (c?.email) sendReplyEmail(c.email, c.name || replyModal.client_name || ''); })
+            .catch(() => {});
+        }
       }
       toast.success('Réponse publiée');
       setReplyModal(null);
@@ -200,8 +216,8 @@ export default function AvisPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: email,
-            subject: `Votre avis compte beaucoup pour ${vendorName}`,
-            html: `<p>Bonjour,</p><p>${vendorName} vous invite à laisser un avis sur LeOui.</p><p><a href="${link}" style="padding:10px 16px;background:#e11d48;color:#fff;border-radius:8px;text-decoration:none;display:inline-block;">Donner mon avis</a></p><p>Si le bouton ne fonctionne pas, copiez ce lien : ${link}</p><p>Merci,<br/>L'équipe LeOui</p>`,
+            subject: `${vendorName} vous invite à laisser votre avis`,
+            html: renderReviewInvitationEmail({ vendorName, link }),
             text: `Bonjour, ${vendorName} vous invite à laisser un avis sur LeOui : ${link}`,
           }),
         });

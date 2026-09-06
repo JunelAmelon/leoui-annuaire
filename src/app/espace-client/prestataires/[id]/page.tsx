@@ -7,6 +7,8 @@ import { useClientData } from '@/contexts/ClientDataContext';
 import VendorProfileDetailView from '@/components/VendorProfileDetailView';
 import { getDocument, getDocuments, addDocument, incrementDocumentFields, updateDocument, deleteDocument } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { renderContactEmail, renderNewReviewEmail } from '@/lib/email-template';
 import { toast } from 'sonner';
 import { Image as ImageIcon, UserCheck, UserPlus } from 'lucide-react';
 
@@ -249,6 +251,13 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       message: form.message.trim().slice(0, 100),
       link: '/espace-prestataire/messages',
     });
+    if (vendor?.email) {
+      sendEmail({
+        to: vendor.email,
+        subject: `Nouveau message de ${coupleName}`,
+        html: renderContactEmail({ vendorName: vendor.name || 'Prestataire', clientName: coupleName, message: form.message.trim(), replyEmail: user?.email || undefined }),
+      });
+    }
     toast.success('Message envoyé !');
   };
 
@@ -296,6 +305,13 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       message: `${review.rating}/5 — ${review.comment.slice(0, 80)}`,
       link: '/espace-prestataire/avis',
     });
+    if (vendor?.email) {
+      sendEmail({
+        to: vendor.email,
+        subject: `Nouvel avis de ${coupleName} (${review.rating}/5)`,
+        html: renderNewReviewEmail({ vendorName: vendor.name || 'Prestataire', clientName: coupleName, rating: review.rating, comment: review.comment }),
+      });
+    }
     toast.success('Avis publié !');
   };
 

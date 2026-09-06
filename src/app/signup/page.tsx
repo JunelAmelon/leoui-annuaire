@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Heart, Mail, Lock, User, Users, Euro, ArrowRight, Eye, EyeOff, Check, Store, Calendar, Chrome, Search, ClipboardList, MessageSquare, BarChart3, MapPin, Home } from 'lucide-react';
 import { signUp } from '@/lib/auth-helpers';
 import { useAuth } from '@/contexts/AuthContext';
+import { sendEmail } from '@/lib/email';
+import { renderWelcomeEmail } from '@/lib/email-template';
 import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import { toast } from 'sonner';
 
@@ -92,6 +94,11 @@ export default function SignupPage() {
         guestCount: Number(guestCount) || 0,
         budget: Number(budget) || 0,
         address: { street, city, postalCode, country }
+      });
+      sendEmail({
+        to: email,
+        subject: 'Bienvenue sur LeOui.net',
+        html: renderWelcomeEmail({ name: name || email }),
       });
       router.push(nextUrl);
     } catch (err: any) {

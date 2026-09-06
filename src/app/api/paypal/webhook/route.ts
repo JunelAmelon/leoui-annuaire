@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getTierFromPaypalPlanId, verifyPaypalWebhookSignature } from '@/lib/paypal';
 import { syncPayPalSubscription, cleanupActiveSubscriptions } from '@/lib/subscription-manager';
+import { sendEmailServer } from '@/lib/email.server';
+import { renderSubscriptionConfirmedEmail, renderSubscriptionCanceledEmail, renderPaymentFailedEmail } from '@/lib/email-template';
+
+/** Récupère email + nom du prestataire (vendors puis profiles). */
+async function getVendorContact(uid: string): Promise<{ email: string; name: string }> {
+  try {
+    const v = await adminDb.collection('vendors').doc(uid).get();
+    const vd = v.data() as any;
+    if (vd?.email) return { email: vd.email, name: vd.name || '' };
+  } catch {}
+  try {
+    const p = await adminDb.collection('profiles').doc(uid).get();
+    const pd = p.data() as any;
+    if (pd?.email) return { email: pd.email, name: pd.name || '' };
+  } catch {}
+  return { email: '', name: '' };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +88,16 @@ export async function POST(req: Request) {
         stripeSubscriptionId: null,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
+
+      // Email de confirmation d'abonnement
+      const contact = await getVendorContact(vendorDocId);
+      if (contact.email) {
+        sendEmailServer({
+          to: contact.email,
+          subject: 'Votre abonnement LeOui.net est actif',
+          html: renderSubscriptionConfirmedEmail({ name: contact.name || 'Prestataire', planName: tier, provider: 'PayPal' }),
+        }).catch(() => {});
+      }
     }
 
     if (
@@ -101,6 +128,16 @@ export async function POST(req: Request) {
         paypalSubscriptionId: subscriptionId,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
+
+      // Email de résiliation
+      const contact = await getVendorContact(vendorDocId);
+      if (contact.email) {
+        sendEmailServer({
+          to: contact.email,
+          subject: 'Votre abonnement LeOui.net a été résilié',
+          html: renderSubscriptionCanceledEmail({ name: contact.name || 'Prestataire' }),
+        }).catch(() => {});
+      }
     }
 
     if (eventType === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') {
@@ -124,6 +161,16 @@ export async function POST(req: Request) {
         paypalSubscriptionId: subscriptionId,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
+
+      // Email d'échec de paiement
+      const contact = await getVendorContact(vendorDocId);
+      if (contact.email) {
+        sendEmailServer({
+          to: contact.email,
+          subject: 'Un paiement LeOui.net a échoué',
+          html: renderPaymentFailedEmail({ name: contact.name || 'Prestataire' }),
+        }).catch(() => {});
+      }
     }
   } catch (e: any) {
     console.error('[paypal/webhook] handler error:', e);

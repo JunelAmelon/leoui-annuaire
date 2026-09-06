@@ -1,9 +1,44 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Mail, Phone, MapPin, MessageSquare } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageSquare, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ContactPage() {
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', subject: 'Question générale', message: '' });
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.email || !form.message || !form.firstName) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email,
+          subject: form.subject,
+          message: form.message,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Message envoyé ! Nous vous répondons sous 24h.');
+      setForm({ firstName: '', lastName: '', email: '', subject: 'Question générale', message: '' });
+    } catch {
+      toast.error('Impossible d\'envoyer le message. Réessayez ou écrivez à hello@leoui.net');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -53,24 +88,24 @@ export default function ContactPage() {
           {/* Form */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-soft p-8">
             <h2 className="font-serif text-heading-xl text-charcoal-900 mb-6" style={{ fontWeight: 400 }}>Envoyer un message</h2>
-            <form className="space-y-5" onSubmit={e => e.preventDefault()}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Prénom</label>
-                  <input type="text" placeholder="Sophie" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
+                  <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Prénom *</label>
+                  <input type="text" required value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Sophie" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Nom</label>
-                  <input type="text" placeholder="Dupont" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
+                  <input type="text" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Dupont" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Email</label>
-                <input type="email" placeholder="sophie@email.fr" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
+                <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Email *</label>
+                <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="sophie@email.fr" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Sujet</label>
-                <select className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white">
+                <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white">
                   <option>Question générale</option>
                   <option>Problème technique</option>
                   <option>Partenariat prestataire</option>
@@ -78,11 +113,12 @@ export default function ContactPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Message</label>
-                <textarea rows={5} placeholder="Votre message…" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white resize-none" />
+                <label className="block text-xs font-medium text-charcoal-500 mb-1.5">Message *</label>
+                <textarea rows={5} required value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Votre message…" className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all bg-white resize-none" />
               </div>
-              <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
-                Envoyer le message
+              <button type="submit" disabled={sending} className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
+                {sending && <Loader2 className="w-4 h-4 animate-spin" />}
+                {sending ? 'Envoi en cours…' : 'Envoyer le message'}
               </button>
             </form>
           </div>

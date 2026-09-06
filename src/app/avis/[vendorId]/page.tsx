@@ -8,6 +8,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDocument, getDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
+import { renderNewReviewEmail } from '@/lib/email-template';
 import { toast } from 'sonner';
 
 export default function AvisPublicPage() {
@@ -159,6 +161,13 @@ export default function AvisPublicPage() {
         const { id } = await addDocument('reviews', newReview);
         if (token && invitation) {
           await updateDocument('review_invitations', token, { used: true, review_id: id, used_at: now });
+        }
+        if (vendor.email) {
+          sendEmail({
+            to: vendor.email,
+            subject: `Nouvel avis de ${name.trim()} (${rating}/5)`,
+            html: renderNewReviewEmail({ vendorName: vendor.name || 'Prestataire', clientName: name.trim(), rating, comment: comment.trim() }),
+          });
         }
         toast.success('Votre avis a été publié');
       }

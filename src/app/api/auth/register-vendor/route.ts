@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { sendEmailServer, getAdminEmail } from '@/lib/email.server';
+import { renderWelcomeVendorEmail, renderAdminAlertEmail } from '@/lib/email-template';
 
 export async function POST(req: Request) {
   try {
@@ -62,6 +64,33 @@ export async function POST(req: Request) {
     }
 
     const customToken = await adminAuth.createCustomToken(uid, { role: 'vendor' });
+
+    // Email de bienvenue au prestataire (non-bloquant)
+    sendEmailServer({
+      to: email,
+      subject: 'Bienvenue sur LeOui.net — votre espace prestataire est prêt',
+      html: renderWelcomeVendorEmail({ name, businessName }),
+    }).catch(() => {});
+
+    // Alerte admin : nouvelle inscription pro
+    const adminEmail = getAdminEmail();
+    if (adminEmail) {
+      sendEmailServer({
+        to: adminEmail,
+        subject: `Nouveau prestataire inscrit : ${businessName || name}`,
+        html: renderAdminAlertEmail({
+          title: 'Nouvelle inscription prestataire',
+          lines: [
+            `<strong>Nom</strong> : ${name}`,
+            `<strong>Entreprise</strong> : ${businessName || '—'}`,
+            `<strong>Catégorie</strong> : ${category || '—'}`,
+            `<strong>Ville</strong> : ${city || '—'}`,
+            `<strong>Email</strong> : ${email}`,
+            `<strong>Téléphone</strong> : ${phone || '—'}`,
+          ],
+        }),
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ ok: true, uid, customToken });
   } catch (e: any) {

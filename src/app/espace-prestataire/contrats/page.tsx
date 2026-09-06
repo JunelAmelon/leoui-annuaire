@@ -7,6 +7,8 @@ import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, XCircle, X, Trash2, MoreVertical, Save, Upload, Clock } from 'lucide-react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/db';
 import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { renderContractEmail } from '@/lib/email-template';
 import { toast } from 'sonner';
 import { uploadPdf } from '@/lib/storage';
 
@@ -221,6 +223,12 @@ export default function ContratsPage() {
           }))
           .catch(() => {});
       }
+      // Email au client (on a toujours c.client_email ici)
+      sendEmail({
+        to: c.client_email,
+        subject: `${vendorName} vous a envoyé un contrat`,
+        html: renderContractEmail({ clientName: c.client_name || '', vendorName, contractName: c.title || c.reference }),
+      });
       await updateDocument('contracts', c.id, { status: 'sent', pdf_url: file_url });
       toast.success(resolvedClientId ? `Contrat envoyé et visible dans les documents du client` : `Contrat envoyé — email non trouvé dans la base`, { duration: 4000 });
       load();

@@ -9,6 +9,8 @@ import VendorProfileDetailView from '@/components/VendorProfileDetailView';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDocument, getDocuments, addDocument, updateDocument } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { renderContactEmail } from '@/lib/email-template';
 import { toast } from 'sonner';
 
 export default function VendorProfilePage() {
@@ -154,6 +156,13 @@ export default function VendorProfilePage() {
         message: form.message.trim().slice(0, 100),
         link: '/espace-prestataire/messages',
       });
+      if (vendor.email) {
+        sendEmail({
+          to: vendor.email,
+          subject: `Nouveau message de ${coupleName}`,
+          html: renderContactEmail({ vendorName: vendor.name || 'Prestataire', clientName: coupleName, message: form.message.trim(), replyEmail: user.email || undefined }),
+        });
+      }
       toast.success('Message envoyé');
     } catch {
       toast.error('Impossible d\'envoyer le message');

@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getDocuments } from '@/lib/db';
+import { getDocuments, getDocument } from '@/lib/db';
 import { auth } from '@/lib/firebase';
+import { sendEmail } from '@/lib/email';
+import { renderVendorStatusEmail } from '@/lib/email-template';
 import { toast } from 'sonner';
 import {
   Store, Search, Star, MapPin, ChevronLeft, ChevronRight,
@@ -69,6 +71,21 @@ export default function AdminPrestatairesPage() {
       });
       if (!res.ok) throw new Error('Erreur');
       setVendors(p => p.map(v => v.id === vendor.id ? { ...v, status: newStatus } : v));
+      // Email au prestataire (non-bloquant)
+      const isActive = newStatus === 'active';
+      const sendStatusEmail = (to: string) => sendEmail({
+        to,
+        subject: isActive ? 'Votre annonce est en ligne sur LeOui.net' : 'Votre annonce a été désactivée',
+        html: renderVendorStatusEmail({ name: vendor.name, active: isActive }),
+      });
+      const vendorEmail = (vendor as any).email;
+      if (vendorEmail) {
+        sendStatusEmail(vendorEmail);
+      } else {
+        getDocument('profiles', vendor.id)
+          .then((p: any) => { if (p?.email) sendStatusEmail(p.email); })
+          .catch(() => {});
+      }
       toast.success(`Statut mis à jour : ${newStatus}`);
     } catch {
       toast.error('Erreur lors de la mise à jour');

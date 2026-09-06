@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { getDocument, getDocuments, addDocument, updateDocument } from '@/lib/db';
 import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { renderClientMessageEmail } from '@/lib/email-template';
 import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -178,6 +180,21 @@ export default function ContactsPage() {
             link: '/espace-client/messages',
           }))
           .catch(() => {});
+        // Email au client
+        const senderName = user.displayName || 'Votre prestataire';
+        const clientEmail = selected.client_email;
+        const sendClientEmail = (to: string) => sendEmail({
+          to,
+          subject: `Nouveau message de ${senderName}`,
+          html: renderClientMessageEmail({ clientName: selected.client_name || '', senderName, message: content }),
+        });
+        if (clientEmail) {
+          sendClientEmail(clientEmail);
+        } else {
+          getDocument('clients', selected.client_id)
+            .then((c: any) => { if (c?.email) sendClientEmail(c.email); })
+            .catch(() => {});
+        }
       }
       setMessages(prev => [...prev, { id: Date.now().toString(), ...msg } as Message]);
       setNewMsg('');
