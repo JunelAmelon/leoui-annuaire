@@ -1003,16 +1003,41 @@ export default function VendorProfileDetailView({
 
               {activeTab === 'carte' && (
                 <div>
-                  <div className="bg-charcoal-100 rounded-2xl h-80 flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="w-10 h-10 text-rose-500 mx-auto mb-3" />
-                      <p className="font-semibold text-charcoal-800">{vendor.location || 'Localisation non renseignée'}</p>
-                      <p className="text-body-sm text-charcoal-500 mt-1">Zone d'intervention principale</p>
+                  {vendor.location ? (
+                    <>
+                      <div className="rounded-2xl overflow-hidden h-80 border border-charcoal-100 shadow-sm">
+                        <iframe
+                          title={`Carte — ${vendor.location}`}
+                          src={`https://www.google.com/maps?q=${encodeURIComponent(vendor.location)}&output=embed&hl=fr`}
+                          className="w-full h-full border-0"
+                          loading="lazy"
+                          allowFullScreen
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+                        <p className="text-body-sm text-charcoal-500 flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4" /> {vendor.location}
+                        </p>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vendor.location)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-rose-600 hover:text-rose-700 font-medium transition-colors"
+                        >
+                          Ouvrir dans Google Maps →
+                        </a>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-charcoal-100 rounded-2xl h-80 flex items-center justify-center">
+                      <div className="text-center">
+                        <MapPin className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+                        <p className="font-semibold text-charcoal-800">Localisation non renseignée</p>
+                        <p className="text-body-sm text-charcoal-500 mt-1">Zone d'intervention principale</p>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-body-sm text-charcoal-500 mt-3 flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" /> {vendor.location}
-                  </p>
+                  )}
                 </div>
               )}
             </div>

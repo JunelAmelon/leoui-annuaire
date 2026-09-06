@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { Star, MessageCircle, ThumbsUp, X, Send, TrendingUp, Copy, Check, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, MessageCircle, ThumbsUp, X, Send, TrendingUp, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDocument, getDocuments, setDocument, updateDocument } from '@/lib/db';
 import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
 import { renderReviewInvitationEmail, renderReviewReplyEmail } from '@/lib/email-template';
@@ -49,7 +49,6 @@ export default function AvisPage() {
   const [replyText, setReplyText] = useState('');
   const [replySaving, setReplySaving] = useState(false);
   const [filterRating, setFilterRating] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [inviteModal, setInviteModal] = useState(false);
   const [inviteEmails, setInviteEmails] = useState('');
   const [sendingInvites, setSendingInvites] = useState(false);
@@ -162,19 +161,6 @@ export default function AvisPage() {
 
   const reviewPhoto = (r: Review) => r.client_photo || (r.client_id ? clientPhotos[r.client_id] : '') || '';
 
-  const reviewLink = useMemo(() => (user ? `${typeof window !== 'undefined' ? window.location.origin : ''}/avis/${user.uid}` : ''), [user]);
-  const copyReviewLink = async () => {
-    if (!reviewLink) return;
-    try {
-      await navigator.clipboard.writeText(reviewLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast.success('Lien de collecte d\'avis copié');
-    } catch {
-      toast.error('Impossible de copier le lien');
-    }
-  };
-
   const generateToken = () => {
     if (typeof crypto !== 'undefined' && (crypto as any).randomUUID) {
       return (crypto as any).randomUUID();
@@ -244,24 +230,13 @@ export default function AvisPage() {
             <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Avis clients</h1>
             <p className="text-sm text-charcoal-500 mt-0.5">Consultez vos avis et répondez à vos clients.</p>
           </div>
-          {reviewLink && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={copyReviewLink}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-full text-sm font-medium hover:bg-rose-100 transition-colors"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                Copier le lien de collecte
-              </button>
-              <button
-                onClick={() => setInviteModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-full text-sm font-medium hover:bg-rose-700 transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                Inviter par email
-              </button>
-            </div>
-          )}
+          <button
+            onClick={() => setInviteModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-full text-sm font-medium hover:bg-rose-700 transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Inviter par email
+          </button>
         </div>
 
         {/* Stats row */}

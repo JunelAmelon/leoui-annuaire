@@ -33,6 +33,7 @@ export default function AvisPublicPage() {
   const [existingReview, setExistingReview] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [invitation, setInvitation] = useState<any>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const redirectTo = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : `/avis/${vendorParamId}`;
 
@@ -298,10 +299,12 @@ export default function AvisPublicPage() {
           <div className="px-6 pb-8">
             {existingReview && !isEditing ? (
               <div className="space-y-5">
-                <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
-                  <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <p className="text-sm font-semibold text-green-800">Votre avis est publié</p>
-                </div>
+                {showSuccess && (
+                  <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <p className="text-sm font-semibold text-green-800">Votre avis est publié</p>
+                  </div>
+                )}
 
                 <div className="bg-stone-50 rounded-2xl p-5 border border-charcoal-100">
                   <div className="flex items-center gap-1 mb-2">
@@ -315,21 +318,23 @@ export default function AvisPublicPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" /> Modifier
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" /> Supprimer
-                  </button>
-                </div>
+                {existingReview.source !== 'invitation' && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" /> Modifier
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" /> Supprimer
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

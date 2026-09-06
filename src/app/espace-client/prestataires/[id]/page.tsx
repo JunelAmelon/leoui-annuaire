@@ -64,14 +64,22 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
             { field: 'status', operator: '==', value: 'active' },
           ]),
         ]);
-        setVendor(vendorData);
+        const resolveImage = (d: any) =>
+          (Array.isArray(d?.images) && d.images[0]) || d?.imageUrl || d?.photo || '';
+
+        setVendor({ ...(vendorData as any), imageUrl: resolveImage(vendorData) });
         setReviews(reviewsData as any[]);
         setPromotions(promoData as any[]);
         if ((vendorData as any)?.category) {
           const sim = await getDocuments('vendors', [
             { field: 'category', operator: '==', value: (vendorData as any).category },
           ]);
-          setSimilarVendors((sim as any[]).filter(v => v.id !== vendorId).slice(0, 3));
+          setSimilarVendors(
+            (sim as any[])
+              .filter(v => v.id !== vendorId)
+              .slice(0, 3)
+              .map(v => ({ ...v, imageUrl: resolveImage(v) }))
+          );
         }
         incrementDocumentFields('vendors', vendorId, { viewCount: 1 }).catch(() => {});
         updateDocument('vendors', vendorId, { lastViewedAt: new Date().toISOString() }).catch(() => {});
