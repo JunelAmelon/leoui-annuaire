@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, XCircle, X, Trash2, MoreVertical, Save, Upload, Clock } from 'lucide-react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/db';
-import { createNotification } from '@/lib/notifications';
+import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { uploadPdf } from '@/lib/storage';
 
@@ -211,13 +211,15 @@ export default function ContratsPage() {
       }
 
       if (resolvedClientId) {
-        createNotification({
-          recipientId: resolvedClientId,
-          type: 'contrat',
-          title: 'Contrat reçu',
-          message: `${vendorName} vous a envoyé le contrat ${c.reference}. À consulter.`,
-          link: '/espace-client/documents',
-        });
+        resolveClientRecipientId(resolvedClientId)
+          .then((recipientId) => createNotification({
+            recipientId,
+            type: 'contrat',
+            title: 'Contrat reçu',
+            message: `${vendorName} vous a envoyé le contrat ${c.reference}. À consulter.`,
+            link: '/espace-client/documents',
+          }))
+          .catch(() => {});
       }
       await updateDocument('contracts', c.id, { status: 'sent', pdf_url: file_url });
       toast.success(resolvedClientId ? `Contrat envoyé et visible dans les documents du client` : `Contrat envoyé — email non trouvé dans la base`, { duration: 4000 });
@@ -545,7 +547,7 @@ export default function ContratsPage() {
                 <Upload className="w-4 h-4" /> Importer PDF
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-charcoal-800 text-white rounded-xl text-sm font-semibold hover:bg-charcoal-900 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-700 text-white rounded-xl text-sm font-semibold hover:bg-rose-600 disabled:opacity-50 transition-colors">
                 <Save className="w-4 h-4" /> {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : 'Sauvegarder'}
               </button>
             </div>

@@ -28,7 +28,7 @@ export default function AboutPage() {
       <Header />
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-24 bg-charcoal-900">
+      <section className="relative overflow-hidden py-24 bg-rose-600">
         <div className="absolute inset-0">
           <img src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
@@ -110,7 +110,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-charcoal-900 text-center px-6">
+      <section className="py-16 bg-rose-600 text-center px-6">
         <h2 className="font-display text-display-sm text-white mb-4" style={{ fontWeight: 300 }}>Prêts à commencer ?</h2>
         <p className="text-body-md text-white/60 mb-8">Trouvez les prestataires idéaux pour votre mariage dès aujourd'hui.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

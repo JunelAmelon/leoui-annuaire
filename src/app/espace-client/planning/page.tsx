@@ -419,7 +419,7 @@ export default function PlanningPage() {
             <button
               onClick={() => setShowAdd(true)}
               data-tour="add-appointment"
-              className="flex items-center gap-1.5 px-3 py-2 bg-charcoal-900 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors rounded-xl"
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-600 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors rounded-xl"
             >
               <Plus className="w-3.5 h-3.5" /> Ajouter
             </button>
@@ -560,7 +560,7 @@ export default function PlanningPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setSelectedEvent(null)}
-                    className="flex-1 py-3 bg-charcoal-900 text-white rounded-xl font-medium hover:bg-charcoal-700 transition-colors min-h-[48px]"
+                    className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-medium hover:bg-charcoal-700 transition-colors min-h-[48px]"
                   >
                     Fermer
                   </button>
@@ -574,7 +574,7 @@ export default function PlanningPage() {
               ) : (
                 <button
                   onClick={() => setSelectedEvent(null)}
-                  className="w-full py-3 bg-charcoal-900 text-white rounded-xl font-medium hover:bg-charcoal-700 transition-colors min-h-[48px]"
+                  className="w-full py-3 bg-rose-600 text-white rounded-xl font-medium hover:bg-charcoal-700 transition-colors min-h-[48px]"
                 >
                   Fermer
                 </button>
@@ -683,7 +683,7 @@ export default function PlanningPage() {
               <button
                 onClick={handleSaveAppointment}
                 disabled={saving}
-                className="w-full sm:flex-1 py-3 bg-charcoal-900 text-white text-sm font-semibold hover:bg-charcoal-700 disabled:opacity-50 transition-colors rounded-xl min-h-[48px]"
+                className="w-full sm:flex-1 py-3 bg-rose-600 text-white text-sm font-semibold hover:bg-charcoal-700 disabled:opacity-50 transition-colors rounded-xl min-h-[48px]"
               >
                 {saving ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Ajouter')}
               </button>

@@ -56,6 +56,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -69,6 +70,22 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
         return acc + (data?.read === false ? 1 : 0);
       }, 0);
       setUnreadNotifCount(unread);
+    });
+    return () => unsub();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setUnreadMsgCount(0);
+      return;
+    }
+    const q = query(collection(db, 'conversations'), where('vendor_id', '==', user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const unread = snapshot.docs.reduce((acc, d) => {
+        const data = d.data() as any;
+        return acc + ((data?.unread_count_vendor ?? data?.unread_vendor ?? 0) as number);
+      }, 0);
+      setUnreadMsgCount(unread);
     });
     return () => unsub();
   }, [user?.uid]);
@@ -98,7 +115,7 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
   const SW = collapsed ? 84 : 224;
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#ECEAE5' }}>
+    <div className="min-h-screen flex" style={{ backgroundColor: '#FAF6F8' }}>
 
       {/* ── DESKTOP FLOATING SIDEBAR ── */}
       <div
@@ -126,6 +143,11 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
           <nav className="flex-1 flex flex-col gap-0.5 py-3 px-2 overflow-y-auto overflow-x-hidden">
             {NAV.map(item => {
               const active = isActive(item);
+              const badgeCount = item.href.includes('notifications')
+                ? unreadNotifCount
+                : item.href.includes('contacts')
+                  ? unreadMsgCount
+                  : 0;
               return (
                 <div key={item.href} className="relative group">
                   <Link
@@ -136,9 +158,9 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                   >
                     <div className="relative flex-shrink-0">
                       <item.icon className={`w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
-                      {item.href.includes('notifications') && unreadNotifCount > 0 && (
+                      {badgeCount > 0 && (
                         <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 bg-rose-500 text-white text-[8px] font-bold flex items-center justify-center leading-none">
-                          {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                          {badgeCount > 9 ? '9+' : badgeCount}
                         </span>
                       )}
                     </div>
@@ -147,9 +169,9 @@ export default function PrestataireDashboardLayout({ children }: { children: Rea
                         {item.label}
                       </span>
                     )}
-                    {!collapsed && item.href.includes('notifications') && unreadNotifCount > 0 && (
+                    {!collapsed && badgeCount > 0 && (
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
-                        {unreadNotifCount}
+                        {badgeCount}
                       </span>
                     )}
                   </Link>

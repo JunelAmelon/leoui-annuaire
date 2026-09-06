@@ -4,10 +4,20 @@ import { computeVendorScore } from '@/lib/subscription-plans';
 
 export async function GET() {
   try {
-    const [vendorsSnap, citiesSnap] = await Promise.all([
+    const now = new Date().toISOString();
+    const [vendorsSnap, citiesSnap, promosSnap] = await Promise.all([
       adminDb.collection('vendors').limit(500).get(),
       adminDb.collection('cities').where('active', '==', true).get(),
+      adminDb.collection('promotions').where('status', '==', 'active').get(),
     ]);
+
+    const activePromoVendorIds = new Set<string>();
+    promosSnap.docs.forEach((d) => {
+      const data = d.data() as any;
+      if (data.vendor_id && (!data.valid_to || data.valid_to >= now)) {
+        activePromoVendorIds.add(String(data.vendor_id));
+      }
+    });
 
     const rawVendors = vendorsSnap.docs
       .map((d) => ({ ...d.data(), id: d.id }))
@@ -24,7 +34,7 @@ export async function GET() {
         imageUrl: (Array.isArray(v.images) && v.images[0]) || v.imageUrl || v.photo || '',
         startingPrice: String(v.startingPrice || ''),
         featured: Boolean(v.featured),
-        hasPromo: Boolean(v.hasPromo),
+        hasPromo: activePromoVendorIds.has(String(v.id)) || activePromoVendorIds.has(String(v.uid || v.id)),
         description: String(v.description || ''),
         responseTime: String(v.responseTime || '48h'),
         status: String(v.status || 'active'),

@@ -55,7 +55,7 @@ export default function GuidePage() {
       <Header />
 
       {/* Hero */}
-      <section className="relative bg-charcoal-900 py-24 overflow-hidden text-center px-6">
+      <section className="relative bg-rose-600 py-24 overflow-hidden text-center px-6">
         <div className="absolute inset-0 opacity-15">
           <img src="https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="" className="w-full h-full object-cover" />
         </div>
@@ -126,7 +126,7 @@ export default function GuidePage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-charcoal-900 text-center px-6">
+      <section className="py-16 bg-rose-600 text-center px-6">
         <h2 className="font-display text-display-sm text-white mb-4" style={{ fontWeight: 300 }}>Trouvez vos prestataires idéaux</h2>
         <p className="text-body-md text-white/60 mb-8">Des professionnels d'exception pour chaque étape de votre mariage.</p>
         <Link href="/vendors" className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors inline-block">

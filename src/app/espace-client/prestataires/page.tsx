@@ -243,7 +243,7 @@ export default function PrestatairesPage() {
             disabled={selectedVendorIds.size === 0}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
               showSelectedOnly
-                ? 'bg-charcoal-900 text-white hover:bg-charcoal-800'
+                ? 'bg-rose-600 text-white hover:bg-rose-700'
                 : 'bg-rose-600 text-white hover:bg-rose-700'
             } ${selectedVendorIds.size === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
             title={selectedVendorIds.size === 0 ? 'Aucun prestataire sélectionné' : 'Afficher uniquement mes prestataires sélectionnés'}
@@ -273,7 +273,7 @@ export default function PrestatairesPage() {
         {CATEGORIES.map(cat => (
           <button key={cat} onClick={() => { setCategory(cat); setPage(1); }}
             className={`px-3.5 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-              category === cat ? 'bg-charcoal-900 text-white shadow-sm' : 'bg-white text-charcoal-600 hover:bg-stone-100 border border-stone-200'
+              category === cat ? 'bg-rose-600 text-white shadow-sm' : 'bg-white text-charcoal-600 hover:bg-stone-100 border border-stone-200'
             }`}>
             {cat}
           </button>
@@ -290,13 +290,13 @@ export default function PrestatairesPage() {
               <p className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider mb-3">Filtres</p>
               <label className="flex items-center justify-between cursor-pointer">
                 <span className="text-sm text-charcoal-700 flex items-center gap-2"><Tag className="w-3.5 h-3.5 text-rose-500" /> Promotions</span>
-                <div onClick={() => setHasPromo(p => !p)} className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${hasPromo ? 'bg-charcoal-900' : 'bg-stone-200'}`}>
+                <div onClick={() => setHasPromo(p => !p)} className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${hasPromo ? 'bg-rose-600' : 'bg-stone-200'}`}>
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${hasPromo ? 'left-5' : 'left-0.5'}`} />
                 </div>
               </label>
               <label className="flex items-center justify-between cursor-pointer mt-3">
                 <span className="text-sm text-charcoal-700 flex items-center gap-2"><Heart className="w-3.5 h-3.5 text-rose-500" /> Mes favoris</span>
-                <div onClick={() => { setShowFavoritesOnly(p => !p); setShowSelectedOnly(false); setPage(1); }} className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${showFavoritesOnly ? 'bg-charcoal-900' : 'bg-stone-200'}`}>
+                <div onClick={() => { setShowFavoritesOnly(p => !p); setShowSelectedOnly(false); setPage(1); }} className={`w-10 h-5 rounded-full transition-colors cursor-pointer relative ${showFavoritesOnly ? 'bg-rose-600' : 'bg-stone-200'}`}>
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${showFavoritesOnly ? 'left-5' : 'left-0.5'}`} />
                 </div>
               </label>
@@ -333,10 +333,10 @@ export default function PrestatairesPage() {
             <p className="text-sm text-charcoal-500">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</p>
             <div className="flex items-center gap-2">
               <div className="flex bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm">
-                <button onClick={() => setViewMode('list')} className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'list' ? 'bg-charcoal-900 text-white' : 'text-charcoal-600 hover:bg-stone-100'}`}>
+                <button onClick={() => setViewMode('list')} className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-stone-100'}`}>
                   <List className="w-3.5 h-3.5" /> Liste
                 </button>
-                <button onClick={() => setViewMode('grid')} className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'grid' ? 'bg-charcoal-900 text-white' : 'text-charcoal-600 hover:bg-stone-100'}`}>
+                <button onClick={() => setViewMode('grid')} className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'grid' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-stone-100'}`}>
                   <Grid3X3 className="w-3.5 h-3.5" /> Photos
                 </button>
               </div>
@@ -395,6 +395,7 @@ export default function PrestatairesPage() {
                   startingPrice={vendor.startingPrice}
                   subscriptionTier={vendor.subscriptionTier}
                   description={vendor.description}
+                  hasPromo={vendor.hasPromo}
                   hrefBase="/espace-client/prestataires"
                   variant="compact"
                   showFavorite
@@ -415,7 +416,7 @@ export default function PrestatairesPage() {
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                 <button key={p} onClick={() => setPage(p)}
                   className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors shadow-sm ${
-                    p === page ? 'bg-charcoal-900 text-white' : 'bg-white border border-stone-200 text-charcoal-700 hover:bg-stone-100'
+                    p === page ? 'bg-rose-600 text-white' : 'bg-white border border-stone-200 text-charcoal-700 hover:bg-stone-100'
                   }`}>{p}</button>
               ))}
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}

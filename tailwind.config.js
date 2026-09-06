@@ -8,10 +8,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        // WARM IVORY — linen-white backgrounds
+        // WARM IVORY — near-white backgrounds
         ivory: {
-          50:  '#FAF8F4',
-          100: '#F4EEE6',
+          50:  '#FCFBFA',
+          100: '#F7F4F0',
           200: '#EBE1D5',
           300: '#DFCFBE',
           400: '#CFBAA5',
@@ -21,36 +21,36 @@ export default {
           800: '#6C5846',
           900: '#514133',
         },
-        // BURNISHED GOLD — warm luxury accent
+        // SOFT ROSE — delicate accent derived from primary #E11D48
         champagne: {
-          50:  '#F9F5EC',
-          100: '#F0E7D2',
-          200: '#E4D2AE',
-          300: '#D4B986',
-          400: '#BF9E5E',
-          500: '#A68540',  // main gold
-          600: '#8C6D2E',
-          700: '#70561F',
-          800: '#564213',
-          900: '#3D2F0C',
+          50:  '#FDF6F8',
+          100: '#FBE9EE',
+          200: '#F6D2DC',
+          300: '#F0B2C3',
+          400: '#E88CA6',
+          500: '#DD6B8D',  // main soft rose accent
+          600: '#C44E73',
+          700: '#A33A5C',
+          800: '#822F4B',
+          900: '#61253A',
         },
-        // TERRACOTTA SIENNA — sophisticated warm red
+        // ROSE — primary action color (#e11d48)
         rose: {
-          50:  '#FAF2EE',
-          100: '#F5E3DA',
-          200: '#ECC5B3',
-          300: '#E1A086',
-          400: '#D27D5C',
-          500: '#BE6040',
-          600: '#A34E30',  // primary action — warm sienna
-          700: '#853C22',
-          800: '#672D16',
-          900: '#4B1F0D',
+          50:  '#FFF1F2',
+          100: '#FFE4E6',
+          200: '#FECDD3',
+          300: '#FDA4AF',
+          400: '#FB7185',
+          500: '#F43F5E',
+          600: '#E11D48',  // primary action
+          700: '#BE123C',
+          800: '#9F1239',
+          900: '#881337',
         },
         // WARM BLUSH — tertiary
         blush: {
-          50:  '#FAF4F1',
-          100: '#F4E6DF',
+          50:  '#FBF7F5',
+          100: '#F6ECE7',
           200: '#E9CCBF',
           300: '#DCAC97',
           400: '#CB886C',
@@ -62,8 +62,8 @@ export default {
         },
         // WARM CHARCOAL — text & dark elements (replaces cold blue-grey)
         charcoal: {
-          50:  '#F5F1ED',
-          100: '#EDE5DC',
+          50:  '#F9F7F5',
+          100: '#F1EDE8',
           200: '#D8CCBF',
           300: '#BDAD9E',
           400: '#9D8D7E',
@@ -74,8 +74,8 @@ export default {
           900: '#1C1814',
         },
         'brand-purple': '#2e1065',
-        'brand-turquoise': '#A68540',
-        'brand-turquoise-hover': '#8C6D2E',
+        'brand-turquoise': '#DD6B8D',
+        'brand-turquoise-hover': '#C44E73',
         'brand-gray': '#7D6E60',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

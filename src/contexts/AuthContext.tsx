@@ -7,8 +7,8 @@ import {
   User,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useRouter, usePathname } from 'next/navigation';
-import { getDocument, setDocument } from '@/lib/db';
+import { useRouter } from 'next/navigation';
+import { getDocument, setDocument, addDocument } from '@/lib/db';
 
 interface AuthUser {
   uid: string;
@@ -16,13 +16,14 @@ interface AuthUser {
   role?: 'client' | 'planner' | 'admin' | 'vendor';
   vendorType?: string;
   displayName?: string | null;
+  photoURL?: string | null;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<{ isNew: boolean }>;
+  signIn: (email: string, password: string, redirectTo?: string) => Promise<void>;
+  signInWithGoogle: (redirectTo?: string) => Promise<{ isNew: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -34,23 +35,16 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+function getRoleDashboard(role?: string) {
+  if (role === 'admin') return '/admin';
+  if (role === 'planner' || role === 'vendor') return '/espace-prestataire';
+  return '/espace-client';
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
-
-  const PROTECTED_PREFIXES = ['/espace-client', '/espace-prestataire', '/admin'];
-
-  useEffect(() => {
-    if (loading || !user || !pathname) return;
-    const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p));
-    if (isProtected) return;
-    const role = user.role || 'client';
-    if (role === 'admin') router.replace('/admin');
-    else if (role === 'planner' || role === 'vendor') router.replace('/espace-prestataire');
-    else router.replace('/espace-client');
-  }, [loading, user, pathname, router]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
@@ -70,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: role as AuthUser['role'],
           vendorType,
           displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
         });
       } catch {
         setUser({
@@ -77,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: firebaseUser.email,
           role: 'client',
           displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
         });
       } finally {
         setLoading(false);
@@ -86,22 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, redirectTo?: string) => {
     const credential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = credential.user;
 
     try {
       const tokenResult = await firebaseUser.getIdTokenResult(true);
       const role = (tokenResult.claims.role as string) || 'client';
-      if (role === 'admin') {
-        router.push('/admin');
-      } else if (role === 'planner' || role === 'vendor') {
-        router.push('/espace-prestataire');
-      } else {
-        router.push('/espace-client');
-      }
+      router.push(redirectTo && redirectTo.startsWith('/') ? redirectTo : getRoleDashboard(role));
     } catch {
-      router.push('/espace-client');
+      router.push(redirectTo && redirectTo.startsWith('/') ? redirectTo : getRoleDashboard('client'));
     }
   };
 
@@ -110,8 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  const handleSocialLogin = async (firebaseUser: User): Promise<{ isNew: boolean }> => {
+  const handleSocialLogin = async (firebaseUser: User, redirectTo?: string): Promise<{ isNew: boolean }> => {
     let isNew = false;
+    let role = 'client';
     try {
       const existing = await getDocument('profiles', firebaseUser.uid);
       if (!existing) {
@@ -123,23 +114,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: 'client',
           created_at: new Date(),
         });
+        await setDocument('users', firebaseUser.uid, {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: 'client',
+          created_at: new Date().toISOString(),
+        });
+        await addDocument('events', {
+          client_id: firebaseUser.uid,
+          couple_names: firebaseUser.displayName || '',
+          event_date: null,
+          created_at: new Date().toISOString(),
+        });
       }
       const tokenResult = await firebaseUser.getIdTokenResult(true);
-      const role = (tokenResult.claims.role as string) || 'client';
-      if (role === 'admin') router.push('/admin');
-      else if (role === 'planner' || role === 'vendor') router.push('/espace-prestataire');
-      else router.push('/espace-client');
+      role = (tokenResult.claims.role as string) || 'client';
+      router.push(redirectTo && redirectTo.startsWith('/') ? redirectTo : getRoleDashboard(role));
     } catch {
-      router.push('/espace-client');
+      router.push(redirectTo && redirectTo.startsWith('/') ? redirectTo : getRoleDashboard(role));
     }
     return { isNew };
   };
 
-  const signInWithGoogle = async (): Promise<{ isNew: boolean }> => {
+  const signInWithGoogle = async (redirectTo?: string): Promise<{ isNew: boolean }> => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     const result = await signInWithPopup(auth, provider);
-    return handleSocialLogin(result.user);
+    return handleSocialLogin(result.user, redirectTo);
   };
 
   return (

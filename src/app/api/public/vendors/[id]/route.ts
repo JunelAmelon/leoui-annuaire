@@ -56,16 +56,19 @@ export async function GET(_: Request, ctx: { params: { id: string } }) {
       { merge: true }
     );
 
+    const reviews = reviewsSnap.docs
+      .map((d) => ({ ...d.data(), id: d.id }))
+      .filter((r: any) => r.status !== 'pending');
+    const promotions = promoSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
+
     const vendor = {
       ...vendorData,
       id: vendorId,
       imageUrl: (Array.isArray((vendorData as any).images) && (vendorData as any).images[0]) || (vendorData as any).imageUrl || (vendorData as any).photo || '',
       videos: (vendorData as any).videos || [],
       reportages: (vendorData as any).reportages || [],
+      hasPromo: promotions.length > 0,
     };
-
-    const reviews = reviewsSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
-    const promotions = promoSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
 
     return NextResponse.json({ ok: true, vendor, reviews, promotions, similarVendors: similar });
   } catch (e: any) {

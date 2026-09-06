@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -138,7 +138,7 @@ export default function VendorJoinPage() {
       <Header />
 
       {/* HERO — Harmonized Style */}
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '580px' }}>
+      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '580px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920"
@@ -193,7 +193,7 @@ export default function VendorJoinPage() {
                     'https://images.pexels.com/photos/3764119/pexels-photo-3764119.jpeg?w=100',
                     'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?w=100'
                   ].map((src, i) => (
-                    <img key={i} src={src} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-charcoal-900" />
+                    <img key={i} src={src} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-rose-600" />
                   ))}
                 </div>
                 <div>
@@ -416,7 +416,7 @@ export default function VendorJoinPage() {
       </section>
 
       {/* CTA FINAL — Conversion maximale */}
-      <section className="py-20 lg:py-28 px-4 sm:px-6 bg-charcoal-900 relative overflow-hidden">
+      <section className="py-20 lg:py-28 px-4 sm:px-6 bg-rose-600 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-rose-500 rounded-full blur-3xl" />

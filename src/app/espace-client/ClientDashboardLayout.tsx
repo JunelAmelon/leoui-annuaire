@@ -46,6 +46,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -63,6 +64,23 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [user?.uid]);
 
+  useEffect(() => {
+    const ids = Array.from(new Set([client?.id, user?.uid].filter(Boolean) as string[]));
+    if (ids.length === 0) {
+      setUnreadMsgCount(0);
+      return;
+    }
+    const q = query(collection(db, 'conversations'), where('client_id', 'in', ids));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const unread = snapshot.docs.reduce((acc, d) => {
+        const data = d.data() as any;
+        return acc + ((data?.unread_count_client ?? data?.unread_client ?? 0) as number);
+      }, 0);
+      setUnreadMsgCount(unread);
+    });
+    return () => unsub();
+  }, [client?.id, user?.uid]);
+
   const isActive = (item: typeof NAV[0]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
 
@@ -79,7 +97,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
   const SW = collapsed ? 84 : 224; // sidebar pixel width
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#ECEAE5' }}>
+    <div className="min-h-screen flex" style={{ backgroundColor: '#FAF6F8' }}>
 
       {/* ── DESKTOP FLOATING SIDEBAR (collapsible) ── */}
       <div
@@ -107,6 +125,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 flex flex-col gap-0.5 py-3 px-2 overflow-y-auto overflow-x-hidden">
             {NAV.map(item => {
               const active = isActive(item);
+              const badgeCount = item.href === '/espace-client/messages' ? unreadMsgCount : 0;
               return (
                 <div key={item.href} className="relative group" data-tour={item.tourId}>
                   <Link
@@ -115,10 +134,22 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
                       collapsed ? 'w-10 h-10 mx-auto justify-center' : 'px-3 py-2.5'
                     } ${active ? 'bg-rose-600' : 'hover:bg-rose-50'}`}
                   >
-                    <item.icon className={`flex-shrink-0 w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
+                    <div className="relative flex-shrink-0">
+                      <item.icon className={`w-[17px] h-[17px] ${active ? 'text-white' : 'text-charcoal-400 group-hover:text-rose-600'}`} />
+                      {badgeCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 bg-rose-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none">
+                          {badgeCount > 9 ? '9+' : badgeCount}
+                        </span>
+                      )}
+                    </div>
                     {!collapsed && (
-                      <span className={`text-sm font-medium truncate ${active ? 'text-white' : 'text-charcoal-600 group-hover:text-rose-700'}`}>
+                      <span className={`text-sm font-medium truncate flex-1 ${active ? 'text-white' : 'text-charcoal-600 group-hover:text-rose-700'}`}>
                         {item.label}
+                      </span>
+                    )}
+                    {!collapsed && badgeCount > 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                        {badgeCount}
                       </span>
                     )}
                   </Link>

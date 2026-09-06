@@ -216,7 +216,7 @@ export default function AdminMessagesPage() {
                   <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-sm ${
                       msg.isMe
-                        ? 'bg-charcoal-800 text-white rounded-br-sm'
+                        ? 'bg-rose-700 text-white rounded-br-sm'
                         : 'bg-white border border-charcoal-100 text-charcoal-800 rounded-bl-sm shadow-sm'
                     }`}>
                       {msg.content && <p className="leading-relaxed">{msg.content}</p>}
@@ -253,7 +253,7 @@ export default function AdminMessagesPage() {
                     className="flex-1 px-3 py-2 text-sm border border-charcoal-200 rounded-xl focus:outline-none focus:border-rose-400 bg-ivory-50"
                   />
                   <button disabled={!newMessage.trim() || sending} onClick={() => void handleSend()}
-                    className="p-2 bg-charcoal-900 text-white rounded-xl hover:bg-charcoal-700 disabled:opacity-40 transition-colors">
+                    className="p-2 bg-rose-600 text-white rounded-xl hover:bg-charcoal-700 disabled:opacity-40 transition-colors">
                     <Send className="w-4 h-4" />
                   </button>
                 </div>

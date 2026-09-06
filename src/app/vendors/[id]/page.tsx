@@ -6,11 +6,15 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import VendorProfileDetailView from '@/components/VendorProfileDetailView';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDocument, getDocuments, addDocument, updateDocument } from '@/lib/db';
+import { createNotification } from '@/lib/notifications';
 import { toast } from 'sonner';
 
 export default function VendorProfilePage() {
   const params = useParams();
   const id = params?.id as string;
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [vendor, setVendor] = useState<any>(null);
@@ -70,20 +74,86 @@ export default function VendorProfilePage() {
   );
 
   const handleContact = async (form: { name: string; email: string; phone: string; message: string }) => {
+    const vendorId = resolvedVendorId || id;
+    if (!user) {
+      // Anonymous fallback: use public API endpoint
+      try {
+        const res = await fetch('/api/public/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vendor_id: vendorId,
+            client_name: form.name,
+            client_email: form.email,
+            client_phone: form.phone,
+            message: form.message,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+        toast.success('Message envoyé');
+      } catch {
+        toast.error('Impossible d\'envoyer le message');
+      }
+      return;
+    }
+
+    // Authenticated: create a real conversation linked to the client account
     try {
-      const res = await fetch('/api/public/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vendor_id: resolvedVendorId || id,
-          client_name: form.name,
-          client_email: form.email,
-          client_phone: form.phone,
-          message: form.message,
-        }),
+      // Prefer profile name+partner over Firebase displayName/email
+      let coupleName = user.displayName || user.email || 'Client';
+      let clientId = user.uid;
+      try {
+        const profile = (await getDocument('profiles', user.uid)) as any;
+        if (profile) {
+          coupleName = `${profile.name || ''}${profile.name && profile.partner ? ' & ' + profile.partner : ''}`.trim() || coupleName;
+          clientId = profile.id || user.uid;
+        }
+      } catch {}
+
+      const existingConvs = await getDocuments('conversations', [
+        { field: 'client_id', operator: '==', value: clientId },
+      ]);
+      const existing = (existingConvs as any[]).find((c: any) => c.vendor_id === vendorId);
+      let convId: string;
+      if (existing) {
+        convId = existing.id;
+        await updateDocument('conversations', convId, {
+          last_message: form.message.trim(),
+          last_message_at: new Date().toISOString(),
+          unread_count_vendor: (existing.unread_count_vendor || 0) + 1,
+        });
+      } else {
+        const ref = await addDocument('conversations', {
+          client_id: clientId,
+          vendor_id: vendorId,
+          client_name: coupleName,
+          vendor_name: vendor.name,
+          vendor_email: vendor.email || '',
+          type: 'vendor',
+          last_message: form.message.trim(),
+          last_message_at: new Date().toISOString(),
+          unread_count_vendor: 1,
+          unread_count_client: 0,
+          created_at: new Date().toISOString(),
+        });
+        convId = ref.id;
+      }
+      await addDocument('messages', {
+        conversation_id: convId,
+        sender_id: user.uid,
+        sender_role: 'client',
+        sender_name: coupleName,
+        content: form.message.trim(),
+        created_at: new Date().toISOString(),
       });
-      const json = await res.json();
-      if (!res.ok || !json?.ok) throw new Error(json?.error || 'Failed');
+      createNotification({
+        recipientId: vendorId,
+        type: 'message',
+        title: `Nouveau message de ${coupleName}`,
+        message: form.message.trim().slice(0, 100),
+        link: '/espace-prestataire/messages',
+      });
       toast.success('Message envoyé');
     } catch {
       toast.error('Impossible d\'envoyer le message');
@@ -103,6 +173,8 @@ export default function VendorProfilePage() {
         vendorsIndexHref="/vendors"
         similarHrefBase="/vendors"
         onSubmitContact={handleContact}
+        isLoggedIn={!!user}
+        clientName={user?.displayName || user?.email || ''}
       />
       <Footer />
     </div>

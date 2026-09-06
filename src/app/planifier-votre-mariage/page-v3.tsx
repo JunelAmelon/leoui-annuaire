@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import Header from '@/components/Header';
@@ -15,7 +15,7 @@ export default function WeddingPlannerPage() {
       <Header />
 
       {/* HERO — same style as vendors page */}
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '380px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1400"
@@ -231,7 +231,7 @@ export default function WeddingPlannerPage() {
       </section>
 
       {/* STATS BAR */}
-      <section className="py-14 px-4 sm:px-6 bg-charcoal-900">
+      <section className="py-14 px-4 sm:px-6 bg-rose-600">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             {[

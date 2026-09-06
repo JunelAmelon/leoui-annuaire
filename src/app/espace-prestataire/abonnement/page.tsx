@@ -1,17 +1,17 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDocument } from '@/lib/db';
 import { auth, db } from '@/lib/firebase';
-import { PAID_PLANS, TIER_BADGE } from '@/lib/subscription-plans';
+import { PAID_PLANS } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import {
   Check, Crown, Loader2, Zap, AlertCircle, CheckCircle2, ExternalLink, RefreshCw,
-  Lock, RotateCcw, Bolt, Star, CreditCard,
+  Lock, RotateCcw, Bolt, CreditCard,
 } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 
@@ -24,9 +24,9 @@ export default function AbonnementPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [paymentProvider, setPaymentProvider] = useState<'stripe' | 'paypal'>('stripe');
-  const [showUpgradePulse, setShowUpgradePulse] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [reconcileLoading, setReconcileLoading] = useState(false);
+  const hasReconciledRef = useRef(false);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -57,10 +57,11 @@ export default function AbonnementPage() {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (!user?.uid || !vendor || reconcileLoading) return;
+    if (!user?.uid || !vendor || reconcileLoading || hasReconciledRef.current) return;
     const maybeNeedsReconcile = (vendor.subscriptionTier === 'free' || !vendor.subscriptionTier)
       && !!vendor.stripeCustomerId;
     if (!maybeNeedsReconcile) return;
+    hasReconciledRef.current = true;
     setReconcileLoading(true);
     getToken()
       .then((token) => fetch('/api/stripe/reconcile', {
@@ -89,8 +90,6 @@ export default function AbonnementPage() {
         }
       }
       setTimeout(() => loadVendor(), 3000);
-      setShowUpgradePulse(true);
-      setTimeout(() => setShowUpgradePulse(false), 8000);
     } else if (searchParams.get('canceled') === 'true') {
       showToast('error', 'Paiement annulé. Vous pouvez réessayer à tout moment.');
     }
@@ -183,7 +182,6 @@ export default function AbonnementPage() {
   const isPastDue = subStatus === 'past_due';
   const periodEnd: string = vendor?.subscriptionCurrentPeriodEnd || '';
   const cancelAtPeriodEnd: boolean = !!vendor?.subscriptionCancelAtPeriodEnd;
-  const badge = TIER_BADGE[currentTier];
 
   return (
     <PrestataireDashboardLayout>
@@ -213,61 +211,54 @@ export default function AbonnementPage() {
       </div>
 
       <div className="mb-6 bg-white border border-charcoal-100 rounded-2xl p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-charcoal-500 mb-3">Moyen de paiement</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-charcoal-500 mb-1">Moyen de paiement</p>
+        <p className="text-xs text-charcoal-400 mb-3">Sélectionnez celui que vous souhaitez utiliser avant de souscrire.</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => setPaymentProvider('stripe')}
             className={`flex-1 rounded-xl border px-4 py-3 text-left transition-colors ${
               paymentProvider === 'stripe'
-                ? 'border-charcoal-900 bg-charcoal-50'
+                ? 'border-rose-600 bg-stone-50'
                 : 'border-charcoal-200 bg-white hover:bg-stone-50'
             }`}
           >
             <p className="text-sm font-semibold text-charcoal-900 flex items-center gap-2">
-              <CreditCard className="w-4 h-4" /> Stripe (recommandé)
+              <CreditCard className="w-4 h-4" /> Carte bancaire
             </p>
-            <p className="text-xs text-charcoal-500 mt-1">Carte bancaire, portail client pour annulation/changement.</p>
+            <p className="text-xs text-charcoal-500 mt-1">Paiement sécurisé via Stripe.</p>
           </button>
           <button
             onClick={() => setPaymentProvider('paypal')}
             className={`flex-1 rounded-xl border px-4 py-3 text-left transition-colors ${
               paymentProvider === 'paypal'
-                ? 'border-charcoal-900 bg-charcoal-50'
+                ? 'border-rose-600 bg-stone-50'
                 : 'border-charcoal-200 bg-white hover:bg-stone-50'
             }`}
           >
             <p className="text-sm font-semibold text-charcoal-900">PayPal</p>
-            <p className="text-xs text-charcoal-500 mt-1">Validation PayPal puis prélèvement mensuel automatique.</p>
+            <p className="text-xs text-charcoal-500 mt-1">Prélèvement automatique mensuel.</p>
           </button>
         </div>
       </div>
 
       {/* Current plan banner */}
       {!loadingVendor && (
-        <div className={`mb-8 rounded-2xl border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-          currentTier === 'free'
-            ? 'bg-stone-50 border-stone-200'
-            : isPastDue
-              ? 'bg-red-50 border-red-200'
-              : 'bg-green-50 border-green-200'
-        }`}>
+        <div className="mb-8 rounded-2xl border border-charcoal-100 bg-white p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              currentTier === 'elite' ? 'bg-amber-100' : currentTier === 'pro' ? 'bg-blue-100' : currentTier === 'starter' ? 'bg-stone-100' : 'bg-stone-100'
-            }`}>
-              <Crown className={`w-5 h-5 ${
-                currentTier === 'elite' ? 'text-amber-600' : currentTier === 'pro' ? 'text-blue-600' : 'text-stone-500'
-              }`} />
+            <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center">
+              <Crown className="w-5 h-5 text-stone-500" />
             </div>
             <div>
-              <p className="font-semibold text-charcoal-900 text-sm">
-                Plan actuel : <span className="capitalize">{currentTier === 'free' ? 'Gratuit' : currentTier}</span>
-                {badge && <span className={`ml-2 px-2 py-0.5 text-xs rounded-full border ${badge.classes}`}>{badge.label}</span>}
+              <p className="font-semibold text-charcoal-900 text-sm flex items-center gap-2">
+                Plan <span className="capitalize">{currentTier === 'free' ? 'Gratuit' : currentTier}</span>
+                {currentTier !== 'free' && isActive && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 border border-green-200 font-medium">Actif</span>
+                )}
               </p>
               {currentTier !== 'free' && periodEnd && (
                 <p className="text-xs text-charcoal-500 mt-0.5">
                   {isPastDue
-                    ? '⚠️ Paiement en échec — votre visibilité est réduite'
+                    ? 'Paiement en échec — votre visibilité est réduite'
                     : cancelAtPeriodEnd
                       ? `Résiliation prévue le ${new Date(periodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
                       : `Renouvellement le ${new Date(periodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
@@ -275,7 +266,7 @@ export default function AbonnementPage() {
               )}
               {currentTier !== 'free' && vendor?.subscriptionProvider && (
                 <p className="text-xs text-charcoal-500 mt-0.5">
-                  Moyen de paiement: {vendor.subscriptionProvider === 'paypal' ? 'PayPal' : 'Stripe'}
+                  Paiement : {vendor.subscriptionProvider === 'paypal' ? 'PayPal' : 'Stripe'}
                 </p>
               )}
               {currentTier === 'free' && (
@@ -306,17 +297,6 @@ export default function AbonnementPage() {
         </div>
       )}
 
-      {!loadingVendor && currentTier !== 'free' && isActive && (
-        <div className={`mb-8 rounded-2xl border px-5 py-4 bg-gradient-to-r from-amber-50 via-white to-rose-50 border-amber-200 ${
-          showUpgradePulse ? 'animate-pulse' : ''
-        }`}>
-          <p className="text-xs uppercase tracking-[0.14em] text-amber-700 font-semibold">Nouveau cap franchi</p>
-          <p className="text-sm text-charcoal-800 mt-1">
-            Votre formule <span className="font-semibold capitalize">{currentTier}</span> est active.
-            Votre profil bénéficie maintenant d’une meilleure visibilité dans les résultats.
-          </p>
-        </div>
-      )}
 
       {/* Plans grid */}
       {loadingVendor ? (
@@ -327,50 +307,30 @@ export default function AbonnementPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
           {PAID_PLANS.map((plan) => {
             const isCurrent = currentTier === plan.id && isActive;
-            const isPopular = plan.popular;
-            const headerGradient =
-              plan.id === 'pro'
-                ? 'from-rose-100 via-ivory-50 to-champagne-100'
-                : 'from-stone-100 via-stone-50 to-ivory-50';
-            const ctaClass = 'bg-charcoal-900 hover:bg-charcoal-800 text-white';
-            const badgeClasses =
-              plan.id === 'pro'
-                ? 'bg-rose-100 text-rose-700 border-rose-200'
-                : plan.id === 'elite'
-                  ? 'bg-stone-100 text-stone-700 border-stone-200'
-                  : plan.badgeClasses;
+            const accentTop = plan.accentClass.replace(/^border-/, 'border-t-');
             return (
               <div
                 key={plan.id}
-                className={`relative bg-white rounded-2xl border shadow-soft flex flex-col overflow-hidden transition-all hover:shadow-md ${
-                  isPopular ? 'border-rose-200' : isCurrent ? 'border-green-300' : 'border-charcoal-100'
-                }`}
+                className={`relative bg-white rounded-2xl border border-charcoal-100 shadow-soft flex flex-col overflow-hidden transition-all hover:shadow-md border-t-4 ${accentTop}`}
               >
-                <div className={`relative p-6 pb-5 bg-gradient-to-br ${headerGradient}`}>
-                  <div className="absolute inset-0 opacity-[0.28]" style={{ backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(255,255,255,.9), transparent 52%), radial-gradient(circle at 80% 0%, rgba(255,255,255,.7), transparent 55%)' }} />
-                  <div className="relative flex items-start justify-between gap-3">
+                <div className="p-6 pb-5 bg-stone-50 border-b border-charcoal-100">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-serif text-charcoal-900 text-xl font-medium leading-none">{plan.name}</h3>
-                        {isPopular && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/70 border border-white/80 text-[11px] font-semibold rounded-full text-rose-700">
-                            <Star className="w-3 h-3" /> Populaire
-                          </span>
-                        )}
-                        {isCurrent && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/70 border border-white/80 text-[11px] font-semibold rounded-full text-green-700">
-                            <Check className="w-3 h-3" /> Actuel
-                          </span>
-                        )}
-                      </div>
+                      <h3 className="font-serif text-charcoal-900 text-xl font-medium leading-none">{plan.name}</h3>
                       <p className="text-charcoal-600 text-xs mt-1">{plan.tagline}</p>
                     </div>
-                    <span className={`text-[11px] px-2.5 py-1 rounded-full border font-semibold bg-white/70 ${badgeClasses}`}>
-                      {plan.badgeLabel}
-                    </span>
+                    {isCurrent ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 border border-green-200 text-[11px] font-medium rounded-full text-green-700">
+                        Actuel
+                      </span>
+                    ) : (
+                      <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ${plan.badgeClasses}`}>
+                        {plan.badgeLabel}
+                      </span>
+                    )}
                   </div>
 
-                  <div className="relative mt-5 flex items-end justify-between">
+                  <div className="mt-5 flex items-end justify-between">
                     <div className="flex items-baseline gap-1">
                       <span className="font-serif text-charcoal-900" style={{ fontSize: '2.4rem', fontWeight: 300, lineHeight: 1 }}>
                         {plan.price}€
@@ -409,11 +369,11 @@ export default function AbonnementPage() {
                     <button
                       onClick={() => handleSubscribe(plan.id)}
                       disabled={!!checkoutLoading}
-                      className={`w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 ${ctaClass}`}
+                      className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 bg-rose-600 hover:bg-rose-700 text-white"
                     >
                       {checkoutLoading === plan.id
                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Chargement…</>
-                        : <><Zap className="w-4 h-4" /> {currentTier !== 'free' && !isCurrent ? 'Changer de plan' : `Commencer avec ${paymentProvider === 'paypal' ? 'PayPal' : 'Stripe'}`}</>}
+                        : <><Zap className="w-4 h-4" /> {currentTier !== 'free' ? 'Changer de plan' : `Commencer avec ${paymentProvider === 'paypal' ? 'PayPal' : 'Stripe'}`}</>}
                     </button>
                   )}
                 </div>
@@ -427,8 +387,8 @@ export default function AbonnementPage() {
       <div className="bg-white rounded-2xl border border-charcoal-100 p-6 grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm">
         {[
           { icon: Lock, title: 'Paiement sécurisé', desc: paymentProvider === 'paypal' ? 'PayPal gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' : 'Stripe gère votre paiement. Vos données bancaires ne nous sont jamais transmises.' },
-          { icon: RotateCcw, title: 'Sans engagement', desc: paymentProvider === 'paypal' ? 'Résiliez depuis votre espace PayPal, sans frais ni pénalités.' : 'Résiliez à tout moment depuis votre portail Stripe, sans frais ni pénalités.' },
-          { icon: Bolt, title: 'Activation immédiate', desc: 'Votre plan est activé dès la confirmation du paiement. Visibilité boostée instantanément.' },
+          { icon: RotateCcw, title: 'Sans engagement', desc: 'Résiliez à tout moment, sans frais ni pénalités.' },
+          { icon: Bolt, title: 'Activation rapide', desc: 'Votre plan est activé dès la confirmation du paiement.' },
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex gap-3">
             <span className="w-9 h-9 rounded-xl bg-ivory-50 border border-charcoal-100 flex items-center justify-center flex-shrink-0">

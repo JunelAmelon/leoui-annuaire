@@ -40,14 +40,17 @@ export default function PromotionsPage() {
     setLoading(true);
     try {
       const data = await getDocuments('promotions', [{ field: 'vendor_id', operator: '==', value: user.uid }]);
-      setPromos((data as any[]).map(d => ({
+      const loaded = (data as any[]).map(d => ({
         id: d.id, title: d.title || '', description: d.description || '',
         discount_type: d.discount_type || 'percentage', discount_value: d.discount_value || 0,
         code: d.code || '', valid_from: d.valid_from || '', valid_to: d.valid_to || '',
         max_uses: d.max_uses || 0, used_count: d.used_count || 0,
         min_amount: d.min_amount || 0, status: d.status || 'active',
         created_at: d.created_at || new Date().toISOString(),
-      })));
+      }));
+      setPromos(loaded);
+      const hasActive = loaded.some(p => p.status === 'active' && (!p.valid_to || new Date(p.valid_to) >= new Date()));
+      await updateDocument('vendors', user.uid, { hasPromo: hasActive }).catch(() => {});
     } catch { setPromos([]); } finally { setLoading(false); }
   };
 

@@ -5,7 +5,7 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <section className="bg-charcoal-900 py-16 text-center px-6">
+      <section className="bg-rose-600 py-16 text-center px-6">
         <h1 className="font-display text-display-md text-white mb-3">Conditions générales d'utilisation</h1>
         <p className="text-body-md text-white/60">Dernière mise à jour : janvier 2026</p>
       </section>

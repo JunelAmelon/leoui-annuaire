@@ -5,25 +5,25 @@
 @layer base {
   :root {
     /* Warm palette HSL variables for shadcn compatibility */
-    --background: 35 28% 97%;
+    --background: 36 20% 98%;
     --foreground: 22 16% 11%;
     --card: 0 0% 100%;
     --card-foreground: 22 16% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 22 16% 11%;
-    --primary: 18 54% 40%;
+    --primary: 347 77% 50%;
     --primary-foreground: 35 30% 97%;
     --secondary: 30 18% 92%;
     --secondary-foreground: 22 16% 20%;
     --muted: 30 12% 94%;
     --muted-foreground: 22 10% 46%;
-    --accent: 38 46% 44%;
+    --accent: 343 66% 65%;
     --accent-foreground: 35 30% 97%;
     --destructive: 0 68% 50%;
     --destructive-foreground: 0 0% 98%;
     --border: 28 16% 86%;
     --input: 28 16% 86%;
-    --ring: 18 54% 40%;
+    --ring: 347 77% 50%;
     --radius: 0.375rem;
   }
 
@@ -48,13 +48,13 @@
 
   /* Custom selection color */
   ::selection {
-    background-color: rgba(166, 133, 64, 0.18);
+    background-color: rgba(225, 29, 72, 0.15);
     color: #1C1814;
   }
 
   /* Refined focus ring */
   *:focus-visible {
-    outline: 1.5px solid #A34E30;
+    outline: 1.5px solid #E11D48;
     outline-offset: 2px;
   }
 }
@@ -91,10 +91,10 @@
   }
 
   /* Gradient backgrounds — flat, not gradient */
-  .gradient-champagne   { background-color: #F4EEE6; }
-  .bg-gradient-champagne{ background-color: #F4EEE6; }
-  .gradient-rose        { background-color: #FAF2EE; }
-  .bg-gradient-rose     { background-color: #FAF2EE; }
+  .gradient-champagne   { background-color: #FDF6F8; }
+  .bg-gradient-champagne{ background-color: #FDF6F8; }
+  .gradient-rose        { background-color: #FFF1F2; }
+  .bg-gradient-rose     { background-color: #FFF1F2; }
 
   /* Still needed in some places */
   .gradient-overlay {

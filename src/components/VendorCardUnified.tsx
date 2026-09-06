@@ -9,7 +9,7 @@
  */
 
 import Link from 'next/link';
-import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight, Zap, Tag } from 'lucide-react';
+import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight, Zap, Tag, Gift } from 'lucide-react';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 
@@ -129,6 +129,11 @@ export default function VendorCardUnified({
                 <MapPin className="w-3 h-3" /> {location || 'France'}
               </span>
             </div>
+            {hasPromo && (
+              <p className="text-xs font-medium text-rose-600 flex items-center gap-1.5 mb-2">
+                <Gift className="w-3 h-3" /> Promo en cours
+              </p>
+            )}
             <p className="text-sm text-charcoal-600 line-clamp-2 leading-relaxed">
               {description || `${category} professionnel pour votre mariage.`}
             </p>
@@ -139,11 +144,7 @@ export default function VendorCardUnified({
               <span className="text-sm text-charcoal-700 flex items-center gap-1.5 font-medium">
                 À partir de <span className="text-charcoal-900 font-semibold">{startingPrice || '-'}</span>
               </span>
-              {hasPromo && (
-                <span className="hidden sm:flex text-xs text-rose-600 items-center gap-1">
-                  <Tag className="w-3 h-3" /> 1 promotion
-                </span>
-              )}
+              {/* promo badge moved to image */}
             </div>
             <div className="flex items-center justify-end gap-2 flex-shrink-0">
               <span className="hidden sm:flex text-xs text-charcoal-500 items-center gap-1">
@@ -206,6 +207,11 @@ export default function VendorCardUnified({
               </div>
               <span className="text-xs text-white/80 font-medium">{rating || '0.0'}</span>
             </div>
+            {hasPromo && (
+              <p className="text-xs text-rose-300 font-medium truncate flex items-center gap-1 mb-0.5">
+                <Gift className="w-3 h-3" /> Promo en cours
+              </p>
+            )}
             <p className="text-white font-semibold text-sm truncate">{name}</p>
             <p className="text-xs text-white/70 truncate flex items-center gap-1 mt-0.5">
               <MapPin className="w-3 h-3" /> {location || 'France'}
@@ -287,8 +293,8 @@ export default function VendorCardUnified({
               </span>
             )}
             {hasPromo && (
-              <span className="flex items-center gap-1 text-xs text-rose-600 bg-rose-50 px-2 py-1 rounded-full">
-                Promo
+              <span className="flex items-center gap-1.5 text-xs font-medium text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full">
+                <Gift className="w-3 h-3" /> Promo
               </span>
             )}
           </div>

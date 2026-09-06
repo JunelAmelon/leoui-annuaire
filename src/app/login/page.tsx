@@ -1,8 +1,9 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Heart, Store, Chrome } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -14,13 +15,28 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { user, loading: authLoading, signIn, signInWithGoogle } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = (() => {
+    const n = searchParams?.get('next');
+    if (n && n.startsWith('/')) return decodeURIComponent(n);
+    return '/espace-client';
+  })();
+  const hasRedirectedRef = useRef(false);
+
+  useEffect(() => {
+    if (authLoading || !user || hasRedirectedRef.current) return;
+    hasRedirectedRef.current = true;
+    router.replace(nextUrl);
+  }, [authLoading, user, nextUrl]);
 
   const handleGoogle = async () => {
     setSocialLoading(true);
     setError('');
     try {
-      const { isNew } = await signInWithGoogle();
+      hasRedirectedRef.current = true;
+      const { isNew } = await signInWithGoogle(nextUrl);
       if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui.net 🎉');
       else toast.success('Connexion réussie !');
     } catch (err: any) {
@@ -41,7 +57,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await signIn(email, password);
+      hasRedirectedRef.current = true;
+      await signIn(email, password, nextUrl);
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
@@ -217,7 +234,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-charcoal-500 mt-6">
             Pas encore de compte ?{' '}
-            <Link href="/signup" className="text-rose-600 font-semibold hover:underline">S'inscrire gratuitement</Link>
+            <Link href={`/signup${nextUrl !== '/espace-client' ? `?next=${encodeURIComponent(nextUrl)}` : ''}`} className="text-rose-600 font-semibold hover:underline">S'inscrire gratuitement</Link>
           </p>
 
           {/* Vendor portal CTA */}

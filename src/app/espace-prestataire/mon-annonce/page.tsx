@@ -537,7 +537,7 @@ export default function MonAnnoncePage() {
                     <input type="url" value={newImage} onChange={e => setNewImage(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImage()}
                       className="flex-1 px-3 py-2 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all"
                       placeholder="https://... coller une URL" />
-                    <button onClick={addImage} className="px-4 py-2 bg-charcoal-800 text-white rounded-xl text-sm hover:bg-charcoal-900 transition-colors"><Plus className="w-4 h-4" /></button>
+                    <button onClick={addImage} className="px-4 py-2 bg-rose-700 text-white rounded-xl text-sm hover:bg-rose-600 transition-colors"><Plus className="w-4 h-4" /></button>
                   </div>
                 </>
               )}
@@ -733,7 +733,7 @@ export default function MonAnnoncePage() {
                       <input type="text" value={newPkgItem} onChange={e => setNewPkgItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPkgItem()}
                         className="flex-1 px-3 py-2 border border-charcoal-200 rounded-xl text-sm bg-white focus:outline-none focus:border-rose-400 transition-all"
                         placeholder="Inclus dans la formule…" />
-                      <button onClick={addPkgItem} className="px-3 py-2 bg-charcoal-800 text-white rounded-xl text-sm hover:bg-charcoal-900 transition-colors"><Plus className="w-4 h-4" /></button>
+                      <button onClick={addPkgItem} className="px-3 py-2 bg-rose-700 text-white rounded-xl text-sm hover:bg-rose-600 transition-colors"><Plus className="w-4 h-4" /></button>
                     </div>
                     {newPkg.items.length > 0 && (
                       <div className="flex flex-wrap gap-1">

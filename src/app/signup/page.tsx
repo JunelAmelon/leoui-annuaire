@@ -1,10 +1,10 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Heart, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, Store, Calendar, Chrome, Search, ClipboardList, MessageSquare, BarChart3, MapPin, Home } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Heart, Mail, Lock, User, Users, Euro, ArrowRight, Eye, EyeOff, Check, Store, Calendar, Chrome, Search, ClipboardList, MessageSquare, BarChart3, MapPin, Home } from 'lucide-react';
 import { signUp } from '@/lib/auth-helpers';
 import { useAuth } from '@/contexts/AuthContext';
 import CityAutocompleteInput from '@/components/CityAutocompleteInput';
@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [partner, setPartner] = useState('');
   const [email, setEmail] = useState('');
   const [weddingDate, setWeddingDate] = useState('');
+  const [guestCount, setGuestCount] = useState('');
+  const [budget, setBudget] = useState('');
   const [street, setStreet] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [city, setCity] = useState('');
@@ -27,7 +29,20 @@ export default function SignupPage() {
   const [socialLoading, setSocialLoading] = useState(false);
   const [stats, setStats] = useState<{ vendorsCount: number; weddingsCount: number } | null>(null);
   const router = useRouter();
-  const { signInWithGoogle } = useAuth();
+  const searchParams = useSearchParams();
+  const nextUrl = (() => {
+    const n = searchParams?.get('next');
+    if (n && n.startsWith('/')) return decodeURIComponent(n);
+    return '/espace-client';
+  })();
+  const { user, loading: authLoading, signInWithGoogle } = useAuth();
+  const hasRedirectedRef = useRef(false);
+
+  useEffect(() => {
+    if (authLoading || !user || hasRedirectedRef.current) return;
+    hasRedirectedRef.current = true;
+    router.replace(nextUrl);
+  }, [authLoading, user, nextUrl]);
 
   useEffect(() => {
     fetch('/api/public/stats')
@@ -46,7 +61,8 @@ export default function SignupPage() {
     setSocialLoading(true);
     setError('');
     try {
-      const { isNew } = await signInWithGoogle();
+      hasRedirectedRef.current = true;
+      const { isNew } = await signInWithGoogle(nextUrl);
       if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui.net 🎉');
       else toast.success('Connexion réussie !');
     } catch (err: any) {
@@ -69,11 +85,15 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
     try {
+      hasRedirectedRef.current = true;
       await signUp({
         email, password, name, partner, role: 'client',
+        eventDate: weddingDate,
+        guestCount: Number(guestCount) || 0,
+        budget: Number(budget) || 0,
         address: { street, city, postalCode, country }
       });
-      router.push('/espace-client');
+      router.push(nextUrl);
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/email-already-in-use') setError('Cet email est déjà utilisé.');
@@ -226,6 +246,37 @@ export default function SignupPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Nombre d'invités provisoire</label>
+                <div className="relative">
+                  <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="100"
+                    value={guestCount}
+                    onChange={(e) => setGuestCount(e.target.value)}
+                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all text-charcoal-700"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Budget estimé (€)</label>
+                <div className="relative">
+                  <Euro className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="15000"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all text-charcoal-700"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Address section */}
             <div className="space-y-3 pt-1">
               <p className="text-xs font-medium text-charcoal-700 flex items-center gap-1.5">
@@ -347,7 +398,7 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-charcoal-500 mt-6">
             Déjà un compte ?{' '}
-            <Link href="/login" className="text-rose-600 font-semibold hover:underline">Se connecter</Link>
+            <Link href={`/login${nextUrl !== '/espace-client' ? `?next=${encodeURIComponent(nextUrl)}` : ''}`} className="text-rose-600 font-semibold hover:underline">Se connecter</Link>
           </p>
 
           {/* Vendor portal CTA */}

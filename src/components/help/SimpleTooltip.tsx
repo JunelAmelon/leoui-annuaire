@@ -40,7 +40,7 @@ function SimpleTooltipContent({
 
   const variantStyles = {
     light: 'bg-white text-charcoal-800 shadow-lg shadow-charcoal-900/10 border border-charcoal-100',
-    dark: 'bg-charcoal-900 text-white shadow-xl shadow-charcoal-900/20',
+    dark: 'bg-rose-600 text-white shadow-xl shadow-charcoal-900/20',
     gold: 'bg-gold-50 text-gold-900 shadow-lg shadow-gold-500/15 border border-gold-200',
   };
 

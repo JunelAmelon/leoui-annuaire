@@ -96,7 +96,7 @@ export function PayPalSubscriptionCard({
         className={`w-full py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
           isPopular
             ? 'bg-gold-500 text-white hover:bg-gold-600 shadow-lg shadow-gold-500/25'
-            : 'bg-charcoal-900 text-white hover:bg-charcoal-800'
+            : 'bg-rose-600 text-white hover:bg-rose-700'
         }`}
       >
         {isLoading ? (

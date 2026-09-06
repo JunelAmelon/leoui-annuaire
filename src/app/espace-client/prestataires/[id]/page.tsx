@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -187,10 +187,26 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
 
   const handleContact = async (form: { name: string; email: string; phone: string; message: string }) => {
     if (!user) { router.push('/login'); return; }
-    if (!client?.id) { toast.error('Profil client introuvable.'); return; }
     const vendorId = vendor?.uid || vendor?.id;
+    const clientId = client?.id || user.uid;
+    let coupleName = '';
+    if (client?.name) {
+      coupleName = `${client.name}${client.partner ? ' & ' + client.partner : ''}`.trim();
+    }
+    if (!coupleName && user?.uid) {
+      try {
+        const profile = (await getDocument('profiles', user.uid)) as any;
+        if (profile?.name) {
+          coupleName = `${profile.name}${profile.partner ? ' & ' + profile.partner : ''}`.trim();
+        }
+      } catch {}
+    }
+    if (!coupleName) {
+      coupleName = user.displayName || user.email || 'Client';
+    }
+
     const existingConvs = await getDocuments('conversations', [
-      { field: 'client_id', operator: '==', value: client.id },
+      { field: 'client_id', operator: '==', value: clientId },
     ]);
     const existing = (existingConvs as any[]).find(c => c.vendor_id === vendorId);
     let convId: string;
@@ -203,7 +219,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       });
     } else {
       const ref = await addDocument('conversations', {
-        client_id: client.id,
+        client_id: clientId,
         vendor_id: vendorId,
         client_name: coupleName,
         vendor_name: vendor.name,
@@ -234,23 +250,36 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       link: '/espace-prestataire/messages',
     });
     toast.success('Message envoyé !');
-    router.push('/espace-client/messages');
   };
 
   const handleSubmitReview = async (review: { rating: number; comment: string }) => {
     if (!client?.id || !resolvedVendorId) { toast.error('Données manquantes'); return; }
+    const now = new Date().toISOString();
+    const existing = await getDocuments('reviews', [
+      { field: 'vendor_id', operator: '==', value: resolvedVendorId },
+      { field: 'client_id', operator: '==', value: client.id },
+    ]);
+    if ((existing as any[]).length > 0) {
+      setExistingClientReview({ rating: (existing[0] as any).rating, comment: (existing[0] as any).comment });
+      toast.error('Vous avez déjà laissé un avis pour ce prestataire');
+      return;
+    }
     await addDocument('reviews', {
       vendor_id: resolvedVendorId,
       client_id: client.id,
       client_name: coupleName,
+      client_photo: client.photo || '',
       rating: review.rating,
       comment: review.comment,
-      date: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      status: 'verified',
+      date: now,
+      created_at: now,
+      updated_at: now,
+      status: 'published',
+      source: 'client_space',
+      vendor_reply: '',
     });
     const updatedReviews = [
-      { id: Date.now().toString(), vendor_id: resolvedVendorId, client_id: client.id, client_name: coupleName, rating: review.rating, comment: review.comment, date: new Date().toISOString(), status: 'verified' },
+      { id: Date.now().toString(), vendor_id: resolvedVendorId, client_id: client.id, client_name: coupleName, rating: review.rating, comment: review.comment, date: now, created_at: now, updated_at: now, status: 'published', source: 'client_space', vendor_reply: '' },
       ...reviews,
     ];
     setExistingClientReview({ rating: review.rating, comment: review.comment });
@@ -296,7 +325,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
             disabled={venueLoading || isCurrentVenue}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
               isCurrentVenue
-                ? 'bg-charcoal-900 text-white border-charcoal-900'
+                ? 'bg-rose-600 text-white border-rose-600'
                 : 'bg-white text-charcoal-700 border-charcoal-200 hover:bg-stone-50'
             } disabled:opacity-60`}
           >

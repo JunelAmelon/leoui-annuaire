@@ -118,7 +118,7 @@ export async function POST(req: Request) {
                   },
                   quantity: 1,
                 }],
-                success_url: `${APP_URL}/espace-prestataire/abonnement?success=true&upgrade=true`,
+                success_url: `${APP_URL}/espace-prestataire/abonnement?success=true&upgrade=true&session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${APP_URL}/espace-prestataire/abonnement?canceled=true`,
                 metadata: { uid, vendorId: uid, planId, type: 'prorata_upgrade' },
               });

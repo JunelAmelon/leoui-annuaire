@@ -8,7 +8,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-white">
       <Header />
 
-      <section className="bg-charcoal-900 py-20 text-center px-6">
+      <section className="bg-rose-600 py-20 text-center px-6">
         <p className="text-xs font-semibold text-rose-400 tracking-[0.14em] uppercase mb-4">— Nous écrire</p>
         <h1 className="font-display text-display-lg text-white mb-4">Contact</h1>
         <p className="text-body-md text-white/60 max-w-xl mx-auto">

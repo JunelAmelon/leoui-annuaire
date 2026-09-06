@@ -12,7 +12,7 @@ import { Calendar, MapPin, Pencil, Users, Euro, ChevronRight, X, Camera } from '
 const DEFAULT_PHOTO = 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=400';
 
 /* Circular SVG progress ring */
-function RingProgress({ value, max, label, sub, color = '#A34E30' }: { value: number; max: number; label: string; sub: string; color?: string }) {
+function RingProgress({ value, max, label, sub, color = '#E11D48' }: { value: number; max: number; label: string; sub: string; color?: string }) {
   const r = 26;
   const circ = 2 * Math.PI * r;
   const pct = max > 0 ? Math.min(1, value / max) : 0;
@@ -275,10 +275,10 @@ export default function MariagePage() {
 
             {/* Circular stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-              <RingProgress value={teamVendors.length} max={Math.max(teamVendors.length, 10)} label="Services réservés" sub={`${teamVendors.length} prestataire${teamVendors.length !== 1 ? 's' : ''}`} color="#A34E30" />
-              <RingProgress value={taskStats.done} max={Math.max(taskStats.total, 1)} label="Tâches réalisées" sub={`${taskStats.done} sur ${taskStats.total}`} color="#A34E30" />
-              <RingProgress value={guestStats.confirmed} max={Math.max(guestStats.total, 1)} label="Invités confirmés" sub={`${guestStats.confirmed} sur ${guestStats.total}`} color="#A68540" />
-              <RingProgress value={guestStats.placed} max={Math.max(guestStats.total, 1)} label="Invités placés" sub={`${guestStats.placed} sur ${guestStats.total}`} color="#A68540" />
+              <RingProgress value={teamVendors.length} max={Math.max(teamVendors.length, 10)} label="Services réservés" sub={`${teamVendors.length} prestataire${teamVendors.length !== 1 ? 's' : ''}`} color="#E11D48" />
+              <RingProgress value={taskStats.done} max={Math.max(taskStats.total, 1)} label="Tâches réalisées" sub={`${taskStats.done} sur ${taskStats.total}`} color="#E11D48" />
+              <RingProgress value={guestStats.confirmed} max={Math.max(guestStats.total, 1)} label="Invités confirmés" sub={`${guestStats.confirmed} sur ${guestStats.total}`} color="#DD6B8D" />
+              <RingProgress value={guestStats.placed} max={Math.max(guestStats.total, 1)} label="Invités placés" sub={`${guestStats.placed} sur ${guestStats.total}`} color="#DD6B8D" />
             </div>
           </div>
         </div>
@@ -655,7 +655,7 @@ export default function MariagePage() {
               </div>
               <div>
                 <label className="block text-xs text-charcoal-500 mb-1.5 font-medium">Palette de couleurs</label>
-                <input type="text" value={themeForm.theme_colors} onChange={e => setThemeForm(f => ({ ...f, theme_colors: e.target.value }))} placeholder="#F5E6D3, #A68540, #BE6040" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
+                <input type="text" value={themeForm.theme_colors} onChange={e => setThemeForm(f => ({ ...f, theme_colors: e.target.value }))} placeholder="#F5E6D3, #DD6B8D, #BE6040" className="w-full border border-charcoal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-rose-400 bg-ivory-50" />
                 <p className="text-[0.65rem] text-charcoal-400 mt-1">Codes hexadécimaux séparés par des virgules</p>
                 {themeForm.theme_colors && (
                   <div className="flex gap-2 mt-2 flex-wrap">

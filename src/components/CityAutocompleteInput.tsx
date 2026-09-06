@@ -100,7 +100,7 @@ export default function CityAutocompleteInput({
         <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin ${dark ? 'text-white/60' : 'text-charcoal-400'}`} />
       )}
       {show && suggestions.length > 0 && (
-        <div className={`absolute top-full left-0 right-0 mt-1 border rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto ${dark ? 'bg-charcoal-900 border-white/10' : 'bg-white border-charcoal-100'}`}>
+        <div className={`absolute top-full left-0 right-0 mt-1 border rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto ${dark ? 'bg-rose-600 border-white/10' : 'bg-white border-charcoal-100'}`}>
           {suggestions.map((c) => (
             <button
               key={c}

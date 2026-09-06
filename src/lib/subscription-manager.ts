@@ -10,6 +10,16 @@
 import { adminDb } from './firebase-admin';
 import { stripe } from './stripe';
 
+function toMillis(value: any): number {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  if (typeof value === 'number') return value;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
 export type SubscriptionProvider = 'stripe' | 'paypal';
 
 export type SubscriptionStatus = 
@@ -52,15 +62,25 @@ export async function getActiveSubscription(userId: string): Promise<Subscriptio
   const snapshot = await adminDb
     .collection('subscriptions')
     .where('userId', '==', userId)
-    .where('status', 'in', ['active', 'past_due', 'pending'])
-    .orderBy('createdAt', 'desc')
-    .limit(1)
     .get();
 
   if (snapshot.empty) return null;
   
-  const doc = snapshot.docs[0];
-  return { id: doc.id, ...doc.data() } as Subscription;
+  const activeStatuses = new Set(['active', 'past_due', 'pending']);
+  let chosen: any = null;
+  let chosenMs = 0;
+  snapshot.docs.forEach(doc => {
+    const data = doc.data() as any;
+    if (!activeStatuses.has(data.status)) return;
+    const ms = toMillis(data.createdAt);
+    if (!chosen || ms > chosenMs) {
+      chosen = doc;
+      chosenMs = ms;
+    }
+  });
+
+  if (!chosen) return null;
+  return { id: chosen.id, ...chosen.data() } as Subscription;
 }
 
 /**
@@ -70,10 +90,10 @@ export async function getUserSubscriptions(userId: string): Promise<Subscription
   const snapshot = await adminDb
     .collection('subscriptions')
     .where('userId', '==', userId)
-    .orderBy('createdAt', 'desc')
     .get();
 
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subscription));
+  return (snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subscription)))
+    .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
 }
 
 /**
@@ -348,25 +368,28 @@ export async function cleanupActiveSubscriptions(
   const snapshot = await adminDb
     .collection('subscriptions')
     .where('userId', '==', userId)
-    .where('status', 'in', ['active', 'past_due', 'pending'])
     .get();
 
+  const activeStatuses = new Set(['active', 'past_due', 'pending']);
   const batch = adminDb.batch();
   let hasUpdates = false;
+  let cleanedCount = 0;
 
   snapshot.docs.forEach(doc => {
-    if (doc.id !== exceptSubscriptionId) {
+    const data = doc.data() as any;
+    if (doc.id !== exceptSubscriptionId && activeStatuses.has(data.status)) {
       batch.update(doc.ref, {
         status: 'canceled',
         canceledAt: new Date(),
         updatedAt: new Date(),
       });
       hasUpdates = true;
+      cleanedCount++;
     }
   });
 
   if (hasUpdates) {
     await batch.commit();
-    console.log('[SubscriptionManager] Nettoyé', snapshot.docs.length - 1, 'anciens abonnements pour', userId);
+    console.log('[SubscriptionManager] Nettoyé', cleanedCount, 'anciens abonnements pour', userId);
   }
 }

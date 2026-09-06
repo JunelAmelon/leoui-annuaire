@@ -155,7 +155,7 @@ export default function CityPage({ params }: CityPageProps) {
     <div className="min-h-screen bg-ivory-50">
       <Header />
 
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '380px' }}>
         <div className="absolute inset-0">
           <img
             src={city.imageUrl}
@@ -197,7 +197,7 @@ export default function CityPage({ params }: CityPageProps) {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                   selectedCategory === cat
-                    ? 'bg-charcoal-900 text-white'
+                    ? 'bg-rose-600 text-white'
                     : 'bg-white text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
                 }`}
               >

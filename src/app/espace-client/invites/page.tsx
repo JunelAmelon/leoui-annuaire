@@ -211,7 +211,7 @@ export default function InvitesPage() {
         <div className="flex gap-2 flex-wrap">
           {(['all', 'confirmed', 'pending', 'declined'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-2 text-xs font-medium tracking-[0.06em] uppercase transition-colors ${filter === f ? 'bg-charcoal-900 text-white' : 'bg-white border border-charcoal-200 text-charcoal-500 hover:border-charcoal-400'}`}>
+              className={`px-3 py-2 text-xs font-medium tracking-[0.06em] uppercase transition-colors ${filter === f ? 'bg-rose-600 text-white' : 'bg-white border border-charcoal-200 text-charcoal-500 hover:border-charcoal-400'}`}>
               {f === 'all' ? 'Tous' : RSVP_CONFIG[f].label}
             </button>
           ))}
@@ -386,7 +386,7 @@ export default function InvitesPage() {
                 <div className="flex gap-2 flex-wrap">
                   {MENUS.map(m => (
                     <button key={m} type="button" onClick={() => setForm(f => ({ ...f, menu: m }))}
-                      className={`px-3 py-1.5 text-xs font-light transition-colors ${form.menu === m ? 'bg-charcoal-900 text-white' : 'bg-white border border-charcoal-200 text-charcoal-500 hover:border-charcoal-400'}`}>
+                      className={`px-3 py-1.5 text-xs font-light transition-colors ${form.menu === m ? 'bg-rose-600 text-white' : 'bg-white border border-charcoal-200 text-charcoal-500 hover:border-charcoal-400'}`}>
                       {m}
                     </button>
                   ))}
@@ -405,7 +405,7 @@ export default function InvitesPage() {
                 <p className="label-xs text-charcoal-500 tracking-[0.08em]">Accompagnants</p>
                 <div className="space-y-3">
                   <label className="flex items-center gap-2.5 cursor-pointer">
-                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.has_children ? 'bg-charcoal-900 border-charcoal-900' : 'border-charcoal-300'}`}
+                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.has_children ? 'bg-rose-600 border-rose-600' : 'border-charcoal-300'}`}
                       onClick={() => setForm(f => ({ ...f, has_children: !f.has_children }))}>
                       {form.has_children && <Check className="w-3 h-3 text-white" />}
                     </div>
@@ -429,7 +429,7 @@ export default function InvitesPage() {
                 </div>
                 <div className="space-y-3">
                   <label className="flex items-center gap-2.5 cursor-pointer">
-                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.has_pets ? 'bg-charcoal-900 border-charcoal-900' : 'border-charcoal-300'}`}
+                    <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${form.has_pets ? 'bg-rose-600 border-rose-600' : 'border-charcoal-300'}`}
                       onClick={() => setForm(f => ({ ...f, has_pets: !f.has_pets }))}>
                       {form.has_pets && <Check className="w-3 h-3 text-white" />}
                     </div>
@@ -474,7 +474,7 @@ export default function InvitesPage() {
                 Annuler
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex-1 py-2.5 bg-charcoal-900 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 bg-rose-600 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
                 {saving ? 'Sauvegarde…' : editGuest ? 'Mettre à jour' : 'Ajouter'}
               </button>
             </div>

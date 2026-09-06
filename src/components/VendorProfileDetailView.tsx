@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import VendorCard from '@/components/VendorCard';
 import SimilarVendorsCarousel from '@/components/SimilarVendorsCarousel';
+import { toast } from 'sonner';
+import { incrementDocumentFields, addDocument, getDocument } from '@/lib/db';
 import {
   Star,
   MapPin,
@@ -25,6 +28,9 @@ import {
   ChevronRight,
   Award,
   Video,
+  Gift,
+  Calendar,
+  BadgeCheck,
 } from 'lucide-react';
 
 const FALLBACK_PHOTOS = [
@@ -83,8 +89,23 @@ export default function VendorProfileDetailView({
   isFavorite: isFavoriteProp,
   onFavoriteToggle,
 }: VendorProfileDetailViewProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('informations');
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [selectedPromo, setSelectedPromo] = useState<any>(null);
+  const [pendingPromoToken, setPendingPromoToken] = useState<string | null>(null);
+
+  const nextUrl = useMemo(() => {
+    const base = isLoggedIn
+      ? (pathname || `/vendors/${vendorId}`)
+      : `/espace-client/prestataires/${vendorId}`;
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    if (pendingPromoToken) params.set('promoToken', pendingPromoToken);
+    const query = params.toString();
+    return query ? `${base}?${query}` : base;
+  }, [isLoggedIn, pathname, searchParams, vendorId, pendingPromoToken]);
   const [internalFavorite, setInternalFavorite] = useState(false);
   const isFavorite = isFavoriteProp !== undefined ? isFavoriteProp : internalFavorite;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
@@ -99,10 +120,17 @@ export default function VendorProfileDetailView({
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(Boolean(existingClientReview));
+  const [showReviewConfirmation, setShowReviewConfirmation] = useState(false);
+  const [expandedReview, setExpandedReview] = useState<any | null>(null);
+  const reviewsScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
   const [showGallery, setShowGallery] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showStickyButton, setShowStickyButton] = useState(false);
   const contactButtonRef = useRef<HTMLButtonElement>(null);
+  const promotionsRef = useRef<HTMLDivElement>(null);
 
   const photos: string[] = vendor.images?.length ? vendor.images : FALLBACK_PHOTOS;
   const videos: string[] = vendor.videos || [];
@@ -113,6 +141,58 @@ export default function VendorProfileDetailView({
   const avgRating = reviews.length > 0
     ? (reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length)
     : (vendor.rating || 5);
+  const publishedReviews = useMemo(
+    () => (reviews || [])
+      .filter((r: any) => r.status !== 'pending')
+      .sort((a: any, b: any) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()),
+    [reviews]
+  );
+  const RATING_LABELS = ['', 'Décevant', 'Passable', 'Bien', 'Très bien', 'Excellent'];
+
+  // Récupère les photos des clients ayant laissé un avis
+  useEffect(() => {
+    const ids = Array.from(new Set(publishedReviews.map((r: any) => r.client_id).filter(Boolean)));
+    const missing = ids.filter((id) => !(id in clientPhotos));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        missing.map(async (id) => {
+          try {
+            const c = await getDocument('clients', id);
+            if (c?.photo || c?.photoURL) return [id, (c.photo || c.photoURL) as string] as const;
+            const p = await getDocument('profiles', id);
+            return [id, (p?.photo || p?.photoURL || '') as string] as const;
+          } catch {
+            return [id, ''] as const;
+          }
+        })
+      );
+      if (!cancelled) setClientPhotos((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+    return () => { cancelled = true; };
+  }, [publishedReviews]);
+
+  // Affiche les flèches du carrousel uniquement si le contenu déborde
+  const updateReviewsScrollState = () => {
+    const el = reviewsScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'avis') return;
+    updateReviewsScrollState();
+    const el = reviewsScrollRef.current;
+    window.addEventListener('resize', updateReviewsScrollState);
+    el?.addEventListener('scroll', updateReviewsScrollState, { passive: true });
+    return () => {
+      window.removeEventListener('resize', updateReviewsScrollState);
+      el?.removeEventListener('scroll', updateReviewsScrollState);
+    };
+  }, [activeTab, publishedReviews.length]);
+
   const activePromos = (promotions || []).filter((p: any) => !p.valid_to || new Date(p.valid_to) >= new Date());
 
   // Observer pour afficher le bouton sticky après le défilement
@@ -140,9 +220,91 @@ export default function VendorProfileDetailView({
     { id: 'carte', label: 'Carte' },
   ];
 
+  const isPromoPath = Boolean(selectedPromo);
   const isContactDisabled = contactSubmitDisabled
     ? contactSubmitDisabled(contactForm)
-    : isLoggedIn ? !contactForm.message.trim() : (!contactForm.name || !contactForm.email);
+    : isLoggedIn
+      ? !contactForm.message.trim()
+      : isPromoPath
+        ? !contactForm.message.trim()
+        : (!contactForm.name || !contactForm.email);
+
+  const buildPromoMessage = (promo: any) => {
+    const discount = promo.discount_type === 'percentage' ? `${promo.discount_value}%` : `${promo.discount_value} €`;
+    return `Bonjour, je suis intéressé(e) par votre offre "${promo.title}" (code ${promo.code}, remise de -${discount}). Pouvez-vous me revenir avec les conditions et disponibilités ?`;
+  };
+
+  const submitContact = async (form: ContactForm, promo: any) => {
+    setSending(true);
+    try {
+      await onSubmitContact(form);
+      if (isLoggedIn && promo?.id) {
+        await incrementDocumentFields('promotions', promo.id, { used_count: 1 }).catch(() => {});
+        await addDocument('promo_usages', {
+          promo_id: promo.id,
+          vendor_id: vendorId,
+          message_preview: form.message.slice(0, 200),
+          created_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleUsePromo = (promo: any) => {
+    const message = buildPromoMessage(promo);
+    setSelectedPromo(promo);
+    setContactForm((prev) => ({ ...prev, message }));
+    setShowContactModal(true);
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn || !vendor || !vendorId || typeof window === 'undefined') return;
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    const tokenFromUrl = params.get('promoToken');
+    const storageKey = tokenFromUrl ? `pendingPromo_${tokenFromUrl}` : 'pendingPromo';
+    const raw = sessionStorage.getItem(storageKey);
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw);
+      if (pending.vendorId !== vendorId) return;
+      sessionStorage.removeItem(storageKey);
+      const promo = pending.promo;
+      const form: ContactForm = { name: '', email: '', phone: '', message: pending.message || buildPromoMessage(promo) };
+      setSelectedPromo(promo);
+      submitContact(form, promo).then(() => {
+        setShowContactModal(false);
+        setSelectedPromo(null);
+        toast.success('Votre demande a bien été envoyée au prestataire');
+      }).catch(() => {
+        toast.error('Votre demande promotion n\'a pas pu être envoyée');
+      });
+    } catch {}
+  }, [isLoggedIn, vendorId, vendor, searchParams]);
+
+  const openContact = () => {
+    setSelectedPromo(null);
+    setContactForm((prev) => ({
+      ...prev,
+      message: 'Bonjour, nous sommes en pleins préparatifs de mariage et nous aimerions en savoir plus sur vos services et disponibilités.',
+    }));
+    setShowContactModal(true);
+  };
+
+  const closeContact = () => {
+    setSelectedPromo(null);
+    setShowContactModal(false);
+  };
+
+  const closeAuthPrompt = () => {
+    try {
+      if (pendingPromoToken) sessionStorage.removeItem(`pendingPromo_${pendingPromoToken}`);
+      sessionStorage.removeItem('pendingPromo');
+    } catch {}
+    setPendingPromoToken(null);
+    setShowAuthPrompt(false);
+  };
 
   return (
     <>
@@ -288,7 +450,7 @@ export default function VendorProfileDetailView({
 
               <button
                 ref={contactButtonRef}
-                onClick={() => setShowContactModal(true)}
+                onClick={openContact}
                 className="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide mb-3"
               >
                 Envoyer un message
@@ -311,20 +473,22 @@ export default function VendorProfileDetailView({
             </div>
 
             {/* Tabs */}
-            <div className="mt-10 border-b border-charcoal-200 w-full overflow-x-auto relative z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <div className="flex gap-1 min-w-max">
+            <div className="mt-10 relative z-10">
+              <div
+                className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+              >
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-all relative ${
-                      activeTab === tab.id ? 'text-charcoal-900' : 'text-charcoal-500 hover:text-charcoal-800'
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap rounded-full border transition-all duration-200 flex-shrink-0 ${
+                      activeTab === tab.id
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                        : 'bg-white text-charcoal-500 border-charcoal-200 hover:border-charcoal-400 hover:text-charcoal-800'
                     }`}
                   >
                     {tab.label}
-                    {activeTab === tab.id && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-charcoal-900 rounded-full" />
-                    )}
                   </button>
                 ))}
               </div>
@@ -462,129 +626,161 @@ export default function VendorProfileDetailView({
 
               {activeTab === 'avis' && (
                 <div>
-                  {/* Formulaire laisser un avis — client connecté uniquement */}
+                  {/* ── Formulaire laisser un avis — client connecté uniquement ── */}
                   {canReview && !reviewSubmitted && (
-                    <div className="mb-6 bg-white rounded-2xl border border-charcoal-100 p-6 shadow-sm">
-                      <h3 className="font-serif text-charcoal-900 text-base font-medium mb-1">Laisser un avis</h3>
-                      <p className="text-xs text-charcoal-500 mb-4 flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5 text-green-500" />
+                    <div className="mb-8 relative overflow-hidden rounded-3xl border border-champagne-200 bg-gradient-to-b from-champagne-50/60 to-white p-6 sm:p-8">
+                      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent" />
+                      <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-rose-600 mb-1.5">Votre avis compte</p>
+                      <h3 className="font-serif text-charcoal-900 text-xl sm:text-2xl mb-1">Partagez votre expérience</h3>
+                      <p className="text-xs text-charcoal-500 flex items-center gap-1.5 mb-6">
+                        <BadgeCheck className="w-3.5 h-3.5 text-green-600" />
                         Avis vérifié — vous avez fait appel à ce prestataire
                       </p>
-                      <div className="flex gap-1.5 mb-4">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <button key={n} type="button" onClick={() => setReviewRating(n)}>
-                            <Star className={`w-7 h-7 transition-colors ${n <= reviewRating ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`} />
-                          </button>
-                        ))}
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-5">
+                        <div className="flex gap-1.5">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setReviewRating(n)}
+                              className="transition-transform duration-150 hover:scale-125 hover:-rotate-6"
+                              aria-label={`${n} étoile${n > 1 ? 's' : ''}`}
+                            >
+                              <Star
+                                className={`w-8 h-8 transition-colors duration-150 ${n <= reviewRating ? 'text-amber-400 fill-amber-400 drop-shadow-[0_2px_4px_rgba(251,191,36,0.35)]' : 'text-charcoal-200 hover:text-amber-300'}`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <span className="font-serif italic text-charcoal-600">{RATING_LABELS[reviewRating]}</span>
                       </div>
+
                       <textarea
                         value={reviewComment}
                         onChange={(e) => setReviewComment(e.target.value)}
-                        placeholder="Partagez votre expérience avec ce prestataire…"
+                        placeholder="Racontez votre collaboration : la qualité du service, la réactivité, le rendu le jour J…"
                         rows={4}
-                        className="w-full px-4 py-3 bg-stone-50 border border-charcoal-200 rounded-xl text-sm resize-none focus:outline-none focus:border-rose-400 transition-all"
+                        className="w-full px-5 py-4 bg-white border border-champagne-200 rounded-2xl text-sm text-charcoal-800 placeholder:text-charcoal-300 resize-none focus:outline-none focus:border-rose-300 focus:ring-4 focus:ring-rose-100/60 transition-all"
                       />
-                      <button
-                        disabled={!reviewComment.trim() || submittingReview}
-                        onClick={async () => {
-                          if (!onSubmitReview) return;
-                          setSubmittingReview(true);
-                          try {
-                            await onSubmitReview({ rating: reviewRating, comment: reviewComment });
-                            setReviewSubmitted(true);
-                          } finally { setSubmittingReview(false); }
-                        }}
-                        className="mt-3 px-5 py-2.5 bg-charcoal-900 text-white text-sm font-semibold rounded-xl hover:bg-charcoal-800 disabled:opacity-50 transition-colors"
-                      >
-                        {submittingReview ? 'Envoi…' : 'Publier mon avis'}
-                      </button>
-                    </div>
-                  )}
-                  {reviewSubmitted && existingClientReview && (
-                    <div className="mb-6 bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-semibold text-green-800">Votre avis a été publié</p>
-                        <div className="flex gap-0.5 mt-1">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i < existingClientReview.rating ? 'text-amber-400 fill-amber-400':'text-charcoal-200'}`}/>)}</div>
-                      </div>
-                    </div>
-                  )}
-                  {reviewSubmitted && !existingClientReview && (
-                    <div className="mb-6 bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                      <p className="text-sm font-semibold text-green-800">Votre avis a été publié. Merci !</p>
-                    </div>
-                  )}
-                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-5 sm:p-6 bg-white rounded-2xl border border-charcoal-200 mb-6">
-                    <div className="text-center">
-                      <p className="font-display text-[3.5rem] leading-none text-charcoal-900">{avgRating.toFixed(1)}</p>
-                      <div className="flex gap-0.5 justify-center mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < Math.round(avgRating) ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-body-sm text-charcoal-600 mt-1">{reviews.length} avis</p>
-                    </div>
 
-                    {reviews.length > 0 && (
-                      <div className="flex-1 space-y-2">
-                        {[5, 4, 3, 2, 1].map((n) => {
-                          const count = reviews.filter((r) => Math.round(r.rating || 5) === n).length;
-                          const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
-                          return (
-                            <div key={n} className="flex items-center gap-3">
-                              <span className="text-body-sm w-3">{n}</span>
-                              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                              <div className="flex-1 h-2 bg-charcoal-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="text-body-sm text-charcoal-500 w-8">{pct}%</span>
-                            </div>
-                          );
-                        })}
+                      <div className="flex items-center justify-between mt-5">
+                        <p className="text-[11px] text-charcoal-400 italic hidden sm:block">Publié immédiatement, sans modération.</p>
+                        <button
+                          disabled={!reviewComment.trim() || submittingReview}
+                          onClick={async () => {
+                            if (!onSubmitReview) return;
+                            setSubmittingReview(true);
+                            try {
+                              await onSubmitReview({ rating: reviewRating, comment: reviewComment });
+                              setReviewSubmitted(true);
+                              setShowReviewConfirmation(true);
+                              setTimeout(() => setShowReviewConfirmation(false), 4000);
+                            } finally { setSubmittingReview(false); }
+                          }}
+                          className="group inline-flex items-center gap-2 px-6 py-3 bg-rose-600 text-white text-sm font-medium rounded-full hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ml-auto"
+                        >
+                          {submittingReview ? 'Publication…' : 'Publier mon avis'}
+                          <Send className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  {reviews.length === 0 ? (
-                    <div className="text-center py-12 text-charcoal-400">
-                      <Star className="w-10 h-10 mx-auto mb-3 text-charcoal-200" />
-                      <p>Aucun avis pour le moment</p>
+                  {/* ── Confirmation après publication ── */}
+                  {showReviewConfirmation && (
+                    <div className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-green-800">Merci ! Votre avis a été publié.</p>
+                        {existingClientReview && (
+                          <div className="flex gap-0.5 mt-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${i < existingClientReview.rating ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Carrousel des avis ── */}
+                  {publishedReviews.length === 0 ? (
+                    <div className="relative py-16 text-center">
+                      <div className="flex items-center justify-center gap-3 mb-5">
+                        <span className="h-px w-10 bg-champagne-300" />
+                        <div className="flex gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 text-champagne-300" />
+                          ))}
+                        </div>
+                        <span className="h-px w-10 bg-champagne-300" />
+                      </div>
+                      <p className="font-serif italic text-charcoal-800 text-xl sm:text-2xl">Aucun avis pour le moment</p>
+                      <p className="text-sm text-charcoal-400 mt-2 max-w-sm mx-auto leading-relaxed">
+                        Ce prestataire n'a pas encore reçu d'avis de ses clients.
+                      </p>
                     </div>
                   ) : (
-                    <div className="space-y-5">
-                      {reviews
-                        .filter((r) => r.status !== 'pending')
-                        .map((review: any, i: number) => {
-                          const initials = (review.client_name || review.author || 'A')
+                    <div className="relative">
+                      {/* Flèche gauche — visible uniquement si on peut défiler */}
+                      {canScrollLeft && (
+                        <button
+                          type="button"
+                          onClick={() => reviewsScrollRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
+                          className="hidden sm:flex absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-md border border-charcoal-100 items-center justify-center text-charcoal-600 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                          aria-label="Avis précédents"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                      )}
+
+                      <div
+                        ref={reviewsScrollRef}
+                        className="flex gap-5 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
+                        {publishedReviews.map((review: any, i: number) => {
+                          const name = review.client_name || review.author || 'Client';
+                          const clientPhoto = review.client_photo || (review.client_id ? clientPhotos[review.client_id] : '') || '';
+                          const initials = name
                             .split(' ')
+                            .filter(Boolean)
                             .map((w: string) => w[0])
                             .slice(0, 2)
                             .join('')
                             .toUpperCase();
+                          const comment: string = review.comment || '';
+                          const words = comment.trim().split(/\s+/);
+                          const title = review.title || (words.length > 6 ? words.slice(0, 5).join(' ') : '');
+                          const isLong = comment.length > 180;
                           return (
-                            <article key={i} className="bg-white rounded-2xl border border-charcoal-100 p-6">
-                              <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center text-rose-700 font-semibold text-sm">
+                            <article
+                              key={review.id || i}
+                              className="bg-white rounded-2xl border border-charcoal-100 p-6 shadow-sm flex-shrink-0 w-[85vw] sm:w-[300px] snap-start flex flex-col"
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                {clientPhoto ? (
+                                  <img src={clientPhoto} alt={name} className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
+                                ) : (
+                                  <div className="w-11 h-11 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-semibold text-sm flex-shrink-0">
                                     {initials}
                                   </div>
-                                  <div>
-                                    <p className="font-semibold text-charcoal-900 text-sm">
-                                      {review.client_name || review.author || 'Client'}
-                                    </p>
-                                    <p className="text-xs text-charcoal-500">
-                                      {new Date(review.date || review.created_at || Date.now()).toLocaleDateString('fr-FR', {
-                                        month: 'long',
-                                        year: 'numeric',
-                                      })}
-                                    </p>
-                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-charcoal-900 text-sm truncate">{name}</p>
+                                  <p className="text-xs text-charcoal-400">
+                                    Envoyé le {new Date(review.date || review.created_at || Date.now()).toLocaleDateString('fr-FR')}
+                                  </p>
                                 </div>
-                                <div className="flex gap-0.5 flex-shrink-0">
+                              </div>
+                              <div className="flex items-center gap-1.5 mb-3">
+                                <div className="flex gap-0.5">
                                   {[...Array(5)].map((_, j) => (
                                     <Star
                                       key={j}
@@ -592,17 +788,108 @@ export default function VendorProfileDetailView({
                                     />
                                   ))}
                                 </div>
+                                <span className="text-sm font-semibold text-charcoal-900">{(review.rating || 5).toFixed(1)}</span>
                               </div>
-                              {review.comment && <p className="text-body-md text-charcoal-700 leading-relaxed">{review.comment}</p>}
+                              {title && (
+                                <p className="font-bold text-charcoal-900 text-sm mb-2">{title}</p>
+                              )}
+                              <p className={`text-sm text-charcoal-600 leading-relaxed flex-1 ${isLong ? 'line-clamp-4' : ''}`}>
+                                {comment}
+                              </p>
+                              {isLong && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedReview(review)}
+                                  className="mt-2 text-sm font-semibold text-charcoal-900 underline underline-offset-2 hover:text-rose-600 text-left transition-colors"
+                                >
+                                  En savoir plus
+                                </button>
+                              )}
                               {review.vendor_reply && (
-                                <div className="mt-3 bg-rose-50 rounded-xl p-3 border-l-2 border-rose-300">
-                                  <p className="text-xs font-semibold text-rose-700 mb-1">Réponse du prestataire</p>
-                                  <p className="text-xs text-charcoal-600">{review.vendor_reply}</p>
+                                <div className="mt-3 pt-3 border-t border-charcoal-100">
+                                  <p className="text-xs font-semibold text-rose-600 mb-1">Réponse du prestataire</p>
+                                  <p className="text-xs text-charcoal-500 leading-relaxed line-clamp-3">{review.vendor_reply}</p>
                                 </div>
                               )}
                             </article>
                           );
                         })}
+                      </div>
+
+                      {/* Flèche droite — visible uniquement si on peut défiler */}
+                      {canScrollRight && (
+                        <button
+                          type="button"
+                          onClick={() => reviewsScrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
+                          className="hidden sm:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-md border border-charcoal-100 items-center justify-center text-charcoal-600 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                          aria-label="Avis suivants"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Modale avis complet ── */}
+                  {expandedReview && (
+                    <div
+                      className="fixed inset-0 z-50 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+                      onClick={() => setExpandedReview(null)}
+                    >
+                      <div
+                        className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <div className="flex items-center gap-3">
+                            {(() => {
+                              const p = expandedReview.client_photo || (expandedReview.client_id ? clientPhotos[expandedReview.client_id] : '') || '';
+                              return p ? (
+                                <img src={p} alt="" className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="w-11 h-11 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-semibold text-sm flex-shrink-0">
+                                  {(expandedReview.client_name || expandedReview.author || 'C')
+                                    .split(' ').filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
+                                </div>
+                              );
+                            })()}
+                            <div>
+                              <p className="font-semibold text-charcoal-900 text-sm">
+                                {expandedReview.client_name || expandedReview.author || 'Client'}
+                              </p>
+                              <p className="text-xs text-charcoal-400">
+                                Envoyé le {new Date(expandedReview.date || expandedReview.created_at || Date.now()).toLocaleDateString('fr-FR')}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedReview(null)}
+                            className="w-8 h-8 rounded-full hover:bg-stone-100 flex items-center justify-center text-charcoal-400 hover:text-charcoal-700 transition-colors flex-shrink-0"
+                            aria-label="Fermer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1.5 mb-4">
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, j) => (
+                              <Star
+                                key={j}
+                                className={`w-4 h-4 ${j < (expandedReview.rating || 5) ? 'text-amber-400 fill-amber-400' : 'text-charcoal-200'}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm font-semibold text-charcoal-900">{(expandedReview.rating || 5).toFixed(1)}</span>
+                        </div>
+                        <p className="text-sm text-charcoal-700 leading-relaxed whitespace-pre-line">{expandedReview.comment}</p>
+                        {expandedReview.vendor_reply && (
+                          <div className="mt-4 bg-stone-50 rounded-xl p-4 border border-stone-100">
+                            <p className="text-xs font-semibold text-rose-600 mb-1">Réponse de {vendor.name}</p>
+                            <p className="text-sm text-charcoal-600 leading-relaxed">{expandedReview.vendor_reply}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -611,7 +898,7 @@ export default function VendorProfileDetailView({
               {activeTab === 'reportages' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   {reportages.map((r, i) => (
-                    <article key={i} className="group relative rounded-2xl overflow-hidden cursor-pointer bg-charcoal-900">
+                    <article key={i} className="group relative rounded-2xl overflow-hidden cursor-pointer bg-rose-600">
                       {r.videoUrl ? (
                         <div className="relative">
                           <video
@@ -644,31 +931,49 @@ export default function VendorProfileDetailView({
               )}
 
               {activeTab === 'promotions' && (
-                <div className="space-y-4">
-                  {activePromos.map((promo: any, i: number) => (
+                <div ref={promotionsRef} className="space-y-4">
+                  {activePromos.map((promo: any) => (
                     <div
-                      key={i}
-                      className={`bg-white rounded-2xl p-6 ${i === 0 ? 'border-2 border-rose-200' : 'border border-charcoal-200'}`}
+                      key={promo.id}
+                      className="bg-white rounded-2xl p-6 border border-rose-100 shadow-sm"
                     >
-                      <div className="flex items-center gap-2 mb-3">
-                        <Tag className={`w-5 h-5 ${i === 0 ? 'text-rose-600' : 'text-champagne-600'}`} />
-                        <span className={`font-semibold ${i === 0 ? 'text-rose-600' : 'text-champagne-700'}`}>
-                          {promo.title} — -{promo.discount_value}
-                          {promo.discount_type === 'percentage' ? '%' : ' €'}
-                        </span>
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2.5 mb-2">
+                            <span className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
+                              <Gift className="w-4 h-4 text-rose-600" />
+                            </span>
+                            <h3 className="font-semibold text-charcoal-900 truncate">{promo.title}</h3>
+                          </div>
+                          {promo.description && (
+                            <p className="text-sm text-charcoal-600 mb-3 leading-relaxed">{promo.description}</p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-3">
+                            {promo.code && (
+                              <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-charcoal-800 bg-stone-100 px-2.5 py-1.5 rounded-lg">
+                                <Tag className="w-3 h-3 text-charcoal-500" />
+                                {promo.code}
+                              </span>
+                            )}
+                            {promo.valid_to && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-charcoal-500">
+                                <Calendar className="w-3.5 h-3.5" />
+                                Jusqu&apos;au {new Date(promo.valid_to).toLocaleDateString('fr-FR')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <span className="inline-block bg-rose-600 text-white text-sm font-bold px-3 py-1.5 rounded-full">
+                            -{promo.discount_value}{promo.discount_type === 'percentage' ? '%' : ' €'}
+                          </span>
+                        </div>
                       </div>
-                      {promo.description && <p className="text-body-md text-charcoal-700 mb-3">{promo.description}</p>}
-                      {promo.code && (
-                        <p className="text-body-sm text-charcoal-500 font-mono">
-                          Code : <strong>{promo.code}</strong>
-                        </p>
-                      )}
-                      {promo.valid_to && <p className="text-body-sm text-charcoal-400 mt-1">Valable jusqu'au {promo.valid_to}</p>}
                       <button
-                        onClick={() => setShowContactModal(true)}
-                        className="mt-4 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                        onClick={() => handleUsePromo(promo)}
+                        className="mt-5 w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
                       >
-                        En profiter
+                        <Gift className="w-4 h-4" /> En profiter
                       </button>
                     </div>
                   ))}
@@ -747,15 +1052,20 @@ export default function VendorProfileDetailView({
                 </div>
               )}
               {activePromos.length > 0 && (
-                <div className="flex items-center gap-1.5 mb-4">
-                  <Tag className="w-4 h-4 text-rose-500" />
-                  <button
-                    className="text-body-sm text-rose-600 hover:text-rose-700 font-medium"
-                    onClick={() => setActiveTab('promotions')}
-                  >
-                    {activePromos.length} promotion{activePromos.length > 1 ? 's' : ''} active{activePromos.length > 1 ? 's' : ''}
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('promotions');
+                    setTimeout(() => promotionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  }}
+                  className="w-full flex items-center gap-2.5 mb-4 px-3 py-2.5 bg-rose-50 border border-rose-100 rounded-xl text-left hover:bg-rose-100 transition-colors"
+                >
+                  <span className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                    <Gift className="w-3.5 h-3.5 text-rose-600" />
+                  </span>
+                  <span className="text-sm font-medium text-rose-700">
+                    {activePromos.length} promotion{activePromos.length > 1 ? 's' : ''} en cours
+                  </span>
+                </button>
               )}
 
               {vendor.startingPrice && (
@@ -775,7 +1085,7 @@ export default function VendorProfileDetailView({
 
               <div className="flex gap-3 mb-5">
                 <button
-                  onClick={() => setShowContactModal(true)}
+                  onClick={openContact}
                   className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 px-4 transition-colors text-sm tracking-wide"
                 >
                   Envoyer un message
@@ -822,7 +1132,7 @@ export default function VendorProfileDetailView({
 
               <div className={`fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-rose-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transition-transform duration-300 ${showStickyButton ? 'translate-y-0' : 'translate-y-full'}`}>
                 <button
-                  onClick={() => setShowContactModal(true)}
+                  onClick={openContact}
                   className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-medium py-3.5 transition-colors text-sm tracking-wide"
                 >
                   Contacter ce prestataire
@@ -860,7 +1170,7 @@ export default function VendorProfileDetailView({
                   <h2 className="font-display text-[1.7rem] leading-tight text-charcoal-900">Plus d'information</h2>
                 </div>
                 <button
-                  onClick={() => setShowContactModal(false)}
+                  onClick={closeContact}
                   className="w-9 h-9 bg-charcoal-100 rounded-lg flex items-center justify-center hover:bg-charcoal-200 transition-colors mt-1"
                 >
                   <X className="w-4 h-4 text-charcoal-700" />
@@ -886,13 +1196,20 @@ export default function VendorProfileDetailView({
                 className="space-y-3"
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  setSending(true);
-                  try {
-                    await onSubmitContact(contactForm);
+                  if (sending) return;
+                  if (!isLoggedIn && selectedPromo) {
+                    const token = Math.random().toString(36).slice(2);
+                    setPendingPromoToken(token);
+                    try {
+                      sessionStorage.setItem(`pendingPromo_${token}`, JSON.stringify({ vendorId, promo: selectedPromo, message: contactForm.message }));
+                    } catch {}
                     setShowContactModal(false);
-                  } finally {
-                    setSending(false);
+                    setShowAuthPrompt(true);
+                    return;
                   }
+                  await submitContact(contactForm, selectedPromo);
+                  setShowContactModal(false);
+                  setSelectedPromo(null);
                 }}
               >
                 <div>
@@ -904,7 +1221,7 @@ export default function VendorProfileDetailView({
                     className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm text-charcoal-800 resize-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
-                {!isLoggedIn && (
+                {!isLoggedIn && !selectedPromo && (
                   <>
                     <div>
                       <label className="block text-xs font-medium text-charcoal-600 mb-1">Prénom et Nom</label>
@@ -949,6 +1266,60 @@ export default function VendorProfileDetailView({
                   {sending ? 'Envoi…' : 'Envoyer'}
                 </button>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AUTH PROMPT MODAL */}
+      {showAuthPrompt && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] w-full max-w-md max-h-[92dvh] overflow-hidden">
+            <div className="relative h-44">
+              <img
+                src="/mariage%20(1).jpg"
+                alt="Mariage"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                  <Gift className="w-5 h-5 text-rose-600" />
+                </div>
+                <span className="text-white font-medium text-sm shadow-black drop-shadow-md">Une promotion vous attend</span>
+              </div>
+              <button
+                onClick={closeAuthPrompt}
+                className="absolute top-3 right-3 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-charcoal-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 text-center">
+              <h2 className="font-display text-2xl text-charcoal-900 mb-2">Débloquez cette offre</h2>
+              <p className="text-sm text-charcoal-600 mb-6 leading-relaxed">
+                Connectez-vous ou créez votre compte pour envoyer votre demande avec cette promotion au prestataire. Vous pourrez ensuite suivre votre conversation.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href={`/signup?next=${encodeURIComponent(nextUrl)}`}
+                  className="block w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  S&apos;inscrire
+                </Link>
+                <Link
+                  href={`/login?next=${encodeURIComponent(nextUrl)}`}
+                  className="block w-full bg-white border border-charcoal-200 hover:bg-charcoal-50 text-charcoal-800 font-semibold py-3 rounded-xl transition-colors"
+                >
+                  Se connecter
+                </Link>
+                <button
+                  onClick={closeAuthPrompt}
+                  className="w-full text-sm text-charcoal-500 hover:text-charcoal-700 py-2"
+                >
+                  Annuler
+                </button>
+              </div>
             </div>
           </div>
         </div>

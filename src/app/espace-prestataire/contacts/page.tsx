@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import LinkifyText from '@/components/LinkifyText';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
-import { MessageSquare, Search, Send, Paperclip, X, Loader2, Clock, CheckCircle2, Heart, ChevronLeft, FileText, Image as ImageIcon } from 'lucide-react';
+import {
+  MessageSquare, Search, Send, Paperclip, X, Loader2, Clock, CheckCircle2, Heart, ChevronLeft, ChevronRight, FileText, Image as ImageIcon,
+} from 'lucide-react';
 import { getDocument, getDocuments, addDocument, updateDocument } from '@/lib/db';
+import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
 import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -40,6 +44,7 @@ export default function ContactsPage() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [filePreview, setFilePreview] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [imageGallery, setImageGallery] = useState<{ attachments: { url: string; name?: string; type?: string }[]; index: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
   const [vendorPhoto, setVendorPhoto] = useState('');
@@ -147,15 +152,15 @@ export default function ContactsPage() {
       const lastLabel = attachments.length
         ? (attachments.length === 1 ? `Fichier : ${attachments[0].name}` : `${attachments.length} fichiers joints`)
         : content;
-      const msg = {
+      const msg: any = {
         conversation_id: selected.id,
         sender_id: user.uid,
         sender_role: 'vendor',
         sender_name: user.displayName || user.email,
         content,
-        attachments: attachments.length ? attachments : undefined,
         created_at: new Date().toISOString(),
       };
+      if (attachments.length) msg.attachments = attachments;
       await addDocument('messages', msg);
       const currentUnread = ((selected as any).unread_count_client || 0) as number;
       await updateDocument('conversations', selected.id, {
@@ -163,6 +168,17 @@ export default function ContactsPage() {
         last_message_at: new Date().toISOString(),
         unread_count_client: currentUnread + 1,
       });
+      if (selected.client_id) {
+        resolveClientRecipientId(selected.client_id)
+          .then((recipientId) => createNotification({
+            recipientId,
+            type: 'message',
+            title: `Nouveau message de ${user.displayName || 'votre prestataire'}`,
+            message: content.slice(0, 100),
+            link: '/espace-client/messages',
+          }))
+          .catch(() => {});
+      }
       setMessages(prev => [...prev, { id: Date.now().toString(), ...msg } as Message]);
       setNewMsg('');
       setPendingFiles([]);
@@ -340,41 +356,67 @@ export default function ContactsPage() {
                                 ? 'bg-rose-600 text-white rounded-br-md'
                                 : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
                             }`}>
-                              {msg.content && <p>{msg.content}</p>}
-                              {msg.attachments?.map((a, i) => {
-                                const type = (a.type || '').toLowerCase();
-                                const isImg = type.startsWith('image/');
-                                const isPdf = type === 'application/pdf';
+                              {msg.content && <p className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></p>}
+                              {(() => {
+                                const attachments = msg.attachments || [];
+                                const imageAttachments = attachments.filter((a) => (a.type || '').toLowerCase().startsWith('image/'));
+                                const otherAttachments = attachments.filter((a) => !(a.type || '').toLowerCase().startsWith('image/'));
+                                const hasMoreImages = imageAttachments.length > 3;
+                                const visibleImages = hasMoreImages ? imageAttachments.slice(0, 2) : imageAttachments;
+                                const gridClass = imageAttachments.length === 1 ? 'grid-cols-1' : imageAttachments.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
                                 return (
-                                  <div key={i} className="mt-2">
-                                    {isImg ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setFilePreview({ url: a.url, name: a.name || 'Image', type: a.type || 'image/*' })}
-                                        className="block"
-                                      >
-                                        <img src={a.url} alt={a.name || 'Image'} className="max-h-56 rounded-xl border border-white/20 object-cover" />
-                                      </button>
-                                    ) : isPdf ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setFilePreview({ url: a.url, name: a.name || 'PDF', type: a.type || 'application/pdf' })}
-                                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors ${isVendor ? 'text-white' : 'text-charcoal-700'}`}
-                                      >
-                                        <FileText className="w-4 h-4" />
-                                        <span className="text-xs underline">{a.name || 'Document PDF'}</span>
-                                      </button>
-                                    ) : (
-                                      <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isVendor ? 'text-rose-100' : 'text-rose-700'}`}>
-                                        <span className="inline-flex items-center gap-1">
-                                          <Paperclip className="w-3 h-3" />
-                                          {a.name || 'Fichier'}
-                                        </span>
-                                      </a>
+                                  <>
+                                    {imageAttachments.length > 0 && (
+                                      <div className={`grid gap-1 mt-2 ${gridClass}`}>
+                                        {visibleImages.map((a, i) => (
+                                          <button
+                                            key={i}
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); setImageGallery({ attachments: imageAttachments, index: i }); }}
+                                            className="relative aspect-square rounded-xl overflow-hidden border border-white/20"
+                                          >
+                                            <img src={a.url} alt={a.name || 'Image'} className="w-full h-full object-cover" />
+                                          </button>
+                                        ))}
+                                        {hasMoreImages && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); setImageGallery({ attachments: imageAttachments, index: 2 }); }}
+                                            className="relative aspect-square rounded-xl overflow-hidden bg-charcoal-900/60 flex items-center justify-center border border-white/20"
+                                          >
+                                            <span className="text-white font-semibold text-lg">+{imageAttachments.length - 2}</span>
+                                          </button>
+                                        )}
+                                      </div>
                                     )}
-                                  </div>
+                                    {otherAttachments.map((a, i) => {
+                                      const type = (a.type || '').toLowerCase();
+                                      const isPdf = type === 'application/pdf';
+                                      return (
+                                        <div key={i} className="mt-2">
+                                          {isPdf ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => setFilePreview({ url: a.url, name: a.name || 'PDF', type: a.type || 'application/pdf' })}
+                                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors ${isVendor ? 'text-white' : 'text-charcoal-700'}`}
+                                            >
+                                              <FileText className="w-4 h-4" />
+                                              <span className="text-xs underline">{a.name || 'Document PDF'}</span>
+                                            </button>
+                                          ) : (
+                                            <a href={a.url} target="_blank" rel="noreferrer" className={`underline text-xs ${isVendor ? 'text-rose-100' : 'text-rose-700'}`}>
+                                              <span className="inline-flex items-center gap-1">
+                                                <Paperclip className="w-3 h-3" />
+                                                {a.name || 'Fichier'}
+                                              </span>
+                                            </a>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </>
                                 );
-                              })}
+                              })()}
                               {msg.created_at && (
                                 <p className={`text-xs mt-1 ${isVendor ? 'text-rose-200' : 'text-charcoal-400'}`}>
                                   {formatTime(msg.created_at)}
@@ -450,6 +492,33 @@ export default function ContactsPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Image gallery preview */}
+                {imageGallery && (
+                  <div className="fixed inset-0 z-50 bg-charcoal-900/90 flex items-center justify-center p-4" onClick={() => setImageGallery(null)}>
+                    <button className="absolute top-4 right-4 w-9 h-9 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-xl" onClick={() => setImageGallery(null)}>
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                    <button
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-full disabled:opacity-30"
+                      onClick={(e) => { e.stopPropagation(); setImageGallery((g) => g && g.index > 0 ? { ...g, index: g.index - 1 } : g); }}
+                      disabled={imageGallery.index === 0}
+                    >
+                      <ChevronLeft className="w-6 h-6 text-white" />
+                    </button>
+                    <button
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-full disabled:opacity-30"
+                      onClick={(e) => { e.stopPropagation(); setImageGallery((g) => g && g.index < g.attachments.length - 1 ? { ...g, index: g.index + 1 } : g); }}
+                      disabled={imageGallery.index === imageGallery.attachments.length - 1}
+                    >
+                      <ChevronRight className="w-6 h-6 text-white" />
+                    </button>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm font-medium">
+                      {imageGallery.index + 1} / {imageGallery.attachments.length}
+                    </div>
+                    <img src={imageGallery.attachments[imageGallery.index].url} alt="" className="max-w-full max-h-[85vh] object-contain rounded-xl" onClick={e => e.stopPropagation()} />
+                  </div>
+                )}
 
                 {/* Lightbox / inline preview */}
                 {filePreview && (

@@ -151,7 +151,7 @@ export default function ChatAssistant() {
       <button
         onClick={() => setIsOpen(prev => !prev)}
         className={`relative w-14 h-14 rounded-2xl shadow-soft-xl flex items-center justify-center transition-all duration-200 hover:scale-105 ${
-          isOpen ? 'bg-charcoal-800 hover:bg-charcoal-900' : 'bg-rose-600 hover:bg-rose-700'
+          isOpen ? 'bg-rose-700 hover:bg-rose-600' : 'bg-rose-600 hover:bg-rose-700'
         }`}
       >
         {hasUnread && !isOpen && (

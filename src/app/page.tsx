@@ -160,7 +160,7 @@ export default function HomePage() {
       </section>
 
       {/* ── NOS MÉTIERS — numbered horizontal strip ── */}
-      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
+      <section className="py-24 bg-white" style={{ backgroundColor: '#FAF6F8' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
           <div className="flex items-end justify-between mb-12">
@@ -215,7 +215,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SÉLECTION — magazine list layout ── */}
-      <section id="recommandations" className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
+      <section id="recommandations" className="py-24 bg-white" style={{ backgroundColor: '#FAF6F8' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
           <div className="flex items-end justify-between mb-10">
@@ -252,10 +252,10 @@ export default function HomePage() {
       </section>
 
       {/* ── GALERIE — asymmetric editorial grid ── */}
-      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
+      <section className="py-16 bg-white" style={{ backgroundColor: '#FAF6F8' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="mb-12">
-            <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">
+          <div className="mb-8">
+            <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-1.5 flex items-center gap-2">
               <span className="w-8 h-px bg-rose-400"></span>
               Inspiration
             </p>
@@ -343,7 +343,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TÉMOIGNAGES — pull quotes ── */}
-      <section className="py-24 bg-white" style={{ backgroundColor: '#ffffff' }}>
+      <section className="py-24 bg-white" style={{ backgroundColor: '#FAF6F8' }}>
         <div className="max-w-6xl mx-auto px-6 lg:px-10">
           <div className="text-center mb-16">
             <p className="text-sm font-medium text-rose-500 tracking-[0.1em] uppercase mb-3 flex items-center gap-2">

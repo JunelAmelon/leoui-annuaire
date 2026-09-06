@@ -165,7 +165,7 @@ export default function WeddingPlannerPageV1() {
       <Header />
 
       {/* HERO — Harmonized Style */}
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '580px' }}>
+      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '580px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920"
@@ -220,7 +220,7 @@ export default function WeddingPlannerPageV1() {
                     'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?w=100',
                     'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?w=100'
                   ].map((src, i) => (
-                    <img key={i} src={src} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-charcoal-900" />
+                    <img key={i} src={src} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-rose-600" />
                   ))}
                 </div>
                 <div>

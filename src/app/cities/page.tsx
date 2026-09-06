@@ -156,7 +156,7 @@ export default function CitiesPage() {
               onClick={() => setActiveRegion(r)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                 activeRegion === r
-                  ? 'bg-charcoal-900 text-white'
+                  ? 'bg-rose-600 text-white'
                   : 'bg-charcoal-50 text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
               }`}
             >
@@ -241,19 +241,24 @@ export default function CitiesPage() {
 
       {/* Bottom CTA */}
       <section className="py-20 px-4 bg-charcoal-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-15">
           <img src="https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1920" className="w-full h-full object-cover" alt="" />
         </div>
         <div className="relative z-10 max-w-3xl mx-auto text-center">
+          <p className="text-sm font-medium text-rose-400 tracking-[0.1em] uppercase mb-3 flex items-center justify-center gap-2">
+            <span className="w-8 h-px bg-rose-400"></span>
+            Partout en France
+            <span className="w-8 h-px bg-rose-400"></span>
+          </p>
           <h2 className="font-display text-display-md text-white mb-4">
             Votre ville n'est pas listée ?
           </h2>
           <p className="text-body-lg text-white/70 mb-8">
             Nous couvrons toute la France. Utilisez notre moteur de recherche pour trouver des prestataires près de chez vous, où que vous soyez.
           </p>
-          <Link href="/vendors" className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-8 py-4 rounded-xl transition-colors">
+          <Link href="/vendors" className="inline-flex items-center gap-2 bg-white text-charcoal-900 hover:bg-rose-50 font-semibold px-8 py-4 rounded-xl transition-colors">
             Rechercher des prestataires
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5 text-rose-600" />
           </Link>
         </div>
       </section>

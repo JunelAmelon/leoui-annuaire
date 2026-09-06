@@ -24,9 +24,37 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode !== 'subscription') break;
-        const uid = session.metadata?.uid || '';
+        let uid = session.metadata?.uid || '';
+        if (!uid && typeof session.customer === 'string') {
+          const vendorSnap = await adminDb.collection('vendors').where('stripeCustomerId', '==', session.customer).limit(1).get();
+          if (!vendorSnap.empty) uid = vendorSnap.docs[0].id;
+        }
         if (!uid) break;
+
+        if (session.mode === 'payment') {
+          const vendorSnap = await adminDb.collection('vendors').doc(uid).get();
+          const vendor = vendorSnap.data() as any;
+          if (vendor?.stripeSubscriptionId) {
+            const sub = await stripe.subscriptions.retrieve(vendor.stripeSubscriptionId);
+            await syncVendorSubscriptionFromStripe({
+              uid,
+              subscription: sub,
+              stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id || vendor.stripeCustomerId,
+              sessionMetadata: session.metadata as Record<string, string | null> | undefined,
+            });
+            await syncStripeSubscription(uid, sub);
+          } else if (session.metadata?.planId) {
+            await adminDb.collection('vendors').doc(uid).set({
+              subscriptionTier: session.metadata.planId,
+              subscriptionStatus: 'active',
+              subscriptionProvider: 'stripe',
+              updatedAt: new Date().toISOString(),
+            }, { merge: true });
+          }
+          break;
+        }
+
+        if (session.mode !== 'subscription') break;
 
         const subId = typeof session.subscription === 'string'
           ? session.subscription

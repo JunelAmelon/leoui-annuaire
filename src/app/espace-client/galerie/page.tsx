@@ -121,7 +121,7 @@ export default function GaleriePage() {
               <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.2rem, 2vw, 1.5rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>{album.label}</h1>
             </div>
           </div>
-          <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 bg-charcoal-900 text-white text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-charcoal-700'} transition-colors`}>
+          <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 bg-rose-600 text-white text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-charcoal-700'} transition-colors`}>
             {uploading ? <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
             {uploading ? 'Upload…' : 'Ajouter des photos'}
             <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />

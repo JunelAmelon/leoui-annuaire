@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 
 /* ── Semi-circle gauge (like "Steps for Today" in reference) ── */
-function GaugeChart({ value, max, color = '#A34E30' }: { value: number; max: number; color?: string }) {
+function GaugeChart({ value, max, color = '#E11D48' }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.min(1, value / max) : 0;
   const r = 38;
   const cx = 50;
@@ -123,7 +123,7 @@ export default function EspaceClientPage() {
           </div>
           {/* CTA */}
           <Link href="/espace-client/prestataires"
-            className="flex items-center gap-1.5 bg-charcoal-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-charcoal-700 transition-colors whitespace-nowrap shadow-sm">
+            className="flex items-center gap-1.5 bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-charcoal-700 transition-colors whitespace-nowrap shadow-sm">
             <Plus className="w-3.5 h-3.5" /> Prestataires
           </Link>
         </div>
@@ -180,7 +180,7 @@ export default function EspaceClientPage() {
             {/* Legend */}
             <div className="flex items-center gap-5 mt-3 flex-wrap">
               {[
-                { color: '#A68540', label: 'Budget total' },
+                { color: '#DD6B8D', label: 'Budget total' },
                 { color: '#2D2A26', label: 'Jours restants' },
               ].map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
@@ -192,7 +192,7 @@ export default function EspaceClientPage() {
           </div>
         </div>
 
-        {/* DARK J-X CARD */}
+        {/* J-X CARD — dark elegant */}
         <div data-tour="countdown" className="lg:col-span-2 rounded-2xl bg-charcoal-900 shadow-sm overflow-hidden" style={{ minHeight: 240 }}>
           <div className="p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-2">
@@ -203,7 +203,7 @@ export default function EspaceClientPage() {
             <div className="flex-1 flex flex-col items-center justify-center py-2">
               <div className="relative flex items-end justify-center gap-1">
                 {daysLeft !== null ? (
-                  <><span className="font-serif text-white/40 text-2xl font-light leading-none mb-1">J-</span>
+                  <><span className="font-serif text-rose-400 text-2xl font-light leading-none mb-1">J-</span>
                   <p className="font-serif text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 7vw, 5rem)', fontWeight: 300, letterSpacing: '-0.04em' }}>
                     {daysLeft > 0 ? daysLeft : '0'}
                   </p></>
@@ -259,7 +259,7 @@ export default function EspaceClientPage() {
           </div>
           {/* Gauge */}
           <div className="mt-2 mb-1">
-            <GaugeChart value={guestStats.confirmed} max={Math.max(guestStats.total, totalGuests, 1)} color="#A34E30" />
+            <GaugeChart value={guestStats.confirmed} max={Math.max(guestStats.total, totalGuests, 1)} color="#E11D48" />
           </div>
           <Link href="/espace-client/invites"
             className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-stone-100 hover:bg-stone-200 text-charcoal-700 text-sm font-medium rounded-xl transition-colors">
@@ -285,7 +285,7 @@ export default function EspaceClientPage() {
           </div>
           {/* Progress bar */}
           <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-charcoal-900 rounded-full transition-all duration-700" style={{ width: `${checkPct}%` }} />
+            <div className="h-full bg-rose-600 rounded-full transition-all duration-700" style={{ width: `${checkPct}%` }} />
           </div>
           <div className="flex items-center justify-between text-xs text-charcoal-400 mb-5">
             <span>{taskStats.done} réalisées</span>

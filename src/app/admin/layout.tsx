@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const SW = collapsed ? 84 : 224;
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#ECEAE5' }}>
+    <div className="min-h-screen flex" style={{ backgroundColor: '#FAF6F8' }}>
 
       {/* ── DESKTOP FLOATING SIDEBAR ── */}
       <div

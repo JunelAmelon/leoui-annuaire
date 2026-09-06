@@ -6,7 +6,7 @@ import {
   User,
 } from 'firebase/auth';
 import { auth } from './firebase';
-import { setDocument } from './db';
+import { setDocument, addDocument } from './db';
 
 export interface SignUpData {
   email: string;
@@ -14,6 +14,9 @@ export interface SignUpData {
   name: string;
   partner?: string;
   phone?: string;
+  eventDate?: string;
+  guestCount?: number;
+  budget?: number;
   role?: 'client' | 'planner';
   address?: {
     street?: string;
@@ -40,6 +43,22 @@ export async function signUp(data: SignUpData): Promise<User> {
     address: data.address || null,
     role: data.role || 'client',
     created_at: new Date(),
+  });
+
+  await setDocument('users', user.uid, {
+    uid: user.uid,
+    email: data.email,
+    role: data.role || 'client',
+    created_at: new Date().toISOString(),
+  });
+
+  await addDocument('events', {
+    client_id: user.uid,
+    couple_names: `${data.name}${data.partner ? ' & ' + data.partner : ''}`.trim(),
+    event_date: data.eventDate || null,
+    guest_count: data.guestCount || 0,
+    budget: data.budget || 0,
+    created_at: new Date().toISOString(),
   });
 
   return user;

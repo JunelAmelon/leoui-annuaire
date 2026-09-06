@@ -10,8 +10,8 @@ import { toast } from 'sonner';
 type CalcOp = '+' | '−' | '×' | '÷' | null;
 
 const BUDGET_ITEMS = [
-  { id: 'salle',       label: 'Salle & réception',   pct: 25, color: '#A68540' },
-  { id: 'traiteur',    label: 'Traiteur & boissons',  pct: 30, color: '#BE6040' },
+  { id: 'salle',       label: 'Salle & réception',   pct: 25, color: '#DD6B8D' },
+  { id: 'traiteur',    label: 'Traiteur & boissons',  pct: 30, color: '#E11D48' },
   { id: 'photo',       label: 'Photographe / vidéo',  pct: 8,  color: '#2D2A26' },
   { id: 'deco',        label: 'Décoration & fleurs',  pct: 7,  color: '#8B7355' },
   { id: 'musique',     label: 'Musique & animation',  pct: 6,  color: '#C4956A' },
@@ -73,7 +73,7 @@ export default function CalculatricePage() {
   const [customPct, setCustomPct] = useState<Record<string, number>>({});
   const [newPosteLabel, setNewPosteLabel] = useState('');
   const [newPostePct, setNewPostePct] = useState('');
-  const [newPosteColor, setNewPosteColor] = useState('#A68540');
+  const [newPosteColor, setNewPosteColor] = useState('#DD6B8D');
   const [savingBreakdown, setSavingBreakdown] = useState(false);
 
   /* ── Calculator logic ── */
@@ -177,7 +177,7 @@ export default function CalculatricePage() {
     if (!label) return;
     const pct = Math.max(0, Math.min(100, Number(newPostePct) || 0));
     const id = `custom-${Date.now()}`;
-    const item: BudgetItem = { id, label, pct, color: newPosteColor || '#A68540', isCustom: true };
+    const item: BudgetItem = { id, label, pct, color: newPosteColor || '#DD6B8D', isCustom: true };
     setBudgetItems((prev) => [...prev, item]);
     setCustomPct((prev) => ({ ...prev, [id]: pct }));
     setNewPosteLabel('');

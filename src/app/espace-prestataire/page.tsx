@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from './PrestataireDashboardLayout';
 import {
-  Eye, MessageSquare, Star, TrendingUp,
+  Eye, MessageSquare, Star,
   ArrowRight, CalendarDays, BadgeCheck, Clock, ChevronRight, Crown, Zap,
+  Image as ImageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDocuments, getDocument } from '@/lib/db';
@@ -15,32 +16,50 @@ import { auth, db } from '@/lib/firebase';
 
 export default function EspacePrestatairePage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ views: 0, messages: 0, rating: 0 });
+  const [stats, setStats] = useState({ views: 0, messages: 0, rating: 0, appointments: 0 });
   const [recentContacts, setRecentContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('inactive');
   const [clientPhotos, setClientPhotos] = useState<Record<string, string>>({});
   const [stripeCustomerId, setStripeCustomerId] = useState('');
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       try {
-        const [conversations, vendorDoc, reviewsList] = await Promise.all([
+        const [conversations, vendorDoc, reviewsList, planningEvents] = await Promise.all([
           getDocuments('conversations', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
           getDocument('vendors', user.uid),
           getDocuments('reviews', [{ field: 'vendor_id', operator: '==', value: user.uid }]),
+          getDocuments('planning_events', [{ field: 'uid', operator: '==', value: user.uid }]),
         ]);
         const avgRating = reviewsList.length > 0
           ? Math.round(reviewsList.reduce((s: number, r: any) => s + (r.rating || 5), 0) / reviewsList.length * 10) / 10
           : (vendorDoc as any)?.rating || 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const upcomingCount = (planningEvents as any[]).filter((t) => {
+          const d = t?.date ? new Date(t.date) : null;
+          if (!d || isNaN(d.getTime())) return false;
+          const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+          return eventDay.getTime() >= today.getTime();
+        }).length;
         setStats({
           views: (vendorDoc as any)?.viewCount || 0,
           messages: conversations.length,
           rating: avgRating,
+          appointments: upcomingCount,
         });
-        const recent = conversations.slice(0, 4);
+        const recent = (conversations as any[])
+          .filter((c) => (c?.unread_count_vendor || c?.unread_vendor || 0) > 0)
+          .sort((a: any, b: any) => {
+            const ta = a?.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+            const tb = b?.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+            return tb - ta;
+          })
+          .slice(0, 4);
         setRecentContacts(recent);
 
         try {
@@ -57,6 +76,7 @@ export default function EspacePrestatairePage() {
         } catch {}
         const tier = (vendorDoc as any)?.subscriptionTier as SubscriptionTier || 'free';
         const status = (vendorDoc as any)?.subscriptionStatus || 'inactive';
+        setPhotoCount(((vendorDoc as any)?.images || []).length);
         setSubscriptionTier(status === 'active' ? tier : 'free');
         setSubscriptionStatus(status);
         setStripeCustomerId((vendorDoc as any)?.stripeCustomerId || '');
@@ -80,6 +100,7 @@ export default function EspacePrestatairePage() {
       setSubscriptionTier(status === 'active' ? tier : 'free');
       setSubscriptionStatus(status);
       setStripeCustomerId(data?.stripeCustomerId || '');
+      setPhotoCount((data?.images || []).length);
     });
     return () => unsub();
   }, [user?.uid]);
@@ -98,6 +119,7 @@ export default function EspacePrestatairePage() {
   const statCards = [
     { label: 'Vues annonce', value: stats.views, icon: Eye, color: 'text-champagne-700', bg: 'bg-champagne-50', border: 'border-champagne-200' },
     { label: 'Messages reçus', value: stats.messages, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
+    { label: 'RDV à venir', value: stats.appointments, icon: CalendarDays, color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
     { label: 'Note moyenne', value: stats.rating || '—', icon: Star, color: 'text-champagne-700', bg: 'bg-champagne-50', border: 'border-charcoal-200', suffix: stats.rating ? '/5' : '' },
   ];
 
@@ -106,12 +128,6 @@ export default function EspacePrestatairePage() {
     { href: '/espace-prestataire/contacts', label: 'Messages', icon: MessageSquare, desc: 'Répondez aux demandes de clients' },
     { href: '/espace-prestataire/planning', label: 'Mon planning', icon: CalendarDays, desc: 'Gérez vos disponibilités' },
   ];
-
-  const quickActionBg: Record<string, string> = {
-    'Mon profil': 'mariage (1).jpg',
-    'Messages': 'https://images.pexels.com/photos/7709086/pexels-photo-7709086.jpeg?auto=compress&cs=tinysrgb&w=1600',
-    'Mon planning': 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  };
 
   return (
     <PrestataireDashboardLayout>
@@ -132,7 +148,7 @@ export default function EspacePrestatairePage() {
             </div>
             <Link
               href="/espace-prestataire/abonnement"
-              className="flex items-center gap-2 bg-charcoal-900 hover:bg-charcoal-800 text-blue-200 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex-shrink-0 whitespace-nowrap shadow-sm"
+              className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-blue-200 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors flex-shrink-0 whitespace-nowrap shadow-sm"
             >
               <Zap className="w-4 h-4" /> Voir les tarifs
             </Link>
@@ -168,34 +184,62 @@ export default function EspacePrestatairePage() {
         {/* Quick actions */}
         <div className="lg:col-span-2">
           <h2 className="font-serif text-charcoal-900 text-base font-medium mb-4">Actions rapides</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {quickActions.map((action) => (
               <Link
                 key={action.href}
                 href={action.href}
-                className="group relative rounded-2xl shadow-soft hover:shadow-md transition-all overflow-hidden min-h-[200px] bg-charcoal-900"
+                className="group bg-white rounded-2xl border border-stone-100 p-4 flex items-start gap-3 hover:shadow-sm transition-all"
               >
-                {quickActionBg[action.label] && (
-                  <img
-                    src={quickActionBg[action.label]}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700"
-                  />
-                )}
-                <div className="absolute inset-0 bg-black/60" />
-                <div className="relative p-4 flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-colors">
-                    <action.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white transition-colors">{action.label}</p>
-                    <p className="text-xs text-white/70 mt-0.5">{action.desc}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-white/50 group-hover:text-white transition-colors flex-shrink-0" />
+                <div className="w-10 h-10 rounded-xl bg-stone-50 flex items-center justify-center flex-shrink-0">
+                  <action.icon className="w-5 h-5 text-stone-600" />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-charcoal-900">{action.label}</p>
+                  <p className="text-xs text-charcoal-500 mt-0.5 leading-relaxed">{action.desc}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-rose-600 transition-colors flex-shrink-0" />
               </Link>
             ))}
           </div>
+
+          {/* Conseil du jour */}
+          {photoCount < 5 && (
+            <div className="mt-6 bg-stone-50 border border-stone-100 rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white border border-stone-100 flex items-center justify-center flex-shrink-0">
+                  <ImageIcon className="w-4 h-4 text-stone-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-charcoal-800">Conseil du jour</p>
+                  <p className="text-xs text-charcoal-500 mt-1 leading-relaxed">
+                    {photoCount === 0
+                      ? 'Ajoutez au moins 5 photos pour donner confiance aux futurs mariés.'
+                      : `Vous avez ${photoCount} photo${photoCount > 1 ? 's' : ''}. Ajoutez-en encore ${5 - photoCount} pour maximiser vos contacts.`}
+                  </p>
+                  <Link href="/espace-prestataire/mon-annonce" className="text-xs text-stone-500 hover:text-rose-600 mt-1.5 inline-flex items-center gap-0.5 underline underline-offset-2">
+                    Mettre à jour mes photos
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!loading && subscriptionTier !== 'free' && subscriptionStatus === 'active' && (
+            <div className="mt-4 bg-white border border-amber-100 rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                  <BadgeCheck className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-charcoal-800">Plan {subscriptionTier} actif</p>
+                  <p className="text-xs text-charcoal-500 mt-1 leading-relaxed">
+                    Votre profil bénéficie d'une meilleure visibilité dans les résultats.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Recent activity */}
@@ -211,8 +255,8 @@ export default function EspacePrestatairePage() {
             ) : recentContacts.length === 0 ? (
               <div className="p-8 text-center">
                 <MessageSquare className="w-8 h-8 text-charcoal-300 mx-auto mb-2" />
-                <p className="text-sm text-charcoal-500">Aucun contact pour l'instant</p>
-                <p className="text-xs text-charcoal-400 mt-1">Les demandes de clients apparaîtront ici</p>
+                <p className="text-sm text-charcoal-500">Aucun message non lu</p>
+                <p className="text-xs text-charcoal-400 mt-1">Vos nouvelles demandes apparaîtront ici</p>
               </div>
             ) : (
               <div className="divide-y divide-charcoal-50">
@@ -226,7 +270,7 @@ export default function EspacePrestatairePage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-charcoal-900 truncate">{c.client_name || 'Client'}</p>
                       <p className="text-xs text-charcoal-400 flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3" /> Nouveau message
+                        <Clock className="w-3 h-3" /> Message non lu
                       </p>
                     </div>
                   </div>
@@ -240,30 +284,6 @@ export default function EspacePrestatairePage() {
             </div>
           </div>
 
-          {/* Tip card */}
-          <div className="mt-4 bg-gradient-to-br from-champagne-50 to-rose-50 border border-champagne-200 rounded-2xl p-4">
-            <div className="flex items-start gap-3">
-              <TrendingUp className="w-5 h-5 text-champagne-700 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-charcoal-800">Conseil du jour</p>
-                <p className="text-xs text-charcoal-600 mt-1 leading-relaxed">
-                  Les prestataires avec des photos professionnelles reçoivent <strong>3x plus de contacts</strong>. Ajoutez vos meilleures réalisations.
-                </p>
-                <Link href="/espace-prestataire/mon-annonce" className="text-xs font-semibold text-rose-600 hover:text-rose-700 mt-2 inline-flex items-center gap-1">
-                  Mettre à jour mes photos <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {!loading && subscriptionTier !== 'free' && subscriptionStatus === 'active' && (
-            <div className="mt-4 bg-gradient-to-r from-amber-50 via-white to-rose-50 border border-amber-200 rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.12em] font-semibold text-amber-700">Cap franchi</p>
-              <p className="text-sm text-charcoal-800 mt-1">
-                Votre plan <span className="font-semibold capitalize">{subscriptionTier}</span> est actif. Vous avez debloque une meilleure mise en avant.
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </PrestataireDashboardLayout>

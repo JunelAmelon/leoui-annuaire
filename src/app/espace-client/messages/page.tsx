@@ -7,6 +7,7 @@ import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db
 import { MessageSquare, Send, Paperclip, Search, Users, Store, ChevronLeft, ChevronRight, Heart, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/lib/storage';
+import LinkifyText from '@/components/LinkifyText';
 
 interface Conversation {
   id: string;
@@ -160,16 +161,16 @@ export default function MessagesPage() {
       const lastLabel = attachments.length
         ? (attachments.length === 1 ? `Fichier : ${attachments[0].name}` : `${attachments.length} fichiers joints`)
         : content;
-      const msg: Msg = {
+      const msg: any = {
         id: Date.now().toString(),
         conversation_id: selected.id,
         sender_id: user.uid,
         sender_role: 'client',
         sender_name: coupleName,
         content,
-        attachments: attachments.length ? attachments : undefined,
         created_at: new Date().toISOString(),
-      } as any;
+      };
+      if (attachments.length) msg.attachments = attachments;
       await addDocument('messages', msg);
       const recipientField = selected.type === 'vendor' ? 'unread_count_vendor' : 'unread_count_planner';
       const currentUnread = ((selected as any)[recipientField] || 0) as number;
@@ -386,7 +387,7 @@ export default function MessagesPage() {
                             {!isMe && msg.sender_name && (
                               <p className="text-xs font-semibold mb-1 text-charcoal-500">{msg.sender_name}</p>
                             )}
-                            {msg.content && <p>{msg.content}</p>}
+                            {msg.content && <p className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></p>}
                             {(() => {
                               const attachments = msg.attachments || [];
                               const imageAttachments = attachments.filter((a) => (a.type || '').toLowerCase().startsWith('image/'));

@@ -197,7 +197,7 @@ export default function ChecklistPage() {
           </p>
         </div>
         <div className="w-full h-0.5 bg-charcoal-100">
-          <div className="h-full bg-charcoal-900 transition-all duration-700" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-rose-600 transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>
         <p className="label-xs text-charcoal-400 mt-3 tracking-[0.08em]">
           {completedCount} sur {items.length} étapes complétées
@@ -213,7 +213,7 @@ export default function ChecklistPage() {
             onClick={() => setFilter(f)}
             className={`px-4 py-2 text-xs font-medium tracking-[0.07em] uppercase transition-colors duration-200 ${
               filter === f
-                ? 'bg-charcoal-900 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-white border border-charcoal-200 text-charcoal-500 hover:border-charcoal-400 hover:text-charcoal-800'
             }`}
           >
@@ -222,7 +222,7 @@ export default function ChecklistPage() {
         ))}
         </div>
         <button onClick={openAdd}
-          className="flex items-center gap-1.5 px-3 py-2 bg-charcoal-900 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors">
+          className="flex items-center gap-1.5 px-3 py-2 bg-rose-600 text-white text-xs font-medium hover:bg-charcoal-700 transition-colors">
           <Plus className="w-3.5 h-3.5" /> Nouvelle tâche
         </button>
       </div>
@@ -317,7 +317,7 @@ export default function ChecklistPage() {
             <div className="px-6 py-4 border-t border-charcoal-100 flex gap-3">
               <button onClick={() => { setShowModal(false); setEditItem(null); }} className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-light hover:bg-charcoal-50 transition-colors">Annuler</button>
               <button onClick={handleSave} disabled={saving}
-                className="flex-1 py-2.5 bg-charcoal-900 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 bg-rose-600 text-white text-sm font-medium hover:bg-charcoal-700 disabled:opacity-50 transition-colors">
                 {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : 'Ajouter'}
               </button>
             </div>

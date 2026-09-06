@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown, ArrowRight, Gift } from 'lucide-react';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
@@ -142,7 +142,7 @@ function VendorsPageContent() {
       <Header />
 
       {/* HERO — same style as wedding planner page */}
-      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
+      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '380px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/32291227/pexels-photo-32291227.jpeg"
@@ -204,7 +204,7 @@ function VendorsPageContent() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                   selectedCategory === cat
-                    ? 'bg-charcoal-900 text-white'
+                    ? 'bg-rose-600 text-white'
                     : 'bg-charcoal-50 text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
                 }`}
               >
@@ -326,13 +326,13 @@ function VendorsPageContent() {
                 <div className="flex border border-charcoal-200 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'list' ? 'bg-charcoal-900 text-white' : 'text-charcoal-600 hover:bg-charcoal-50'}`}
+                    className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-charcoal-50'}`}
                   >
                     <List className="w-4 h-4" /> Liste
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'grid' ? 'bg-charcoal-900 text-white' : 'text-charcoal-600 hover:bg-charcoal-50'}`}
+                    className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'grid' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-charcoal-50'}`}
                   >
                     <Grid3X3 className="w-4 h-4" /> Photos
                   </button>
@@ -390,6 +390,11 @@ function VendorsPageContent() {
                             <Heart className="w-4 h-4 text-charcoal-400 hover:text-rose-500" />
                           </button>
                         </div>
+                        {vendor.hasPromo && (
+                          <p className="text-xs font-medium text-rose-600 flex items-center gap-1.5 mb-2">
+                            <Gift className="w-3 h-3" /> Promo en cours
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mb-1.5">
                           <div className="flex gap-0.5">
                             {[...Array(5)].map((_, i) => (
@@ -413,11 +418,6 @@ function VendorsPageContent() {
                           <span className="text-sm text-charcoal-700 flex items-center gap-1.5 font-medium">
                             À partir de <span className="text-charcoal-900 font-semibold">{vendor.startingPrice}</span>
                           </span>
-                          {vendor.hasPromo && (
-                            <span className="hidden sm:flex text-xs text-rose-600 items-center gap-1">
-                              <Tag className="w-3 h-3" /> 1 promotion
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center justify-end gap-2 flex-shrink-0">
                           <span className="hidden sm:flex text-xs text-charcoal-500 items-center gap-1">
@@ -455,6 +455,11 @@ function VendorsPageContent() {
                           </div>
                           <span className="text-xs text-white/80 font-medium">{vendor.rating}</span>
                         </div>
+                        {vendor.hasPromo && (
+                          <p className="text-xs text-rose-300 font-medium truncate flex items-center gap-1 mb-0.5">
+                            <Gift className="w-3 h-3" /> Promo en cours
+                          </p>
+                        )}
                         <p className="text-white font-semibold text-sm truncate">{vendor.name}</p>
                         <p className="text-xs text-white/70 truncate flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3" /> {vendor.location}
@@ -481,7 +486,7 @@ function VendorsPageContent() {
                     key={p}
                     onClick={() => setCurrentPage(p)}
                     className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                      p === currentPage ? 'bg-charcoal-900 text-white' : 'border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50'
+                      p === currentPage ? 'bg-rose-600 text-white' : 'border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50'
                     }`}
                   >
                     {p}

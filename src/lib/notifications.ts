@@ -1,4 +1,4 @@
-import { addDocument } from '@/lib/db';
+import { addDocument, getDocument } from '@/lib/db';
 
 export type NotificationType =
   | 'message'
@@ -28,4 +28,20 @@ export async function createNotification(params: {
   } catch {
     // Non-bloquant
   }
+}
+
+/**
+ * Résout un identifiant client (doc `clients` ou `profiles`) vers l'UID Firebase Auth
+ * utilisé comme `recipient_id` dans les notifications.
+ */
+export async function resolveClientRecipientId(clientId: string): Promise<string> {
+  try {
+    const clientDoc = await getDocument('clients', clientId);
+    if (clientDoc?.uid) return clientDoc.uid;
+  } catch {}
+  try {
+    const profileDoc = await getDocument('profiles', clientId);
+    if (profileDoc) return clientId;
+  } catch {}
+  return clientId;
 }
