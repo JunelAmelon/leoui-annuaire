@@ -336,20 +336,22 @@ export default function PrestatairesPage() {
           {/* Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-charcoal-500">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</p>
-            <div className="flex items-center gap-2">
-              <div className="flex bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
+              <div className="flex w-fit bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm flex-shrink-0">
                 <button onClick={() => setViewMode('list')} className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-stone-100'}`}>
-                  <List className="w-3.5 h-3.5" /> Liste
+                  <List className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Liste</span>
                 </button>
                 <button onClick={() => setViewMode('grid')} className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'grid' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-stone-100'}`}>
-                  <Grid3X3 className="w-3.5 h-3.5" /> Photos
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Photos</span>
                 </button>
               </div>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                className="bg-white border border-stone-200 rounded-xl px-3 py-2 text-sm text-charcoal-700 outline-none shadow-sm">
+                className="w-full sm:w-auto bg-white border border-stone-200 rounded-xl px-3 py-2 text-sm text-charcoal-700 outline-none shadow-sm">
                 <option value="recommandés">Recommandés</option>
-                <option value="note">Note (décroissante)</option>
-                <option value="prix-asc">Prix (croissant)</option>
+                <option value="note">Note</option>
+                <option value="prix-asc">Prix croissant</option>
               </select>
             </div>
           </div>
