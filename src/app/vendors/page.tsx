@@ -406,31 +406,33 @@ function VendorsPageContent() {
                   <span className="ml-2 normal-case text-charcoal-500 font-normal">{selectedLocation.label}</span>
                 )}
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
                 {/* View toggle */}
-                <div className="flex border border-charcoal-200 rounded-lg overflow-hidden">
+                <div className="flex w-fit border border-charcoal-200 rounded-lg overflow-hidden flex-shrink-0">
                   <button
                     onClick={() => setViewMode('list')}
                     className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-charcoal-50'}`}
                   >
-                    <List className="w-4 h-4" /> Liste
+                    <List className="w-4 h-4" />
+                    <span className="hidden sm:inline">Liste</span>
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`px-3 py-2 flex items-center gap-1.5 text-sm transition-colors ${viewMode === 'grid' ? 'bg-rose-600 text-white' : 'text-charcoal-600 hover:bg-charcoal-50'}`}
                   >
-                    <Grid3X3 className="w-4 h-4" /> Photos
+                    <Grid3X3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Photos</span>
                   </button>
                 </div>
                 <select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value)}
-                  className="border border-charcoal-200 rounded-lg px-3 py-2 text-sm text-charcoal-700 bg-white outline-none focus:ring-2 focus:ring-rose-200"
+                  className="w-full sm:w-auto border border-charcoal-200 rounded-lg px-3 py-2 text-sm text-charcoal-700 bg-white outline-none focus:ring-2 focus:ring-rose-200"
                 >
                   <option value="recommandés">Recommandés</option>
-                  <option value="note">Note (décroissante)</option>
-                  <option value="prix-asc">Prix (croissant)</option>
-                  <option value="prix-desc">Prix (décroissant)</option>
+                  <option value="note">Note</option>
+                  <option value="prix-asc">Prix croissant</option>
+                  <option value="prix-desc">Prix décroissant</option>
                 </select>
               </div>
             </div>
