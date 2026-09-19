@@ -8,8 +8,10 @@ import Footer from '@/components/Footer';
 import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown, ArrowRight, Gift } from 'lucide-react';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
+import { VENDOR_CATEGORIES } from '@/lib/vendor-categories';
+import CategoryPicker from '@/components/CategoryPicker';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
-import CityAutocompleteInput from '@/components/CityAutocompleteInput';
+import CityAutocompleteInput, { LocationSuggestion } from '@/components/CityAutocompleteInput';
 
 const bounceXKeyframes = `
 @keyframes bounce-x {
@@ -19,6 +21,36 @@ const bounceXKeyframes = `
 `;
 
 const PER_PAGE = 6;
+
+async function resolveAreaCities(type: 'department' | 'region', code: string): Promise<string[]> {
+  const base = 'https://geo.api.gouv.fr';
+  const names = new Set<string>();
+  try {
+    if (type === 'department') {
+      const res = await fetch(`${base}/departements/${encodeURIComponent(code)}/communes?fields=nom&limit=10000`);
+      if (res.ok) {
+        const data = await res.json();
+        for (const c of data) names.add((c.nom as string).toLowerCase());
+      }
+    } else if (type === 'region') {
+      const resDept = await fetch(`${base}/regions/${encodeURIComponent(code)}/departements`);
+      if (!resDept.ok) return [];
+      const depts = (await resDept.json()) as { code: string }[];
+      await Promise.all(
+        (depts || []).map(async (d) => {
+          const res = await fetch(`${base}/departements/${encodeURIComponent(d.code)}/communes?fields=nom&limit=10000`);
+          if (res.ok) {
+            const data = await res.json();
+            for (const c of data) names.add((c.nom as string).toLowerCase());
+          }
+        })
+      );
+    }
+  } catch (e) {
+    console.error('Failed to resolve area cities:', e);
+  }
+  return Array.from(names);
+}
 
 function VendorsPageContent() {
   const searchParams = useSearchParams();
@@ -35,8 +67,10 @@ function VendorsPageContent() {
   const [vendorsLoading, setVendorsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
-  const [cities, setCities] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
+  const [areaCities, setAreaCities] = useState<Set<string>>(new Set());
+  const [areaLoading, setAreaLoading] = useState(false);
 
   const parsePrice = (priceStr: string): number => {
     const num = (priceStr || '').replace(/[^\d]/g, '');
@@ -54,9 +88,7 @@ function VendorsPageContent() {
         const json = await r.json();
         if (!r.ok || !json?.ok) throw new Error(json?.error || 'Failed');
         const vendors = Array.isArray(json.vendors) ? json.vendors : [];
-        const cities = Array.isArray(json.cities) ? json.cities : [];
         setAllVendors(vendors);
-        if (cities.length > 0) setCities(cities);
       })
       .catch(() => setAllVendors([]))
       .finally(() => setVendorsLoading(false));
@@ -70,15 +102,43 @@ function VendorsPageContent() {
     }
   }, [searchParams]);
 
-  // Update city filter when URL changes
+  // Update city / region filter when URL changes
   useEffect(() => {
-    const city = searchParams.get('city');
-    const ville = searchParams.get('ville');
-    const c = city || ville;
-    if (c) {
-      setCityFilter(c);
+    const city = searchParams.get('city') || '';
+    const locType = searchParams.get('locType') as 'city' | 'department' | 'region' | null;
+    const locCode = searchParams.get('locCode') || '';
+    if (city) {
+      setCityFilter(city);
+    }
+    if (locType && locCode && locType !== 'city') {
+      const labelSuffix = locType === 'department' ? 'département' : 'région';
+      setSelectedLocation({ type: locType, name: city, code: locCode, label: `${city} (${labelSuffix})` });
+    } else {
+      setSelectedLocation(null);
     }
   }, [searchParams]);
+
+  // Resolve area communes when a department or region is selected
+  useEffect(() => {
+    if (!selectedLocation) {
+      setAreaCities(new Set());
+      return;
+    }
+    if (selectedLocation.type === 'city') {
+      setAreaCities(new Set([selectedLocation.name.toLowerCase()]));
+      return;
+    }
+    let cancelled = false;
+    setAreaLoading(true);
+    resolveAreaCities(selectedLocation.type, selectedLocation.code)
+      .then((names) => {
+        if (!cancelled) setAreaCities(new Set(names));
+      })
+      .finally(() => {
+        if (!cancelled) setAreaLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [selectedLocation]);
 
   // Update search query when URL changes
   useEffect(() => {
@@ -88,20 +148,13 @@ function VendorsPageContent() {
     }
   }, [searchParams]);
 
-  const categories = ['Tous', 'Photographes', 'Vidéastes', 'Traiteurs', 'Fleuristes', 'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception'];
   const priceOptions = ['Moins de 500€', '500€ - 1 000€', '1 000€ - 1 500€', 'Plus de 1 500€'];
   const serviceOptions = ['Séance d\'engagement', 'Après le mariage', 'Album photo', 'Album digital', 'Photos haute résolution', 'Blu-ray / DVD'];
 
-  const categoryMapping: Record<string, string[]> = {
-    'Photographes': ['Photographie', 'Photographe'],
-    'Vidéastes': ['Vidéo', 'Vidéaste'],
-    'Traiteurs': ['Traiteur', 'Catering'],
-    'Fleuristes': ['Fleuriste', 'Fleurs'],
-    'DJ & Musiciens': ['DJ & Musique', 'DJ', 'Musique', 'Musicien'],
-    'Décorateurs': ['Décoration', 'Décorateur'],
-    'Wedding Planners': ['Wedding Planner', 'Organisateur'],
-    'Lieux de réception': ['Lieu de réception', 'Salle', 'Domaine'],
-  };
+  const categoryMapping: Record<string, string[]> = {};
+  VENDOR_CATEGORIES.forEach(c => { categoryMapping[c] = [c]; });
+
+  const normalizedLocation = (loc: string) => (loc || '').split(',')[0].trim().toLowerCase();
 
   const filteredVendors = allVendors
     .filter(v => {
@@ -112,7 +165,17 @@ function VendorsPageContent() {
       const matchPromo = !hasPromo || v.hasPromo;
       const matchAward = !hasAward || (v as any).weddingAward || (v as any).award;
       const matchSearch = !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.category.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchCity = !cityFilter || (v.location || '').toLowerCase().includes(cityFilter.toLowerCase());
+
+      let matchCity = true;
+      if (cityFilter) {
+        const cityName = normalizedLocation(v.location);
+        if (selectedLocation && (selectedLocation.type === 'region' || selectedLocation.type === 'department')) {
+          matchCity = areaCities.size > 0 && areaCities.has(cityName);
+        } else {
+          matchCity = v.location?.toLowerCase().includes(cityFilter.toLowerCase());
+        }
+      }
+
       const price = parsePrice(v.startingPrice);
       const matchPrice = priceFilters.length === 0 || priceFilters.some(f => {
         if (f === 'Moins de 500€') return price > 0 && price < 500;
@@ -135,6 +198,20 @@ function VendorsPageContent() {
 
   const totalPages = Math.max(1, Math.ceil(filteredVendors.length / PER_PAGE));
   const pagedVendors = filteredVendors.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  const handleCityChange = (v: string) => {
+    setCityFilter(v);
+    setCurrentPage(1);
+    if (selectedLocation && v !== selectedLocation.name) {
+      setSelectedLocation(null);
+    }
+  };
+
+  const handleCitySelect = (loc: LocationSuggestion) => {
+    setCityFilter(loc.name);
+    setSelectedLocation(loc.type === 'city' ? null : loc);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -171,6 +248,8 @@ function VendorsPageContent() {
                 placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
                 value={searchQuery}
                 onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+                dropdownPosition="top"
+                maxHeight="max-h-48"
                 className="flex-1"
                 inputClassName="flex items-center bg-white/10 rounded-xl"
                 showIcon
@@ -178,8 +257,11 @@ function VendorsPageContent() {
               />
               <CityAutocompleteInput
                 value={cityFilter}
-                onChange={v => { setCityFilter(v); setCurrentPage(1); }}
-                onSelect={v => { setCityFilter(v); setCurrentPage(1); }}
+                onChange={handleCityChange}
+                onSelectLocation={handleCitySelect}
+                types="all"
+                dropdownPosition="top"
+                maxHeight="max-h-48"
                 placeholder="Où ?"
                 dark
                 showPostalCode={false}
@@ -194,15 +276,15 @@ function VendorsPageContent() {
         </div>
       </section>
 
-      {/* Category pills */}
+      {/* Category filter pills */}
       <div className="bg-white border-b border-charcoal-100 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center gap-2 overflow-x-auto py-3">
-            {categories.map(cat => (
+            {['Tous', ...VENDOR_CATEGORIES].map(cat => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                onClick={() => { setSelectedCategory(cat); setCurrentPage(1); }}
+                className={`px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 rounded-full ${
                   selectedCategory === cat
                     ? 'bg-rose-600 text-white'
                     : 'bg-charcoal-50 text-charcoal-700 hover:bg-charcoal-100 border border-charcoal-200'
@@ -319,7 +401,10 @@ function VendorsPageContent() {
             {/* Results bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
               <p className="text-sm font-semibold text-charcoal-700 uppercase tracking-wide">
-                {vendorsLoading ? 'Chargement…' : `${filteredVendors.length.toLocaleString()} résultats`}
+                {vendorsLoading || areaLoading ? 'Chargement…' : `${filteredVendors.length.toLocaleString()} résultats`}
+                {selectedLocation && selectedLocation.type !== 'city' && !areaLoading && (
+                  <span className="ml-2 normal-case text-charcoal-500 font-normal">{selectedLocation.label}</span>
+                )}
               </p>
               <div className="flex items-center gap-3">
                 {/* View toggle */}
@@ -475,30 +560,30 @@ function VendorsPageContent() {
             {totalPages > 1 && (
               <div className="mt-10 flex items-center justify-center gap-3">
                 <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="flex items-center gap-1 px-4 py-2 border border-charcoal-200 rounded-lg text-sm text-charcoal-600 hover:bg-charcoal-50 disabled:opacity-40 transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" /> Précédent
-                </button>
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-4 py-2 border border-charcoal-200 rounded-lg text-sm text-charcoal-600 hover:bg-charcoal-50 disabled:opacity-40 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Précédent
+                  </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                   <button
                     key={p}
                     onClick={() => setCurrentPage(p)}
                     className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                      p === currentPage ? 'bg-rose-600 text-white' : 'border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50'
-                    }`}
+                        p === currentPage ? 'bg-rose-600 text-white' : 'border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50'
+                      }`}
                   >
                     {p}
                   </button>
                 ))}
                 <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="flex items-center gap-1 px-4 py-2 border border-charcoal-200 rounded-lg text-sm text-charcoal-600 hover:bg-charcoal-50 disabled:opacity-40 transition-colors"
-                >
-                  Suivant <ChevronRight className="w-4 h-4" />
-                </button>
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-4 py-2 border border-charcoal-200 rounded-lg text-sm text-charcoal-600 hover:bg-charcoal-50 disabled:opacity-40 transition-colors"
+                  >
+                    Suivant <ChevronRight className="w-4 h-4" />
+                  </button>
               </div>
             )}
           </main>

@@ -76,6 +76,23 @@ export default function CalculatricePage() {
   const [newPosteColor, setNewPosteColor] = useState('#DD6B8D');
   const [savingBreakdown, setSavingBreakdown] = useState(false);
 
+  /* ── Manual expenses ── */
+  type BudgetExpense = { id: string; label: string; planned: string; spent: string };
+  const [expenses, setExpenses] = useState<BudgetExpense[]>([]);
+  const [newExpenseLabel, setNewExpenseLabel] = useState('');
+  const [newExpensePlanned, setNewExpensePlanned] = useState('');
+  const [newExpenseSpent, setNewExpenseSpent] = useState('');
+  const [savingExpenses, setSavingExpenses] = useState(false);
+
+  useEffect(() => {
+    const saved = (event as any)?.budget_expenses || (client as any)?.budget_expenses;
+    if (Array.isArray(saved) && saved.length > 0) {
+      setExpenses(saved.map((e: any) => ({ id: e.id || `exp-${Date.now()}-${Math.random()}`, label: e.label || '', planned: String(e.planned ?? ''), spent: String(e.spent ?? '') })));
+    } else {
+      setExpenses([]);
+    }
+  }, [event, client]);
+
   /* ── Calculator logic ── */
   const inputDigit = (d: string) => {
     if (waitingNext) {
@@ -218,6 +235,58 @@ export default function CalculatricePage() {
     }
   };
 
+  const addExpense = () => {
+    const label = newExpenseLabel.trim();
+    if (!label) return;
+    const expense: BudgetExpense = {
+      id: `exp-${Date.now()}`,
+      label,
+      planned: newExpensePlanned,
+      spent: newExpenseSpent,
+    };
+    setExpenses((prev) => [...prev, expense]);
+    setNewExpenseLabel('');
+    setNewExpensePlanned('');
+    setNewExpenseSpent('');
+  };
+
+  const updateExpense = (id: string, field: 'label' | 'planned' | 'spent', value: string) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, [field]: value } : e))
+    );
+  };
+
+  const removeExpense = (id: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const saveExpenses = async () => {
+    if (!event?.id && !client?.id) return;
+    setSavingExpenses(true);
+    try {
+      const toSave = expenses.map((e) => ({
+        ...e,
+        planned: e.planned === '' ? 0 : Number(e.planned) || 0,
+        spent: e.spent === '' ? 0 : Number(e.spent) || 0,
+      }));
+      if (event?.id) {
+        await updateDocument('events', event.id, { budget_expenses: toSave, budget: Number(budget) || 0 });
+      } else if (client?.id) {
+        await updateDocument('clients', client.id, { budget_expenses: toSave, budget: Number(budget) || 0 });
+      }
+      await refresh();
+      toast.success('Dépenses enregistrées');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur lors de l\'enregistrement');
+    } finally {
+      setSavingExpenses(false);
+    }
+  };
+
+  const totalPlanned = expenses.reduce((s, e) => s + (Number(e.planned) || 0), 0);
+  const totalSpent = expenses.reduce((s, e) => s + (Number(e.spent) || 0), 0);
+  const remainingBudget = (Number(budget) || 0) - totalSpent;
+
   /* ── UI helpers ── */
   const btnBase = 'flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-100 active:scale-95 select-none cursor-pointer h-14';
 
@@ -234,7 +303,7 @@ export default function CalculatricePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
         {/* ── LEFT: Real Calculator ── */}
-        <div className="bg-charcoal-900 rounded-3xl shadow-xl overflow-hidden lg:sticky lg:top-6">
+        <div className="order-2 lg:order-1 bg-charcoal-900 rounded-3xl shadow-xl overflow-hidden lg:sticky lg:top-6">
           {/* Display */}
           <div className="px-6 pt-8 pb-4">
             {/* Expression */}
@@ -335,7 +404,7 @@ export default function CalculatricePage() {
         </div>
 
         {/* ── RIGHT: Budget Estimator ── */}
-        <div className="space-y-4">
+        <div className="order-1 lg:order-2 space-y-4">
           {/* Inputs */}
           <div className="bg-white rounded-2xl border border-charcoal-100 shadow-soft p-5">
             <div className="flex items-center justify-between mb-4">
@@ -362,122 +431,127 @@ export default function CalculatricePage() {
                 />
               </div>
             </div>
-            {/* Per-guest */}
-            <div className="bg-charcoal-50 rounded-xl px-4 py-3 flex items-center justify-between">
-              <p className="text-xs text-charcoal-500">Coût par invité</p>
-              <p className="font-mono font-semibold text-charcoal-900">
-                {perGuest.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €
-              </p>
-            </div>
           </div>
 
-          {/* Breakdown */}
+          {/* Manual expenses */}
           <div className="bg-white rounded-2xl border border-charcoal-100 shadow-soft p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="font-semibold text-charcoal-900 text-sm">Répartition par poste</h3>
-              <div className="flex items-center gap-3">
-                <button onClick={normalizePct} className="text-xs text-charcoal-400 hover:text-charcoal-700 transition-colors">
-                  Normaliser à 100%
-                </button>
-                <button
-                  onClick={saveBreakdown}
-                  disabled={savingBreakdown}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
-                >
-                  {savingBreakdown ? 'Enregistrement...' : 'Enregistrer'}
-                </button>
-              </div>
+              <h3 className="font-semibold text-charcoal-900 text-sm">Mes dépenses</h3>
+              <button
+                onClick={saveExpenses}
+                disabled={savingExpenses}
+                className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
+              >
+                {savingExpenses ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
             </div>
-            <div className="space-y-3">
-              {budgetItems.map(item => {
-                const pct = getPct(item.id, item.pct);
-                const amount = Math.round((totalBudget * pct) / 100);
-                return (
-                  <div key={item.id}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="text-xs text-charcoal-700">{item.label}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {item.isCustom && (
-                          <button
-                            type="button"
-                            onClick={() => removeCustomPoste(item.id)}
-                            className="p-1 rounded-lg hover:bg-charcoal-50 text-charcoal-400 hover:text-rose-600 transition-colors"
-                            aria-label="Supprimer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number" min="0" max="100" value={pct}
-                            onChange={e => setCustomPct(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
-                            className="w-10 text-right text-xs border border-charcoal-200 rounded-lg px-1 py-0.5 focus:outline-none focus:border-rose-400 bg-transparent font-mono"
-                          />
-                          <span className="text-xs text-charcoal-400">%</span>
-                        </div>
-                        <span className="font-mono text-xs font-semibold text-charcoal-900 w-20 text-right">
-                          {amount.toLocaleString('fr-FR')} €
-                        </span>
-                      </div>
-                    </div>
-                    {/* Bar */}
-                    <div className="w-full h-1.5 bg-charcoal-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, backgroundColor: item.color }} />
-                    </div>
+
+            {/* Table header */}
+            <div className="hidden sm:grid grid-cols-12 gap-2 text-xs text-charcoal-500 mb-2 px-2">
+              <div className="col-span-4">Poste</div>
+              <div className="col-span-3 text-right">Prévu</div>
+              <div className="col-span-3 text-right">Dépensé</div>
+              <div className="col-span-2 text-right">Reste</div>
+            </div>
+
+            {/* Expenses list */}
+            <div className="space-y-2 mb-4">
+              {expenses.length === 0 && (
+                <p className="text-xs text-charcoal-400 text-center py-4">Aucune dépense renseignée.</p>
+              )}
+              {expenses.map((e) => (
+                <div key={e.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-ivory-50 rounded-xl px-2 py-2">
+                  <input
+                    value={e.label}
+                    onChange={(x) => updateExpense(e.id, 'label', x.target.value)}
+                    className="sm:col-span-4 px-2 py-1.5 text-sm border border-charcoal-200 rounded-lg focus:outline-none focus:border-rose-400 bg-white"
+                    placeholder="Poste"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={e.planned}
+                    onChange={(x) => updateExpense(e.id, 'planned', x.target.value)}
+                    className="sm:col-span-3 px-2 py-1.5 text-sm border border-charcoal-200 rounded-lg text-right focus:outline-none focus:border-rose-400 bg-white font-mono"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={e.spent}
+                    onChange={(x) => updateExpense(e.id, 'spent', x.target.value)}
+                    className="sm:col-span-3 px-2 py-1.5 text-sm border border-charcoal-200 rounded-lg text-right focus:outline-none focus:border-rose-400 bg-white font-mono"
+                  />
+                  <div className="sm:col-span-2 flex items-center justify-between gap-2">
+                    <span className={`text-xs font-mono font-semibold w-full text-right ${(Number(e.planned || 0) - Number(e.spent || 0)) >= 0 ? 'text-green-600' : 'text-rose-600'}`}>
+                      {(Number(e.planned || 0) - Number(e.spent || 0)).toLocaleString('fr-FR')} €
+                    </span>
+                    <button
+                      onClick={() => removeExpense(e.id)}
+                      className="p-1 text-charcoal-400 hover:text-rose-600"
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-charcoal-100">
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                <input
-                  value={newPosteLabel}
-                  onChange={(e) => setNewPosteLabel(e.target.value)}
-                  placeholder="Ajouter un poste (ex: Alliances)"
-                  className="sm:col-span-7 px-3 py-2 text-sm border border-charcoal-200 rounded-xl focus:outline-none focus:border-rose-400 bg-ivory-50"
-                />
-                <input
-                  value={newPostePct}
-                  onChange={(e) => setNewPostePct(e.target.value)}
-                  placeholder="%"
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="sm:col-span-2 px-3 py-2 text-sm border border-charcoal-200 rounded-xl focus:outline-none focus:border-rose-400 bg-ivory-50 font-mono"
-                />
-                <input
-                  value={newPosteColor}
-                  onChange={(e) => setNewPosteColor(e.target.value)}
-                  type="color"
-                  className="sm:col-span-2 h-10 w-full border border-charcoal-200 rounded-xl bg-white px-2"
-                />
-                <button
-                  type="button"
-                  onClick={addCustomPoste}
-                  className="sm:col-span-1 h-10 flex items-center justify-center bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors"
-                  aria-label="Ajouter"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+            {/* Add new */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end mb-4">
+              <input
+                value={newExpenseLabel}
+                onChange={(e) => setNewExpenseLabel(e.target.value)}
+                placeholder="Nouveau poste (ex: Traiteur)"
+                className="sm:col-span-4 px-3 py-2 text-sm border border-charcoal-200 rounded-xl focus:outline-none focus:border-rose-400 bg-ivory-50"
+              />
+              <input
+                type="number"
+                min="0"
+                value={newExpensePlanned}
+                onChange={(e) => setNewExpensePlanned(e.target.value)}
+                placeholder="Prévu"
+                className="sm:col-span-3 px-3 py-2 text-sm border border-charcoal-200 rounded-xl text-right focus:outline-none focus:border-rose-400 bg-ivory-50 font-mono"
+              />
+              <input
+                type="number"
+                min="0"
+                value={newExpenseSpent}
+                onChange={(e) => setNewExpenseSpent(e.target.value)}
+                placeholder="Dépensé"
+                className="sm:col-span-3 px-3 py-2 text-sm border border-charcoal-200 rounded-xl text-right focus:outline-none focus:border-rose-400 bg-ivory-50 font-mono"
+              />
+              <button
+                onClick={addExpense}
+                className="sm:col-span-2 h-10 flex items-center justify-center bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors"
+                aria-label="Ajouter"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Totals */}
+            <div className="border-t border-charcoal-100 pt-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-charcoal-500">Total prévu</span>
+                <span className="font-mono font-semibold text-charcoal-900">{totalPlanned.toLocaleString('fr-FR')} €</span>
               </div>
-            </div>
-
-            {/* Total check */}
-            <div className="mt-4 pt-4 border-t border-charcoal-100 flex items-center justify-between">
-              <span className="text-xs text-charcoal-500">Total alloué</span>
-              <span className={`font-mono text-sm font-bold ${
-                Math.abs(totalPct - 100) < 0.05
-                  ? 'text-green-600' : 'text-rose-600'
-              }`}>
-                {totalPct}%
-                {' / '}
-                {budgetItems.reduce((s, i) => s + Math.round((totalBudget * getPct(i.id, i.pct)) / 100), 0).toLocaleString('fr-FR')} €
-              </span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-charcoal-500">Total dépensé</span>
+                <span className="font-mono font-semibold text-rose-600">{totalSpent.toLocaleString('fr-FR')} €</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-charcoal-500">Reste du budget</span>
+                <span className={`font-mono font-semibold ${remainingBudget >= 0 ? 'text-green-600' : 'text-rose-600'}`}>
+                  {remainingBudget.toLocaleString('fr-FR')} €
+                </span>
+              </div>
+              <div className="w-full h-2 bg-charcoal-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-rose-600 rounded-full"
+                  style={{ width: `${Math.min(100, (Number(budget) || 1) ? (totalSpent / (Number(budget) || 1)) * 100 : 0)}%` }}
+                />
+              </div>
             </div>
           </div>
 

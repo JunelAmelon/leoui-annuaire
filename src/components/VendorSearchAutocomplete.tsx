@@ -17,6 +17,9 @@ interface Props {
   value?: string;
   onValueChange?: (v: string) => void;
   navigateOnSelect?: boolean;
+  dropdownPosition?: 'top' | 'bottom';
+  maxHeight?: string;
+  onSelect?: (s: Suggestion) => void;
   className?: string;
   inputClassName?: string;
   showIcon?: boolean;
@@ -49,6 +52,9 @@ export default function VendorSearchAutocomplete({
   value = '',
   onValueChange,
   navigateOnSelect = false,
+  dropdownPosition = 'bottom',
+  maxHeight = 'max-h-60',
+  onSelect,
   className = '',
   inputClassName = '',
   showIcon = true,
@@ -93,6 +99,7 @@ export default function VendorSearchAutocomplete({
     setQuery(s.name);
     onValueChange?.(s.name);
     setOpen(false);
+    onSelect?.(s);
     if (navigateOnSelect) router.push(`/vendors/${s.id}`);
   };
 
@@ -112,6 +119,10 @@ export default function VendorSearchAutocomplete({
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  const dropdownPosClasses = dropdownPosition === 'top'
+    ? 'bottom-full mb-1.5'
+    : 'top-full mt-1.5';
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -134,7 +145,7 @@ export default function VendorSearchAutocomplete({
       </div>
 
       {open && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-charcoal-100 rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className={`absolute ${dropdownPosClasses} left-0 right-0 sm:min-w-full sm:w-max sm:max-w-[90vw] md:max-w-md ${maxHeight} overflow-y-auto bg-white border border-charcoal-100 rounded-xl shadow-2xl z-[100] overflow-x-hidden`}>
           {suggestions.map(s => (
             <button
               key={s.id}

@@ -9,7 +9,7 @@
  */
 
 import Link from 'next/link';
-import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight, Zap, Tag, Gift } from 'lucide-react';
+import { MapPin, Star, Heart, BadgeCheck, Award, Crown, ChevronRight, Zap, Tag, Gift, UserCheck } from 'lucide-react';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 
@@ -31,6 +31,7 @@ interface VendorCardUnifiedProps {
   showFavorite?: boolean;
   isFavorite?: boolean;
   onFavoriteToggle?: (id: string) => void;
+  isReserved?: boolean;
   variant?: 'default' | 'compact' | 'horizontal';
 }
 
@@ -60,6 +61,7 @@ export default function VendorCardUnified({
   showFavorite = false,
   isFavorite = false,
   onFavoriteToggle,
+  isReserved = false,
   variant = 'default',
 }: VendorCardUnifiedProps) {
   const tierBadge = TIER_BADGE[subscriptionTier];
@@ -70,13 +72,13 @@ export default function VendorCardUnified({
   const getTierStyles = () => {
     switch (subscriptionTier) {
       case 'elite':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
+        return 'bg-gradient-to-r from-amber-50 to-stone-50 text-amber-900 border-amber-200';
       case 'pro':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-gradient-to-r from-slate-50 to-stone-50 text-slate-800 border-slate-200';
       case 'starter':
-        return 'bg-stone-100 text-stone-600 border-stone-200';
+        return 'bg-stone-50 text-stone-700 border-stone-200';
       default:
-        return 'bg-gray-100 text-gray-500 border-gray-200';
+        return 'bg-stone-50 text-charcoal-500 border-stone-200';
     }
   };
 
@@ -107,7 +109,13 @@ export default function VendorCardUnified({
                   {name}
                 </h3>
               </Link>
-              {showFavorite && (
+              <div className="flex items-center gap-1.5">
+                {isReserved && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-full">
+                    <UserCheck className="w-3 h-3" /> Réservé
+                  </span>
+                )}
+                {showFavorite && (
                 <button
                   onClick={() => onFavoriteToggle?.(id)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-rose-50 transition-colors ml-2 flex-shrink-0"
@@ -115,6 +123,7 @@ export default function VendorCardUnified({
                   <Heart className={`w-4 h-4 ${isFavorite ? 'text-rose-500 fill-rose-500' : 'text-charcoal-400 hover:text-rose-500'}`} />
                 </button>
               )}
+              </div>
             </div>
             <div className="flex items-center gap-2 mb-1.5">
               <div className="flex gap-0.5">
@@ -196,6 +205,11 @@ export default function VendorCardUnified({
               {tierBadge.label}
             </div>
           )}
+          {isReserved && (
+            <div className="absolute top-3 right-10 px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 bg-green-600/90 text-white">
+              <UserCheck className="w-3 h-3" /> Réservé
+            </div>
+          )}
 
           {/* Content - Style exact site public */}
           <div className="absolute inset-x-0 bottom-0 p-4">
@@ -254,6 +268,11 @@ export default function VendorCardUnified({
           <h3 className="font-serif text-charcoal-900 text-lg leading-tight mb-1">
             {name}
           </h3>
+          {isReserved && (
+            <div className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-lg mb-2">
+              <UserCheck className="w-3 h-3" /> Réservé
+            </div>
+          )}
 
           {/* Rating & Location */}
           <div className="flex items-center gap-2 text-sm text-charcoal-500 mb-2">

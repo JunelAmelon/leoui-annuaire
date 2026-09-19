@@ -37,7 +37,7 @@ export default function HomeRegions() {
       {REGIONS.map((city) => (
         <Link
           key={city.name}
-          href={`/cities/${city.key}`}
+          href={`/vendors?city=${encodeURIComponent(city.name)}`}
           className="group block relative overflow-hidden"
           style={{ height: 'clamp(180px, 25vw, 280px)' }}
         >

@@ -156,28 +156,33 @@ export default function PlanningPage() {
     }
   }, [showAdd]);
 
-  useEffect(() => {
+  const fetchData = async () => {
     if (!user) return;
     const uid = user.uid;
-    setVendorName(user.displayName || user.email?.split('@')[0] || 'Prestataire');
-    async function fetchData() {
-      try {
-        const items = await getDocuments('planning_events', [
-          { field: 'uid', operator: '==', value: uid },
-        ]);
-        const allTasks = items as any[];
-        const nextAppointments = allTasks
-          .filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv' || t?.kind === 'event' || t?.kind === undefined)
-          .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)) as Appointment[];
-        setAppointments(nextAppointments);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-        setDataLoading(false);
-      }
+    setLoading(true);
+    setDataLoading(true);
+    try {
+      const items = await getDocuments('planning_events', [
+        { field: 'uid', operator: '==', value: uid },
+      ]);
+      const allTasks = items as any[];
+      const nextAppointments = allTasks
+        .filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv' || t?.kind === 'event' || t?.kind === undefined)
+        .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)) as Appointment[];
+      setAppointments(nextAppointments);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+      setDataLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    setVendorName(user.displayName || user.email?.split('@')[0] || 'Prestataire');
     fetchData();
+    const uid = user.uid;
     getDocuments('collaborations', [{ field: 'vendor_id', operator: '==', value: uid }])
       .then((collabs) =>
         setLinkedClients(
@@ -266,11 +271,6 @@ export default function PlanningPage() {
         } else {
           await Promise.all(linkedDocs.map((ce) => deleteDocument('client_planning_events', ce.id)));
         }
-        setAppointments((prev) =>
-          prev.map((a) => (a.id === editingId ? { ...a, ...payload } : a)).sort(
-            (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
-          )
-        );
         toast.success('Événement mis à jour');
       } else {
         const ref = await addDocument('planning_events', { ...payload, created_at: new Date().toISOString() });
@@ -291,13 +291,9 @@ export default function PlanningPage() {
             created_at: new Date().toISOString(),
           });
         }
-        setAppointments((prev) =>
-          [...prev, { id: newId, ...payload }].sort(
-            (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
-          )
-        );
         toast.success('Événement ajouté');
       }
+      await fetchData();
       setShowAdd(false);
       setForm({ title: '', date: '', time: '', location: '', with_whom: '', client_id: '', description: '', type: 'RDV' });
       setEditingId(null);
@@ -318,7 +314,7 @@ export default function PlanningPage() {
         { field: 'planning_event_id', operator: '==', value: ev.id },
       ]);
       await Promise.all((linked as any[]).map((ce) => deleteDocument('client_planning_events', ce.id)));
-      setAppointments((prev) => prev.filter((a) => a.id !== ev.id));
+      await fetchData();
       setSelectedEvent(null);
       toast.success('Événement supprimé');
     } catch {

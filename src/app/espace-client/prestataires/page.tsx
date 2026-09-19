@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, updateDocument } from '@/lib/db';
+import { VENDOR_CATEGORIES } from '@/lib/vendor-categories';
+import CategoryPicker from '@/components/CategoryPicker';
 import {
   Star, MapPin, Camera, ChevronLeft, ChevronRight,
   Heart, List, Grid3X3,
@@ -34,10 +36,7 @@ interface Vendor {
   vendorScore?: number;
 }
 
-const CATEGORIES = [
-  'Tous', 'Photographes', 'Vidéastes', 'Traiteurs', 'Fleuristes',
-  'DJ & Musiciens', 'Décorateurs', 'Wedding Planners', 'Lieux de réception',
-];
+
 
 const PRICE_OPTIONS = ['Moins de 500€', '500€ – 1 000€', '1 000€ – 2 000€', 'Plus de 2 000€'];
 const SERVICE_OPTIONS = ['Séance d’engagement', 'Après le mariage', 'Album photo', 'Photos HD', 'Blu-ray / DVD'];
@@ -214,10 +213,10 @@ export default function PrestatairesPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>
-            {showFavoritesOnly ? 'Mes prestataires favoris' : showSelectedOnly ? 'Mes prestataires sélectionnés' : category === 'Tous' ? 'Vos prestataires' : category}
+            {showFavoritesOnly ? 'Mes prestataires favoris' : showSelectedOnly ? 'Mes prestataires réservés' : category === 'Tous' ? 'Vos prestataires' : category}
           </h1>
           <p className="text-sm text-charcoal-500 mt-0.5">
-            {filtered.length} prestataire{filtered.length !== 1 ? 's' : ''} {showFavoritesOnly ? 'favori' : showSelectedOnly ? 'sélectionné' : 'disponible'}{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} prestataire{filtered.length !== 1 ? 's' : ''} {showFavoritesOnly ? 'favori' : showSelectedOnly ? 'réservé' : 'disponible'}{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
         {/* Search row */}
@@ -246,10 +245,10 @@ export default function PrestatairesPage() {
                 ? 'bg-rose-600 text-white hover:bg-rose-700'
                 : 'bg-rose-600 text-white hover:bg-rose-700'
             } ${selectedVendorIds.size === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
-            title={selectedVendorIds.size === 0 ? 'Aucun prestataire sélectionné' : 'Afficher uniquement mes prestataires sélectionnés'}
+            title={selectedVendorIds.size === 0 ? 'Aucun prestataire réservé' : 'Afficher uniquement mes prestataires réservés'}
           >
             <Users className="w-3.5 h-3.5" />
-            {showSelectedOnly ? 'Voir tous' : 'Voir mes prestataires'}
+            {showSelectedOnly ? 'Voir tous' : 'Voir mes réservés'}
           </button>
         </div>
       </div>
@@ -269,15 +268,21 @@ export default function PrestatairesPage() {
       </div>
 
       {/* ── CATEGORY PILLS ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => { setCategory(cat); setPage(1); }}
-            className={`px-3.5 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-              category === cat ? 'bg-rose-600 text-white shadow-sm' : 'bg-white text-charcoal-600 hover:bg-stone-100 border border-stone-200'
-            }`}>
-            {cat}
+      <div className="flex items-center gap-3 pb-1">
+        <CategoryPicker
+          value={category === 'Tous' ? 'Tous' : category}
+          onChange={v => { setCategory(v === 'Tous' ? 'Tous' : v); setPage(1); }}
+          allLabel="Tous"
+          className="w-auto"
+        />
+        {category !== 'Tous' && (
+          <button
+            onClick={() => { setCategory('Tous'); setPage(1); }}
+            className="text-xs text-rose-600 hover:text-rose-700 font-medium whitespace-nowrap"
+          >
+            Réinitialiser
           </button>
-        ))}
+        )}
       </div>
 
       {/* ── MAIN CONTENT — sidebar + results ── */}
@@ -376,6 +381,7 @@ export default function PrestatairesPage() {
                   showFavorite
                   isFavorite={favorites.has(vendor.id)}
                   onFavoriteToggle={toggleFavorite}
+                  isReserved={selectedVendorIds.has(vendor.id) || selectedVendorIds.has((vendor as any).uid)}
                 />
               ))}
             </div>
@@ -401,6 +407,7 @@ export default function PrestatairesPage() {
                   showFavorite
                   isFavorite={favorites.has(vendor.id)}
                   onFavoriteToggle={toggleFavorite}
+                  isReserved={selectedVendorIds.has(vendor.id) || selectedVendorIds.has((vendor as any).uid)}
                 />
               ))}
             </div>

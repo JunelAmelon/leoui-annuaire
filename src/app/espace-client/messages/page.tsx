@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db';
-import { MessageSquare, Send, Paperclip, Search, Users, Store, ChevronLeft, ChevronRight, Heart, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, Camera, Search, Users, Store, ChevronLeft, ChevronRight, Heart, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/lib/storage';
 import LinkifyText from '@/components/LinkifyText';
@@ -49,6 +49,11 @@ export default function MessagesPage() {
   const [imageGallery, setImageGallery] = useState<{ attachments: { url: string; name?: string; type?: string }[]; index: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [vendorPhotos, setVendorPhotos] = useState<Record<string, string>>({});
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+  }, []);
 
   const openConversation = (conv: Conversation, mobile = true) => {
     setSelected(conv);
@@ -477,6 +482,7 @@ export default function MessagesPage() {
                 <div className="flex items-center gap-2">
                   <input type="file" id="client-chat-image" className="hidden" multiple accept="image/*" onChange={e => { handleFileSelect(e.target.files); e.target.value = ''; }} />
                   <input type="file" id="client-chat-pdf" className="hidden" multiple accept="application/pdf" onChange={e => { handleFileSelect(e.target.files); e.target.value = ''; }} />
+                  <input type="file" id="client-chat-camera" className="hidden" accept="image/*" capture onChange={e => { handleFileSelect(e.target.files); e.target.value = ''; }} />
                   <div className="relative">
                     <button
                       type="button"
@@ -487,7 +493,7 @@ export default function MessagesPage() {
                       <Paperclip className="w-4 h-4" />
                     </button>
                     {showAttachMenu && (
-                      <div className="absolute bottom-full left-0 mb-2 w-40 bg-white border border-charcoal-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-charcoal-200 rounded-xl shadow-lg z-10 overflow-hidden">
                         <button
                           type="button"
                           onClick={() => { document.getElementById('client-chat-image')?.click(); }}
@@ -502,6 +508,15 @@ export default function MessagesPage() {
                         >
                           <FileText className="w-4 h-4" /> PDFs
                         </button>
+                        {isMobile && (
+                          <button
+                            type="button"
+                            onClick={() => { document.getElementById('client-chat-camera')?.click(); }}
+                            className="w-full text-left px-3 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 flex items-center gap-2"
+                          >
+                            <Camera className="w-4 h-4" /> Prendre une photo
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

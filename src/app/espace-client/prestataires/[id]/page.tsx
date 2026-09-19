@@ -26,6 +26,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
   const [similarVendors, setSimilarVendors] = useState<any[]>([]);
   const [collab, setCollab] = useState<any>(null);
   const [collabLoading, setCollabLoading] = useState(false);
+  const [hasReservedInCategory, setHasReservedInCategory] = useState(false);
   const [existingClientReview, setExistingClientReview] = useState<{ rating: number; comment: string } | null>(null);
   const [venueLoading, setVenueLoading] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -107,6 +108,24 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
     };
     load();
   }, [id, client?.id]);
+
+  useEffect(() => {
+    if (!client?.id || !vendor?.category) { setHasReservedInCategory(false); return; }
+    const check = async () => {
+      try {
+        const [clientCollabs, catVendors] = await Promise.all([
+          getDocuments('collaborations', [{ field: 'client_id', operator: '==', value: client.id }]),
+          getDocuments('vendors', [{ field: 'category', operator: '==', value: vendor.category }]),
+        ]);
+        const reservedIds = new Set((clientCollabs as any[]).map(c => c.vendor_id).filter(Boolean));
+        const reserved = (catVendors as any[]).some(v =>
+          reservedIds.has(v.id) || reservedIds.has(v.uid)
+        );
+        setHasReservedInCategory(reserved);
+      } catch { setHasReservedInCategory(false); }
+    };
+    check();
+  }, [client?.id, vendor?.category]);
 
   // Charger les favoris du client
   useEffect(() => {
@@ -195,25 +214,20 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
     } catch { toast.error('Erreur'); } finally { setCollabLoading(false); }
   };
 
-  const handleContact = async (form: { name: string; email: string; phone: string; message: string }) => {
-    if (!user) { router.push('/login'); return; }
-    const vendorId = vendor?.uid || vendor?.id;
+  const sendMessageTo = async (targetVendor: any, message: string) => {
+    if (!user) throw new Error('Not authenticated');
+    const vendorId = targetVendor?.uid || targetVendor?.id;
     const clientId = client?.id || user.uid;
-    let coupleName = '';
-    if (client?.name) {
-      coupleName = `${client.name}${client.partner ? ' & ' + client.partner : ''}`.trim();
-    }
-    if (!coupleName && user?.uid) {
+    let senderName = coupleName;
+    if (!senderName && user?.uid) {
       try {
         const profile = (await getDocument('profiles', user.uid)) as any;
         if (profile?.name) {
-          coupleName = `${profile.name}${profile.partner ? ' & ' + profile.partner : ''}`.trim();
+          senderName = `${profile.name}${profile.partner ? ' & ' + profile.partner : ''}`.trim();
         }
       } catch {}
     }
-    if (!coupleName) {
-      coupleName = user.displayName || user.email || 'Client';
-    }
+    if (!senderName) senderName = user.displayName || user.email || 'Client';
 
     const existingConvs = await getDocuments('conversations', [
       { field: 'client_id', operator: '==', value: clientId },
@@ -223,7 +237,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
     if (existing) {
       convId = existing.id;
       await updateDocument('conversations', convId, {
-        last_message: form.message.trim(),
+        last_message: message.trim(),
         last_message_at: new Date().toISOString(),
         unread_count_vendor: (existing.unread_count_vendor || 0) + 1,
       });
@@ -231,11 +245,11 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       const ref = await addDocument('conversations', {
         client_id: clientId,
         vendor_id: vendorId,
-        client_name: coupleName,
-        vendor_name: vendor.name,
-        vendor_email: vendor.email || '',
+        client_name: senderName,
+        vendor_name: targetVendor.name,
+        vendor_email: targetVendor.email || '',
         type: 'vendor',
-        last_message: form.message.trim(),
+        last_message: message.trim(),
         last_message_at: new Date().toISOString(),
         unread_count_vendor: 1,
         unread_count_client: 0,
@@ -247,26 +261,36 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
       conversation_id: convId,
       sender_id: user.uid,
       sender_role: 'client',
-      sender_name: coupleName,
-      content: form.message.trim(),
+      sender_name: senderName,
+      content: message.trim(),
       created_at: new Date().toISOString(),
     });
-    // Notifier le prestataire
     createNotification({
       recipientId: vendorId,
       type: 'message',
-      title: `Nouveau message de ${coupleName}`,
-      message: form.message.trim().slice(0, 100),
+      title: `Nouveau message de ${senderName}`,
+      message: message.trim().slice(0, 100),
       link: '/espace-prestataire/messages',
     });
-    if (vendor?.email) {
+    if (targetVendor?.email) {
       sendEmail({
-        to: vendor.email,
-        subject: `Nouveau message de ${coupleName}`,
-        html: renderContactEmail({ vendorName: vendor.name || 'Prestataire', clientName: coupleName, message: form.message.trim(), replyEmail: user?.email || undefined }),
+        to: targetVendor.email,
+        subject: `Nouveau message de ${senderName}`,
+        html: renderContactEmail({ vendorName: targetVendor.name || 'Prestataire', clientName: senderName, message: message.trim(), replyEmail: user?.email || undefined }),
       });
     }
+  };
+
+  const handleContact = async (form: { name: string; email: string; phone: string; message: string }) => {
+    if (!user) { router.push('/login'); return; }
+    await sendMessageTo(vendor, form.message);
     toast.success('Message envoyé !');
+  };
+
+  const handleContactSimilar = async (vendors: any[], message: string) => {
+    if (!user) { router.push('/login'); return; }
+    await Promise.all(vendors.map(v => sendMessageTo(v, message)));
+    toast.success('Messages envoyés aux prestataires similaires');
   };
 
   const handleSubmitReview = async (review: { rating: number; comment: string }) => {
@@ -366,7 +390,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
           } disabled:opacity-50`}
         >
           {collab ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-          {collabLoading ? '…' : collab ? 'Prestataire lié' : 'Ajouter à mes prestataires'}
+          {collabLoading ? '…' : collab ? 'Prestataire réservé' : 'Réserver ce prestataire'}
         </button>
       </div>
       <VendorProfileDetailView
@@ -379,6 +403,7 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
         vendorsIndexHref="/espace-client/prestataires"
         similarHrefBase="/espace-client/prestataires"
         onSubmitContact={handleContact}
+        onContactSimilar={handleContactSimilar}
         contactSubmitDisabled={(form) => !form.message.trim()}
         contactIntroText="Votre message sera envoyé directement via la messagerie LeOui."
         isLoggedIn={Boolean(user)}
@@ -386,6 +411,9 @@ export default function ClientVendorProfilePage({ params }: { params: { id: stri
         canReview={Boolean(collab) && !existingClientReview}
         existingClientReview={existingClientReview}
         onSubmitReview={handleSubmitReview}
+        isReserved={Boolean(collab)}
+        hasReservedInCategory={hasReservedInCategory}
+        weddingDate={event?.event_date}
         isFavorite={favorites.has(resolvedVendorId || (vendor as any)?.uid || (vendor as any)?.id || '')}
         onFavoriteToggle={handleToggleFavorite}
       />

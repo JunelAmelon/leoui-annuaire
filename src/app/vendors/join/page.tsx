@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CityAutocompleteInput from '@/components/CityAutocompleteInput';
+import { VENDOR_CATEGORY_GROUPS } from '@/lib/vendor-categories';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import {
@@ -53,22 +54,24 @@ const FAQS = [
 
 function FAQItem({ question, answer, isOpen, onClick }: { question: string; answer: string; isOpen: boolean; onClick: () => void }) {
   return (
-    <div className="border-b border-charcoal-100 last:border-0">
+    <div className="border-b border-charcoal-100 last:border-b-0">
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between py-5 text-left group"
+        className={`w-full flex items-center justify-between py-5 px-6 text-left transition-colors ${
+          isOpen ? 'bg-rose-50' : 'hover:bg-stone-50'
+        }`}
       >
-        <span className="font-medium text-charcoal-900 pr-4 group-hover:text-rose-600 transition-colors">
+        <span className={`font-medium pr-4 ${isOpen ? 'text-rose-600' : 'text-charcoal-900'}`}>
           {question}
         </span>
         {isOpen ? (
           <ChevronUp className="w-5 h-5 text-rose-600 flex-shrink-0" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-charcoal-400 flex-shrink-0 group-hover:text-rose-600 transition-colors" />
+          <ChevronDown className="w-5 h-5 text-charcoal-400 flex-shrink-0" />
         )}
       </button>
       {isOpen && (
-        <div className="pb-5">
+        <div className="px-6 pb-5 bg-rose-50">
           <p className="text-charcoal-600 text-sm leading-relaxed">{answer}</p>
         </div>
       )}
@@ -141,7 +144,7 @@ export default function VendorJoinPage() {
       <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '580px' }}>
         <div className="absolute inset-0">
           <img
-            src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920"
+            src="https://images.pexels.com/photos/31953104/pexels-photo-31953104.jpeg?auto=compress&cs=tinysrgb&w=1920"
             alt="Espace prestataire"
             className="w-full h-full object-cover object-center"
           />
@@ -246,7 +249,7 @@ export default function VendorJoinPage() {
             <div className="group">
               <div className="relative mb-6 overflow-hidden rounded-2xl aspect-[4/3]">
                 <img 
-                  src="https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&w=600" 
+                  src="https://images.pexels.com/photos/37710459/pexels-photo-37710459.jpeg?auto=compress&cs=tinysrgb&w=600" 
                   alt="Visibilité"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -268,7 +271,7 @@ export default function VendorJoinPage() {
             <div className="group">
               <div className="relative mb-6 overflow-hidden rounded-2xl aspect-[4/3]">
                 <img 
-                  src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&w=600" 
+                  src="https://images.pexels.com/photos/9870230/pexels-photo-9870230.jpeg?auto=compress&cs=tinysrgb&w=600" 
                   alt="Leads qualifiés"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -290,7 +293,7 @@ export default function VendorJoinPage() {
             <div className="group">
               <div className="relative mb-6 overflow-hidden rounded-2xl aspect-[4/3]">
                 <img 
-                  src="https://images.pexels.com/photos/590022/pexels-photo-590022.jpeg?auto=compress&w=600" 
+                  src="https://images.pexels.com/photos/590022/pexels-photo-590022.jpeg?auto=compress&cs=tinysrgb&w=600" 
                   alt="Dashboard"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -311,68 +314,54 @@ export default function VendorJoinPage() {
         </div>
       </section>
 
-      {/* HOW IT WORKS — Design moderne + texte crédible */}
-      <section id="comment-ca-marche" className="py-24 px-4 sm:px-6 bg-stone-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+      {/* HOW IT WORKS — Conversion oriented */}
+      <section id="comment-ca-marche" className="py-20 lg:py-24 px-4 sm:px-6 bg-stone-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
             <span className="text-rose-600 text-xs font-medium tracking-[0.2em] uppercase mb-4 block">Comment ça marche</span>
             <h2 className="font-display text-3xl sm:text-4xl text-charcoal-900 mb-4">
-              Trois étapes concrètes
+              Trois étapes pour décrocher vos premiers clients
             </h2>
-            <p className="text-charcoal-500 max-w-lg mx-auto">
-              Un processus simple testé et éprouvé par plus de 2 000 professionnels.
+            <p className="text-charcoal-500 max-w-2xl mx-auto">
+              Un processus pensé pour vous faire gagner du temps et convertir plus de couples.
             </p>
           </div>
 
-          <div className="space-y-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Étape 1 */}
-            <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-start">
-              <div className="flex-shrink-0 w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center">
-                <span className="font-display text-2xl font-bold text-rose-600">01</span>
+            <div className="bg-white rounded-2xl p-7 border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center mb-5">
+                <Search className="w-6 h-6 text-rose-600" />
               </div>
-              <div className="flex-1 pb-8 md:pb-0 border-b md:border-b-0 border-stone-200">
-                <div className="flex items-center gap-3 mb-3">
-                  <Search className="w-5 h-5 text-rose-600" />
-                  <h3 className="font-serif text-xl text-charcoal-900">Créez votre profil professionnel</h3>
-                </div>
-                <p className="text-charcoal-600 leading-relaxed max-w-xl">
-                  Remplissez votre vitrine avec vos meilleures photos, votre portfolio et vos tarifs. 
-                  Les couples consultent votre profil avant de prendre contact, alors montrez votre savoir-faire.
-                </p>
-              </div>
+              <div className="text-3xl font-display font-bold text-rose-100 mb-2">01</div>
+              <h3 className="font-serif text-lg text-charcoal-900 mb-3">Créez votre profil</h3>
+              <p className="text-sm text-charcoal-500 leading-relaxed">
+                Photos, portfolio, tarifs, disponibilités : montrez votre savoir-faire aux couples qui recherchent exactement ce que vous proposez.
+              </p>
             </div>
 
             {/* Étape 2 */}
-            <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-start">
-              <div className="flex-shrink-0 w-16 h-16 bg-champagne-100 rounded-2xl flex items-center justify-center">
-                <span className="font-display text-2xl font-bold text-champagne-700">02</span>
+            <div className="bg-white rounded-2xl p-7 border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-champagne-50 flex items-center justify-center mb-5">
+                <MessageSquare className="w-6 h-6 text-champagne-700" />
               </div>
-              <div className="flex-1 pb-8 md:pb-0 border-b md:border-b-0 border-stone-200">
-                <div className="flex items-center gap-3 mb-3">
-                  <MessageSquare className="w-5 h-5 text-champagne-700" />
-                  <h3 className="font-serif text-xl text-charcoal-900">Recevez des demandes détaillées</h3>
-                </div>
-                <p className="text-charcoal-600 leading-relaxed max-w-xl">
-                  Quand un couple est intéressé, vous recevez une demande complète avec la date du mariage, 
-                  le lieu, le nombre d'invités et leur budget. Vous savez immédiatement si c'est un bon fit.
-                </p>
-              </div>
+              <div className="text-3xl font-display font-bold text-champagne-100 mb-2">02</div>
+              <h3 className="font-serif text-lg text-charcoal-900 mb-3">Recevez des demandes qualifiées</h3>
+              <p className="text-sm text-charcoal-500 leading-relaxed">
+                Date, lieu, budget, nombre d'invités : chaque demande contient les informations dont vous avez besoin pour répondre en 1 clic.
+              </p>
             </div>
 
             {/* Étape 3 */}
-            <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-start">
-              <div className="flex-shrink-0 w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center">
-                <span className="font-display text-2xl font-bold text-rose-600">03</span>
+            <div className="bg-white rounded-2xl p-7 border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center mb-5">
+                <Award className="w-6 h-6 text-rose-600" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Award className="w-5 h-5 text-rose-600" />
-                  <h3 className="font-serif text-xl text-charcoal-900">Convertissez et faites grandir votre activité</h3>
-                </div>
-                <p className="text-charcoal-600 leading-relaxed max-w-xl">
-                  Répondez via la messagerie intégrée et gardez un historique complet de vos échanges.
-                </p>
-              </div>
+              <div className="text-3xl font-display font-bold text-rose-100 mb-2">03</div>
+              <h3 className="font-serif text-lg text-charcoal-900 mb-3">Convertissez</h3>
+              <p className="text-sm text-charcoal-500 leading-relaxed">
+                Discutez dans la messagerie, suivez vos contacts et transformez vos premiers échanges en réservations confirmées.
+              </p>
             </div>
           </div>
         </div>
@@ -380,16 +369,16 @@ export default function VendorJoinPage() {
 
 
       {/* FAQ — Réassurance */}
-      <section className="py-20 lg:py-28 px-4 sm:px-6 bg-white">
+      <section className="py-20 lg:py-24 px-4 sm:px-6 bg-white">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <span className="text-rose-600 text-sm font-semibold tracking-wider uppercase mb-3 block">Questions fréquentes</span>
+            <span className="text-rose-600 text-xs font-medium tracking-[0.2em] uppercase mb-4 block">FAQ</span>
             <h2 className="font-display text-3xl sm:text-4xl text-charcoal-900 mb-4">
               Vous avez des <span className="italic text-rose-600">questions</span> ?
             </h2>
           </div>
 
-          <div className="bg-charcoal-50 rounded-2xl p-2">
+          <div className="bg-white rounded-2xl border border-charcoal-100 overflow-hidden">
             {FAQS.map((faq, i) => (
               <FAQItem
                 key={i}
@@ -404,8 +393,8 @@ export default function VendorJoinPage() {
           {/* Support contact */}
           <div className="mt-12 text-center">
             <p className="text-charcoal-600 mb-4">Vous ne trouvez pas votre réponse ?</p>
-            <Link 
-              href="/contact" 
+            <Link
+              href="/contact"
               className="inline-flex items-center gap-2 text-rose-600 font-semibold hover:underline"
             >
               <MessageCircle className="w-5 h-5" />
@@ -415,70 +404,42 @@ export default function VendorJoinPage() {
         </div>
       </section>
 
-      {/* CTA FINAL — Conversion maximale */}
-      <section className="py-20 lg:py-28 px-4 sm:px-6 bg-rose-600 relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-rose-500 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-champagne-500 rounded-full blur-3xl" />
-        </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl text-white mb-6">
-            Prêt à développer <span className="italic text-champagne-300">votre activité</span> ?
-          </h2>
-          <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
-            Rejoignez 2,400+ professionnels qui ont choisi LeOui pour faire croître leur business. 
-            Premier lead garanti sous 48h ou remboursé.
-          </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <a 
-              href="#register" 
-              className="group inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold px-10 py-4 rounded-xl transition-all shadow-lg shadow-rose-600/25"
-            >
-              Rejoindre maintenant
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <a 
-              href="mailto:pro@leoui.net" 
-              className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium px-8 py-4 rounded-xl transition-all border border-white/20"
-            >
-              <Mail className="w-5 h-5" />
-              Nous contacter
-            </a>
-          </div>
+      {/* REGISTRATION FORM — Conversion maximisée */}
+      <section id="register" className="py-14 lg:py-20 px-4 sm:px-6 bg-stone-50 scroll-mt-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-5 gap-10 lg:gap-12 items-start">
+            {/* Left: pitch */}
+            <div className="lg:col-span-2 lg:sticky lg:top-28">
+              <span className="text-rose-600 text-xs font-medium tracking-[0.2em] uppercase mb-4 block">Espace prestataire</span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-charcoal-900 mb-4">
+                Rejoignez LeOui et recevez vos premières demandes
+              </h2>
+              <p className="text-charcoal-600 mb-8 leading-relaxed">
+                Des milliers de couples recherchent leurs prestataires sur notre plateforme. Créez votre compte, présentez votre travail et soyez contacté par les bons clients.
+              </p>
 
-          {/* Trust badges */}
-          <div className="flex flex-wrap justify-center gap-6 text-white/60 text-sm">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-400" />
-              <span>Paiement sécurisé</span>
+              <div className="bg-white rounded-2xl p-6 border border-charcoal-100 shadow-sm mb-8">
+                <p className="font-serif text-lg text-charcoal-800 mb-4">
+                  "Depuis mon inscription, j'ai doublé mes demandes. Les couples arrivent déjà avec une vision claire du budget et de la date."
+                </p>
+                <div className="flex items-center gap-3">
+                  <img
+                    src="https://images.pexels.com/photos/3764119/pexels-photo-3764119.jpeg?auto=compress&cs=tinysrgb&w=100"
+                    alt="Témoignage"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-charcoal-900">Sophie M.</p>
+                    <p className="text-xs text-charcoal-500">Photographe, Bordeaux</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>14 jours satisfait ou remboursé</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-emerald-400" />
-              <span>Activation immédiate</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* REGISTRATION FORM — Intégré moderne */}
-      <section id="register" className="py-20 lg:py-28 px-4 sm:px-6 bg-white scroll-mt-20">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-rose-600 text-sm font-semibold tracking-wider uppercase mb-3 block">Créer votre compte</span>
-            <h2 className="font-display text-3xl sm:text-4xl text-charcoal-900 mb-4">
-              Commencez votre <span className="italic text-rose-600">essai gratuit</span>
-            </h2>
-            <p className="text-charcoal-600">14 jours sans engagement. Aucune carte bancaire requise.</p>
-          </div>
-
-          <div className="bg-charcoal-50 rounded-3xl p-8 md:p-12">
+            {/* Right: form */}
+            <div className="lg:col-span-3 bg-white rounded-2xl p-8 md:p-10 border border-charcoal-100 shadow-sm">
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2">
                 <X className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -526,25 +487,20 @@ export default function VendorJoinPage() {
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-charcoal-700 mb-2">Secteur d'activité *</label>
-                  <select 
-                    required 
-                    value={form.category} 
-                    onChange={e => setField('category', e.target.value)} 
+                  <select
+                    required
+                    value={form.category}
+                    onChange={e => setField('category', e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-charcoal-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all bg-white"
                   >
-                    <option value="">Sélectionnez...</option>
-                    <option>Photographe</option>
-                    <option>Vidéaste</option>
-                    <option>Traiteur</option>
-                    <option>Fleuriste</option>
-                    <option>DJ & Animation</option>
-                    <option>Décorateur</option>
-                    <option>Wedding Planner</option>
-                    <option>Salle & Domaine</option>
-                    <option>Pâtissier</option>
-                    <option>Musicien</option>
-                    <option>Coiffure & Beauté</option>
-                    <option>Transport</option>
+                    <option value="">Sélectionnez votre spécialité...</option>
+                    {VENDOR_CATEGORY_GROUPS.map(group => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.items.map(item => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -627,6 +583,7 @@ export default function VendorJoinPage() {
             </form>
           </div>
         </div>
+      </div>
       </section>
 
       <Footer />

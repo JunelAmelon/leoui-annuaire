@@ -40,6 +40,7 @@ export default function Footer() {
               <li><Link href="/vendors?cat=Traiteurs" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Traiteurs et cuisine de mariage" aria-label="Trouver un traiteur pour mariage">Traiteurs</Link></li>
               <li><Link href="/vendors?cat=Fleuristes" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Fleuristes pour bouquets et décorations" aria-label="Trouver un fleuriste pour mariage">Fleuristes</Link></li>
               <li><Link href="/vendors?cat=DJ+%26+Musiciens" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="DJ et musiciens pour animation mariage" aria-label="Trouver un DJ ou musicien pour mariage">DJ & Musiciens</Link></li>
+              <li><Link href="/bon-plan" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Bons plans mariage" aria-label="Bons plans mariage">Bon plans</Link></li>
               <li><Link href="/vendors" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Tous les prestataires mariage" aria-label="Voir tous les prestataires de mariage">Tous les prestataires</Link></li>
             </ul>
           </div>
@@ -49,7 +50,6 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link href="/inspiration" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Inspiration et idées pour votre mariage" aria-label="Inspiration mariage">Inspiration</Link></li>
               <li><Link href="/planifier-votre-mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Outils pour planifier votre mariage" aria-label="Planifier mon mariage">Planifier mon mariage</Link></li>
-              <li><Link href="/cities" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Trouver des prestataires par ville" aria-label="Prestataires par ville">Régions</Link></li>
               <li><Link href="/guide" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Guide complet du mariage" aria-label="Guide du mariage">Guide du mariage</Link></li>
             </ul>
           </div>

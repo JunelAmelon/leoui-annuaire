@@ -265,29 +265,30 @@ export default function WeddingPlannerPageV1() {
             {features.map((feature, i) => (
               <AnimatedSection key={i} delay={i * 100}>
                 <div
-                  className={`group relative bg-gradient-to-br ${feature.color} p-6 h-full cursor-pointer transition-all duration-500 hover:shadow-xl hover:-translate-y-1`}
+                  className="group relative bg-white rounded-2xl p-6 h-full border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
                   onMouseEnter={() => setHoveredFeature(i)}
                   onMouseLeave={() => setHoveredFeature(null)}
                 >
-                  {/* Corner accent */}
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/20" />
-                  
-                  {/* Stat badge */}
-                  <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-2 py-1">
-                    <span className="text-xs font-medium text-stone-600">{feature.stat}</span>
+                  {/* Top stat badge */}
+                  <div className="absolute top-4 right-4 bg-stone-50 rounded-full px-2.5 py-1">
+                    <span className="text-xs font-semibold text-stone-500">{feature.stat}</span>
                   </div>
 
-                  <div className={`w-12 h-12 bg-white/80 backdrop-blur-sm flex items-center justify-center mb-4 transition-transform duration-300 ${hoveredFeature === i ? 'scale-110' : ''}`}>
+                  {/* Icon circle */}
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110`}>
                     <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
                   </div>
 
                   <h3 className="font-serif text-lg text-stone-800 mb-2">{feature.title}</h3>
-                  <p className="text-sm text-stone-600 leading-relaxed">{feature.desc}</p>
+                  <p className="text-sm text-stone-500 leading-relaxed mb-4 flex-1">{feature.desc}</p>
 
-                  <div className={`mt-4 flex items-center gap-2 text-sm font-medium text-stone-700 opacity-0 transition-opacity duration-300 ${hoveredFeature === i ? 'opacity-100' : ''}`}>
-                    <span>En savoir plus</span>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </div>
+                  <Link
+                    href="/signup"
+                    className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-rose-600"
+                  >
+                    <span>Découvrir</span>
+                    <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </Link>
                 </div>
               </AnimatedSection>
             ))}

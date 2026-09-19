@@ -11,6 +11,7 @@ import { getDocument, getDocuments, addDocument, updateDocument } from '@/lib/db
 import { createNotification } from '@/lib/notifications';
 import { sendEmail } from '@/lib/email';
 import { renderContactEmail } from '@/lib/email-template';
+import { getClientFullData, getClientEvent } from '@/lib/client-helpers';
 import { toast } from 'sonner';
 
 export default function VendorProfilePage() {
@@ -24,6 +25,9 @@ export default function VendorProfilePage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [similarVendors, setSimilarVendors] = useState<any[]>([]);
+  const [weddingDate, setWeddingDate] = useState<string | undefined>();
+  const [isReserved, setIsReserved] = useState(false);
+  const [hasReservedInCategory, setHasReservedInCategory] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -53,6 +57,36 @@ export default function VendorProfilePage() {
     };
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const loadClient = async () => {
+      try {
+        const clientData = await getClientFullData(user.uid);
+        if (clientData?.id) {
+          const event = await getClientEvent(clientData.id);
+          setWeddingDate(event?.event_date);
+          const collabs = await getDocuments('collaborations', [
+            { field: 'client_id', operator: '==', value: clientData.id },
+          ]);
+          const reservedIds = (collabs as any[]).map(c => c.vendor_id).filter(Boolean);
+          setIsReserved(reservedIds.includes(resolvedVendorId));
+          if (reservedIds.length > 0 && vendor?.category) {
+            const allVendors = await getDocuments('vendors', []);
+            const reservedCategories = new Set(
+              (allVendors as any[])
+                .filter(v => reservedIds.includes(v.id) || reservedIds.includes(v.uid))
+                .map(v => v.category)
+            );
+            setHasReservedInCategory(reservedCategories.has(vendor.category));
+          } else {
+            setHasReservedInCategory(false);
+          }
+        }
+      } catch {}
+    };
+    loadClient();
+  }, [user?.uid, resolvedVendorId, vendor?.category]);
 
   if (loading) return (
     <div className="min-h-screen bg-white">
@@ -169,6 +203,77 @@ export default function VendorProfilePage() {
     }
   };
 
+  const sendMessageTo = async (targetVendor: any, message: string) => {
+    if (!user) throw new Error('Not authenticated');
+    const vendorId = targetVendor?.uid || targetVendor?.id;
+    let coupleName = user.displayName || user.email || 'Client';
+    let clientId = user.uid;
+    try {
+      const profile = (await getDocument('profiles', user.uid)) as any;
+      if (profile) {
+        coupleName = `${profile.name || ''}${profile.name && profile.partner ? ' & ' + profile.partner : ''}`.trim() || coupleName;
+        clientId = profile.id || user.uid;
+      }
+    } catch {}
+
+    const existingConvs = await getDocuments('conversations', [
+      { field: 'client_id', operator: '==', value: clientId },
+    ]);
+    const existing = (existingConvs as any[]).find((c: any) => c.vendor_id === vendorId);
+    let convId: string;
+    if (existing) {
+      convId = existing.id;
+      await updateDocument('conversations', convId, {
+        last_message: message.trim(),
+        last_message_at: new Date().toISOString(),
+        unread_count_vendor: (existing.unread_count_vendor || 0) + 1,
+      });
+    } else {
+      const ref = await addDocument('conversations', {
+        client_id: clientId,
+        vendor_id: vendorId,
+        client_name: coupleName,
+        vendor_name: targetVendor.name,
+        vendor_email: targetVendor.email || '',
+        type: 'vendor',
+        last_message: message.trim(),
+        last_message_at: new Date().toISOString(),
+        unread_count_vendor: 1,
+        unread_count_client: 0,
+        created_at: new Date().toISOString(),
+      });
+      convId = ref.id;
+    }
+    await addDocument('messages', {
+      conversation_id: convId,
+      sender_id: user.uid,
+      sender_role: 'client',
+      sender_name: coupleName,
+      content: message.trim(),
+      created_at: new Date().toISOString(),
+    });
+    createNotification({
+      recipientId: vendorId,
+      type: 'message',
+      title: `Nouveau message de ${coupleName}`,
+      message: message.trim().slice(0, 100),
+      link: '/espace-prestataire/messages',
+    });
+    if (targetVendor?.email) {
+      sendEmail({
+        to: targetVendor.email,
+        subject: `Nouveau message de ${coupleName}`,
+        html: renderContactEmail({ vendorName: targetVendor.name || 'Prestataire', clientName: coupleName, message: message.trim(), replyEmail: user.email || undefined }),
+      });
+    }
+  };
+
+  const handleContactSimilar = async (vendors: any[], message: string) => {
+    if (!user) { toast.error('Connectez-vous pour contacter les prestataires'); return; }
+    await Promise.all(vendors.map(v => sendMessageTo(v, message)));
+    toast.success('Messages envoyés aux prestataires similaires');
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -182,8 +287,12 @@ export default function VendorProfilePage() {
         vendorsIndexHref="/vendors"
         similarHrefBase="/vendors"
         onSubmitContact={handleContact}
+        onContactSimilar={handleContactSimilar}
         isLoggedIn={!!user}
         clientName={user?.displayName || user?.email || ''}
+        isReserved={isReserved}
+        hasReservedInCategory={hasReservedInCategory}
+        weddingDate={weddingDate}
       />
       <Footer />
     </div>

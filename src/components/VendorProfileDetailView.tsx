@@ -67,6 +67,10 @@ export type VendorProfileDetailViewProps = {
   onSubmitReview?: (review: { rating: number; comment: string }) => Promise<void>;
   isFavorite?: boolean;
   onFavoriteToggle?: () => void;
+  isReserved?: boolean;
+  hasReservedInCategory?: boolean;
+  weddingDate?: string;
+  onContactSimilar?: (vendors: any[], message: string) => Promise<void>;
 };
 
 export default function VendorProfileDetailView({
@@ -88,6 +92,10 @@ export default function VendorProfileDetailView({
   onSubmitReview,
   isFavorite: isFavoriteProp,
   onFavoriteToggle,
+  isReserved = false,
+  hasReservedInCategory = false,
+  weddingDate,
+  onContactSimilar,
 }: VendorProfileDetailViewProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -96,6 +104,7 @@ export default function VendorProfileDetailView({
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
   const [pendingPromoToken, setPendingPromoToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const nextUrl = useMemo(() => {
     const base = isLoggedIn
@@ -116,6 +125,8 @@ export default function VendorProfileDetailView({
     message: 'Bonjour, nous sommes en pleins préparatifs de mariage et nous aimerions en savoir plus sur vos services et disponibilités.',
   });
   const [sending, setSending] = useState(false);
+  const [showSimilarModal, setShowSimilarModal] = useState(false);
+  const [similarMessage, setSimilarMessage] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -234,6 +245,13 @@ export default function VendorProfileDetailView({
     return `Bonjour, je suis intéressé(e) par votre offre "${promo.title}" (code ${promo.code}, remise de -${discount}). Pouvez-vous me revenir avec les conditions et disponibilités ?`;
   };
 
+  const buildSimilarMessage = useMemo(() => {
+    const date = weddingDate
+      ? new Date(weddingDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '[votre date]';
+    return `Bonjour, nous nous marions le ${date} et souhaiterions avoir plus d'informations sur vos services.`;
+  }, [weddingDate]);
+
   const submitContact = async (form: ContactForm, promo: any) => {
     setSending(true);
     try {
@@ -246,6 +264,10 @@ export default function VendorProfileDetailView({
           message_preview: form.message.slice(0, 200),
           created_at: new Date().toISOString(),
         }).catch(() => {});
+      }
+      if (!isReserved && !hasReservedInCategory && similarVendors.length > 0 && onContactSimilar) {
+        setSimilarMessage(buildSimilarMessage);
+        setShowSimilarModal(true);
       }
     } finally {
       setSending(false);
@@ -283,11 +305,25 @@ export default function VendorProfileDetailView({
     } catch {}
   }, [isLoggedIn, vendorId, vendor, searchParams]);
 
+  const contactTitle = useMemo(() =>
+    isReserved ? 'Laisser un message à votre prestataire' : 'Plus d\'information',
+  [isReserved]);
+
+  const contactPlaceholder = useMemo(() =>
+    isReserved ? 'Bonjour, laisser un message à votre prestataire' : 'Votre message…',
+  [isReserved]);
+
+  const contactDefaultMessage = useMemo(() =>
+    isReserved
+      ? ''
+      : 'Bonjour, nous sommes en pleins préparatifs de mariage et nous aimerions en savoir plus sur vos services et disponibilités.',
+  [isReserved]);
+
   const openContact = () => {
     setSelectedPromo(null);
     setContactForm((prev) => ({
       ...prev,
-      message: 'Bonjour, nous sommes en pleins préparatifs de mariage et nous aimerions en savoir plus sur vos services et disponibilités.',
+      message: contactDefaultMessage,
     }));
     setShowContactModal(true);
   };
@@ -304,6 +340,28 @@ export default function VendorProfileDetailView({
     } catch {}
     setPendingPromoToken(null);
     setShowAuthPrompt(false);
+  };
+
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : `${similarHrefBase}/${vendorId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${vendor.name} — LeOui`,
+          text: `Découvrez ${vendor.name} sur LeOui.`,
+          url,
+        });
+      } catch {}
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success('Lien copié !');
+    } catch {
+      toast.error('Impossible de copier le lien');
+    }
   };
 
   return (
@@ -546,11 +604,11 @@ export default function VendorProfileDetailView({
                           <div
                             key={i}
                             className={`relative p-5 ${
-                              pkg.popular ? 'bg-ivory-800 text-white' : 'bg-ivory-50 border border-ivory-200'
+                              pkg.popular ? 'bg-rose-600 text-white' : 'bg-ivory-50 border border-ivory-200'
                             }`}
                           >
                             {pkg.popular && (
-                              <div className="absolute -top-3 left-5 px-3 py-1 bg-rose-500 text-white text-xs font-semibold uppercase tracking-wider">
+                              <div className="absolute -top-3 left-5 px-3 py-1 bg-white text-rose-600 text-xs font-semibold uppercase tracking-wider">
                                 Recommandé
                               </div>
                             )}
@@ -1150,9 +1208,12 @@ export default function VendorProfileDetailView({
                 )}
               </div>
 
-              <button className="flex items-center gap-2 text-body-sm text-charcoal-500 hover:text-charcoal-800 mt-5 transition-colors">
-                <Share2 className="w-4 h-4" />
-                Partager ce prestataire
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 text-body-sm text-charcoal-500 hover:text-charcoal-800 mt-5 transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
+                {copied ? 'Lien copié !' : 'Partager ce prestataire'}
               </button>
 
               <div className={`fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-rose-200 px-4 py-3 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transition-transform duration-300 ${showStickyButton ? 'translate-y-0' : 'translate-y-full'}`}>
@@ -1188,20 +1249,28 @@ export default function VendorProfileDetailView({
       {showContactModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] w-full max-w-lg max-h-[92dvh] overflow-y-auto animate-scale-in">
-            <div className="p-5 sm:p-7">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-xs font-semibold text-charcoal-500 uppercase tracking-widest mb-1">{vendor.name}</p>
-                  <h2 className="font-display text-[1.7rem] leading-tight text-charcoal-900">Plus d'information</h2>
+            <div className="relative h-44">
+              <img
+                src="/mariage%20(1).jpg"
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                  <Send className="w-5 h-5 text-rose-600" />
                 </div>
-                <button
-                  onClick={closeContact}
-                  className="w-9 h-9 bg-charcoal-100 rounded-lg flex items-center justify-center hover:bg-charcoal-200 transition-colors mt-1"
-                >
-                  <X className="w-4 h-4 text-charcoal-700" />
-                </button>
+                <span className="text-white font-medium text-sm drop-shadow-md">{contactTitle}</span>
               </div>
+              <button
+                onClick={closeContact}
+                className="absolute top-3 right-3 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-charcoal-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
+            <div className="p-5 sm:p-7">
               {isLoggedIn ? (
                 <p className="text-body-sm text-green-700 bg-green-50 rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2">
                   <Check className="w-4 h-4 flex-shrink-0" />
@@ -1243,6 +1312,7 @@ export default function VendorProfileDetailView({
                     rows={4}
                     value={contactForm.message}
                     onChange={(e) => setContactForm((p) => ({ ...p, message: e.target.value }))}
+                    placeholder={contactPlaceholder}
                     className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm text-charcoal-800 resize-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
@@ -1291,6 +1361,104 @@ export default function VendorProfileDetailView({
                   {sending ? 'Envoi…' : 'Envoyer'}
                 </button>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SIMILAR VENDORS MODAL */}
+      {showSimilarModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] w-full max-w-lg max-h-[92dvh] overflow-y-auto">
+            <div className="relative h-44">
+              <img
+                src="/mariage%20(1).jpg"
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                  <Heart className="w-5 h-5 text-rose-600" />
+                </div>
+                <span className="text-white font-medium text-sm drop-shadow-md">Vous pourriez aussi aimer</span>
+              </div>
+              <button
+                onClick={() => setShowSimilarModal(false)}
+                className="absolute top-3 right-3 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-charcoal-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              <h2 className="font-display text-2xl text-charcoal-900 mb-2">
+                Nous avons trouvé d&apos;autres professionnels qui vous correspondent
+              </h2>
+              <p className="text-sm text-charcoal-600 mb-5">
+                {similarVendors.slice(0, 3).length} prestataires similaires. Envoyez-leur le message ci-dessous.
+              </p>
+
+              <div className="space-y-3 mb-5">
+                {similarVendors.slice(0, 3).map((v) => (
+                  <div key={v.id} className="flex items-center justify-between gap-3 p-3 bg-stone-50 rounded-xl">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img src={v.imageUrl || '/mariage%20(1).jpg'} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-charcoal-900 truncate">{v.name}</p>
+                        <p className="text-xs text-charcoal-500">{v.category}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={`${similarHrefBase}/${v.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline"
+                    >
+                      Voir le profil
+                    </a>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-xs font-medium text-charcoal-600 mb-1">Message personnalisé</label>
+                <textarea
+                  rows={4}
+                  value={similarMessage}
+                  onChange={(e) => setSimilarMessage(e.target.value)}
+                  className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-xl text-sm text-charcoal-800 resize-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={async () => {
+                    if (!onContactSimilar) return;
+                    setSending(true);
+                    try {
+                      await onContactSimilar(similarVendors.slice(0, 3), similarMessage);
+                      setShowSimilarModal(false);
+                      toast.success('Messages envoyés aux prestataires similaires');
+                    } catch {
+                      toast.error('Erreur lors de l\'envoi');
+                    } finally {
+                      setSending(false);
+                    }
+                  }}
+                  disabled={sending || !similarMessage.trim()}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-3.5 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {sending ? 'Envoi…' : 'Accepter et envoyer'}
+                </button>
+                <button
+                  onClick={() => setShowSimilarModal(false)}
+                  disabled={sending}
+                  className="w-full text-sm text-charcoal-500 hover:text-charcoal-700 py-2"
+                >
+                  Refuser
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -133,7 +133,7 @@ function EventsTable({
 }
 
 export default function PlanningPage() {
-  const { client, event, loading: dataLoading } = useClientData();
+  const { client, event, loading: dataLoading, refresh } = useClientData();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [vendorEvents, setVendorEvents] = useState<VendorEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,44 +161,46 @@ export default function PlanningPage() {
     }
   }, [showAdd]);
 
-  useEffect(() => {
-    async function fetchData() {
-      const eventId = event?.id;
-      const clientId = client?.id;
-      if (!eventId && !clientId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const filter = eventId
-          ? { field: 'event_id', operator: '==' as const, value: eventId }
-          : { field: 'client_id', operator: '==' as const, value: clientId! };
-
-        const [items, vendorItems] = await Promise.all([
-          getDocuments('tasks', [filter as any]),
-          clientId
-            ? getDocuments('client_planning_events', [{ field: 'client_id', operator: '==', value: clientId }])
-            : Promise.resolve([]),
-        ]);
-
-        const allTasks = items as any[];
-        const nextAppointments = allTasks
-          .filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv')
-          .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)) as Appointment[];
-
-        setAppointments(nextAppointments);
-
-        const sorted = (vendorItems as VendorEvent[]).sort(
-          (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
-        );
-        setVendorEvents(sorted);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = async () => {
+    const eventId = event?.id;
+    const clientId = client?.id;
+    if (!eventId && !clientId) {
+      setLoading(false);
+      return;
     }
+
+    setLoading(true);
+    try {
+      const filter = eventId
+        ? { field: 'event_id', operator: '==' as const, value: eventId }
+        : { field: 'client_id', operator: '==' as const, value: clientId! };
+
+      const [items, vendorItems] = await Promise.all([
+        getDocuments('tasks', [filter as any]),
+        clientId
+          ? getDocuments('client_planning_events', [{ field: 'client_id', operator: '==', value: clientId }])
+          : Promise.resolve([]),
+      ]);
+
+      const allTasks = items as any[];
+      const nextAppointments = allTasks
+        .filter((t) => t?.kind === 'appointment' || t?.kind === 'rdv')
+        .sort((a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)) as Appointment[];
+
+      setAppointments(nextAppointments);
+
+      const sorted = (vendorItems as VendorEvent[]).sort(
+        (a, b) => (parseDate(a.date)?.getTime() || 0) - (parseDate(b.date)?.getTime() || 0)
+      );
+      setVendorEvents(sorted);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (!dataLoading) fetchData();
   }, [event?.id, client?.id, dataLoading]);
 
@@ -272,6 +274,8 @@ export default function PlanningPage() {
         );
         toast.success('Rendez-vous ajouté');
       }
+      await refresh();
+      await fetchData();
       setShowAdd(false);
       setForm({ title: '', date: '', time: '', location: '', with_whom: '', description: '', type: 'RDV' });
       setEditingId(null);
@@ -291,7 +295,8 @@ export default function PlanningPage() {
     if (!confirm(`Supprimer « ${ev.title} » ?`)) return;
     try {
       await deleteDocument('tasks', ev.id);
-      setAppointments((prev) => prev.filter((a) => a.id !== ev.id));
+      await refresh();
+      await fetchData();
       setSelectedEvent(null);
       toast.success('Rendez-vous supprimé');
     } catch {

@@ -4,17 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import CityAutocompleteInput from '@/components/CityAutocompleteInput';
+import { VENDOR_CATEGORY_GROUPS } from '@/lib/vendor-categories';
 import { Camera, MapPin, Save, Plus, X, Eye, ExternalLink, Globe, Star, Clock, Euro, CheckCircle, Instagram, Upload, Loader2, Trash2, ChevronDown, ChevronUp, Video } from 'lucide-react';
 import { getDocuments, setDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 import Link from 'next/link';
-
-const CATEGORIES = [
-  'Photographe', 'Vidéaste', 'Traiteur', 'Fleuriste',
-  'DJ & Animation', 'Décorateur', 'Wedding Planner', 'Salle & Domaine',
-  'Pâtissier', 'Musicien', 'Coiffure & Beauté', 'Transport',
-];
 
 type Faq = { q: string; a: string };
 type TeamMember = { name: string; role: string; bio: string; photo: string };
@@ -436,7 +431,11 @@ export default function MonAnnoncePage() {
                     <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
                       className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all">
                       <option value="">Choisir une catégorie</option>
-                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      {VENDOR_CATEGORY_GROUPS.map(group => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.items.map(c => <option key={c} value={c}>{c}</option>)}
+                        </optgroup>
+                      ))}
                     </select>
                   </div>
                   <div>

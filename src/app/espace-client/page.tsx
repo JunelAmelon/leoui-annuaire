@@ -7,8 +7,8 @@ import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments } from '@/lib/db';
 import { getClientVendors } from '@/lib/client-helpers';
 import {
-  Search, Plus, Heart, Calendar, ChevronRight,
-  ArrowRight, CheckSquare, Users,
+  Search, Plus, Heart, Calendar, MapPin, ChevronRight,
+  ArrowRight, ArrowUpRight, CheckSquare, Users,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -132,97 +132,75 @@ export default function EspaceClientPage() {
       {/* ── ROW 1: Featured beige card + Dark J-X card ── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
-        {/* FEATURED — beige background with blob visualization */}
-        <div className="lg:col-span-3 rounded-2xl overflow-hidden shadow-sm" style={{ backgroundColor: '#DDD8CE', minHeight: 240 }}>
-          <div className="p-6 h-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h2 className="font-serif text-charcoal-900 text-xl font-light">Votre mariage</h2>
-                <p className="text-xs text-charcoal-600 mt-0.5">{fmtDate}{venue !== 'Aucun lieu choisi' ? ` · ${venue}` : ''}</p>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-white/50 flex items-center justify-center">
-                <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-              </div>
+        {/* FEATURED — dark action card */}
+        <div className="lg:col-span-3 rounded-2xl bg-charcoal-900 text-white shadow-sm overflow-hidden p-6 relative" style={{ minHeight: 240 }}>
+          <div className="absolute -top-10 -right-10 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative h-full flex flex-col">
+            <div className="flex items-start justify-between mb-2">
+              <h2 className="text-white/70 text-sm font-medium">Votre mariage</h2>
+              <Link href="/espace-client/mariage" className="text-xs text-rose-400 hover:text-rose-300">
+                Modifier
+              </Link>
             </div>
 
-            {/* Blob visualization */}
-            <div className="relative flex-1" style={{ minHeight: 130 }}>
-              {/* Big gold blob — budget */}
-              <div className="absolute rounded-full pointer-events-none" style={{
-                width: 150, height: 150,
-                background: 'radial-gradient(circle at 40% 40%, rgba(166,133,64,0.75) 0%, rgba(166,133,64,0.25) 60%, transparent 80%)',
-                right: '20%', top: '-5%',
-              }} />
-              {/* Small dark blob — jours */}
-              <div className="absolute rounded-full pointer-events-none" style={{
-                width: 82, height: 82,
-                background: 'radial-gradient(circle at 40% 40%, rgba(45,42,38,0.75) 0%, rgba(45,42,38,0.25) 60%, transparent 80%)',
-                left: '20%', top: '10%',
-              }} />
-              {/* Text labels centered over blobs */}
-              <div className="absolute inset-0 flex items-center justify-around px-6">
-                <div className="text-center">
-                  <p className="font-serif leading-none text-white drop-shadow" style={{ fontSize: '1.6rem', fontWeight: 300 }}>
-                    {daysLeft !== null ? (daysLeft > 0 ? daysLeft : '0') : '—'}
-                  </p>
-                  <p className="text-[0.6rem] text-white/75 mt-1 uppercase tracking-wider">jours</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-serif leading-none text-white drop-shadow" style={{ fontSize: '1.7rem', fontWeight: 300 }}>
-                    {Math.round(budget / 1000)}k€
-                  </p>
-                  <p className="text-[0.6rem] text-white/75 mt-1 uppercase tracking-wider">budget</p>
-                </div>
-              </div>
+            <div className="mt-2">
+              <p className="text-white/50 text-[0.65rem] uppercase tracking-wider mb-1">Budget total</p>
+              <p className="font-serif text-white leading-none" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 400 }}>
+                {budget > 0 ? budget.toLocaleString('fr-FR') : '—'} <span className="text-2xl text-white/60">€</span>
+              </p>
             </div>
 
-            {/* Legend */}
-            <div className="flex items-center gap-5 mt-3 flex-wrap">
-              {[
-                { color: '#DD6B8D', label: 'Budget total' },
-                { color: '#2D2A26', label: 'Jours restants' },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <span className="text-[0.7rem] text-charcoal-600">{label}</span>
-                </div>
-              ))}
+            <div className="mt-3 space-y-0.5 text-xs text-white/60">
+              <p className="font-medium text-white/80">{coupleName}</p>
+              <p>{fmtDate}{venue !== 'Aucun lieu choisi' ? ` · ${venue}` : ''}</p>
+            </div>
+
+            <div className="mt-auto pt-5 flex flex-wrap gap-2">
+              <Link href="/espace-client/mariage" className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-500 text-white text-xs font-medium rounded-full hover:bg-rose-400 transition-colors">
+                Gérer <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link href="/espace-client/invites" className="inline-flex items-center gap-1.5 px-4 py-2 border border-rose-500/40 text-white text-xs font-medium rounded-full hover:bg-rose-500/10 transition-colors">
+                Invités <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link href="/espace-client/prestataires" className="inline-flex items-center gap-1.5 px-4 py-2 border border-rose-500/40 text-white text-xs font-medium rounded-full hover:bg-rose-500/10 transition-colors">
+                Prestataires <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* J-X CARD — dark elegant */}
-        <div data-tour="countdown" className="lg:col-span-2 rounded-2xl bg-charcoal-900 shadow-sm overflow-hidden" style={{ minHeight: 240 }}>
+        {/* J-X CARD — modern minimal */}
+        <div data-tour="countdown" className="lg:col-span-2 rounded-2xl bg-white shadow-sm border border-stone-100 overflow-hidden" style={{ minHeight: 240 }}>
           <div className="p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-white/70 text-sm font-medium">Compte à rebours</h2>
-              <span className="text-white/35 text-xs">{new Date().toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}</span>
+              <h2 className="text-charcoal-500 text-sm font-medium">Compte à rebours</h2>
+              <span className="text-charcoal-400 text-xs">{new Date().toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}</span>
             </div>
             {/* Big number */}
             <div className="flex-1 flex flex-col items-center justify-center py-2">
               <div className="relative flex items-end justify-center gap-1">
                 {daysLeft !== null ? (
-                  <><span className="font-serif text-rose-400 text-2xl font-light leading-none mb-1">J-</span>
-                  <p className="font-serif text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 7vw, 5rem)', fontWeight: 300, letterSpacing: '-0.04em' }}>
+                  <><span className="font-serif text-rose-600 text-2xl font-light leading-none mb-1">J-</span>
+                  <p className="font-serif text-charcoal-900 leading-none" style={{ fontSize: 'clamp(3.5rem, 7vw, 5rem)', fontWeight: 300, letterSpacing: '-0.04em' }}>
                     {daysLeft > 0 ? daysLeft : '0'}
                   </p></>
                 ) : (
-                  <p className="font-serif text-white/60 text-xl font-light">Date à définir</p>
+                  <p className="font-serif text-charcoal-400 text-xl font-light">Date à définir</p>
                 )}
               </div>
-              <p className="text-white/40 text-xs mt-2">jours avant votre mariage</p>
+              <p className="text-charcoal-400 text-xs mt-2">jours avant votre mariage</p>
             </div>
             {/* Date + venue */}
-            <div className="border-t border-white/10 pt-4 space-y-1.5">
+            <div className="border-t border-stone-100 pt-4 space-y-1.5">
               <div className="flex items-center gap-2">
-                <Calendar className="w-3 h-3 text-champagne-400 flex-shrink-0" />
-                <span className="text-white/60 text-xs">{fmtDate}</span>
+                <Calendar className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                <span className="text-charcoal-600 text-xs">{fmtDate}</span>
               </div>
               {venue !== 'Lieu à définir' && (
                 <div className="flex items-center gap-2">
-                  <Heart className="w-3 h-3 text-rose-400 flex-shrink-0" />
-                  <span className="text-white/60 text-xs">{venue}</span>
+                  <Heart className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                  <span className="text-charcoal-600 text-xs">{venue}</span>
                 </div>
               )}
             </div>
@@ -233,9 +211,9 @@ export default function EspaceClientPage() {
                 { label: 'Invités', value: `${guestStats.total || totalGuests || '—'}` },
                 { label: 'Tâches', value: `${checkPct}%` },
               ].map(({ label, value }) => (
-                <div key={label} className="bg-white/8 rounded-xl p-2 text-center">
-                  <p className="text-white font-semibold text-sm">{value}</p>
-                  <p className="text-white/35 text-[0.58rem] mt-0.5 uppercase tracking-wide">{label}</p>
+                <div key={label} className="bg-stone-50 rounded-xl p-2 text-center">
+                  <p className="text-charcoal-900 font-semibold text-sm">{value}</p>
+                  <p className="text-charcoal-400 text-[0.58rem] mt-0.5 uppercase tracking-wide">{label}</p>
                 </div>
               ))}
             </div>

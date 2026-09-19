@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Menu, X } from 'lucide-react';
+import { Heart, Menu, X, Building2 } from 'lucide-react';
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -10,14 +10,29 @@ export default function Header() {
   const navLinks = [
     { href: '/',                label: 'Accueil' },
     { href: '/vendors',         label: 'Prestataires' },
+    { href: '/bon-plan',        label: 'Bon plans' },
     { href: '/inspiration',     label: 'Inspiration' },
     { href: '/planifier-votre-mariage', label: 'Planifier votre mariage' },
-    { href: '/cities',          label: 'Par ville' },
   ];
 
   return (
     <>
       <header className="sticky top-0 z-50 glass-effect border-b border-charcoal-100/60">
+        {/* Top bar — accès entreprise */}
+        <div className="hidden sm:block bg-charcoal-900 text-white">
+          <div className="max-w-7xl mx-auto px-6 lg:px-10 h-9 flex items-center justify-end">
+            <Link
+              href="/vendors/join"
+              className="flex items-center gap-1.5 text-[0.7rem] font-medium tracking-[0.04em] hover:text-rose-200 transition-colors"
+              title="Espace prestataire"
+              aria-label="Accès entreprise"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Accès entreprise
+            </Link>
+          </div>
+        </div>
+
         <nav className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="flex items-center justify-between h-[4.25rem]">
 
@@ -118,6 +133,15 @@ export default function Header() {
                   {label}
                 </Link>
               ))}
+              <Link
+                href="/vendors/join"
+                onClick={() => setDrawerOpen(false)}
+                className="block py-3.5 border-b border-charcoal-100 text-[0.9375rem] font-medium text-rose-600 hover:text-rose-700 transition-colors"
+                title="Espace prestataire"
+                aria-label="Accès entreprise"
+              >
+                Accès entreprise
+              </Link>
             </nav>
 
             {/* Auth */}

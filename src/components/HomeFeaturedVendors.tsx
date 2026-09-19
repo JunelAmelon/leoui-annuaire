@@ -207,13 +207,13 @@ export default function HomeFeaturedVendors() {
   const getTierBadgeStyles = (tier: SubscriptionTier) => {
     switch (tier) {
       case 'elite':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
+        return 'bg-gradient-to-r from-amber-50 to-stone-50 text-amber-900 border-amber-200';
       case 'pro':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-gradient-to-r from-slate-50 to-stone-50 text-slate-800 border-slate-200';
       case 'starter':
-        return 'bg-stone-100 text-stone-600 border-stone-200';
+        return 'bg-stone-50 text-stone-700 border-stone-200';
       default:
-        return 'bg-gray-100 text-gray-500 border-gray-200';
+        return 'bg-stone-50 text-charcoal-500 border-stone-200';
     }
   };
 

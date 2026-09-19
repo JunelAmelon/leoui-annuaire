@@ -192,18 +192,18 @@ export default function HomePage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/80 via-charcoal-900/20 to-transparent" />
-                <div className="absolute inset-0 p-5 flex flex-col justify-between">
+                <div className="absolute inset-0 p-3 sm:p-4 lg:p-5 flex flex-col justify-between">
                   <span
-                    className="font-serif text-white text-5xl leading-none drop-shadow-lg"
+                    className="font-serif text-white text-3xl sm:text-4xl lg:text-5xl leading-none drop-shadow-lg"
                     style={{ fontWeight: 200, fontStyle: 'italic', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
                   >
                     {n}
                   </span>
                   <div>
-                    <p className="text-white font-serif text-xl leading-tight" style={{ fontWeight: 400 }}>
+                    <p className="text-white font-serif text-sm sm:text-base lg:text-xl leading-tight break-words" style={{ fontWeight: 400 }}>
                       {label}
                     </p>
-                    <p className="text-white/40 text-[0.65rem] tracking-[0.1em] uppercase font-medium mt-1 group-hover:text-white/70 transition-colors duration-300">
+                    <p className="text-white/40 text-[0.55rem] sm:text-[0.6rem] lg:text-[0.65rem] tracking-[0.08em] sm:tracking-[0.1em] uppercase font-medium mt-1 group-hover:text-white/70 transition-colors duration-300 whitespace-nowrap">
                       Découvrir →
                     </p>
                   </div>

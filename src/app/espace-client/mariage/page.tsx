@@ -309,7 +309,7 @@ export default function MariagePage() {
             {teamVendors.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-10 h-10 text-charcoal-200 mx-auto mb-2" />
-                <p className="text-sm text-charcoal-400">Aucun prestataire lié pour l'instant</p>
+                <p className="text-sm text-charcoal-400">Aucun prestataire réservé pour l'instant</p>
                 <Link href="/espace-client/prestataires" className="mt-2 inline-block text-xs text-rose-600 hover:underline">Parcourir les prestataires →</Link>
               </div>
             ) : (

@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, addDocument, deleteDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
-import { Upload, X, ZoomIn, ChevronLeft, ChevronRight, Trash2, Move } from 'lucide-react';
+import { Upload, Camera, X, ZoomIn, ChevronLeft, ChevronRight, Trash2, Move } from 'lucide-react';
 import { toast } from 'sonner';
 
-/* Album definitions — staticCover is shown only when no Firestore images exist */
+/* Album definitions — staticCover is always used as album cover */
 const ALBUMS = [
-  { id: 'inspiration', label: 'Sources d\u2019inspiration', desc: 'Vos références et coups de cœur',          staticCover: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'deco',        label: 'Idées décoration',           desc: 'Tables, arches, luminaires, ambiance',     staticCover: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'mariage',     label: 'Photos du mariage',          desc: 'Votre journée immortalisée',               staticCover: 'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'maries',      label: 'Photos des mariés',          desc: 'Portraits et moments complices',           staticCover: 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'ceremonie',   label: 'Photos de cérémonie',        desc: 'Échange des vœux et moments officiels',   staticCover: 'https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=600' },
-  { id: 'ma-galerie',  label: 'Ma galerie',                 desc: 'Vos photos personnelles',                 staticCover: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'inspiration-deco',       label: 'Inspiration Déco & Fleurs',        desc: 'Tables, arches, luminaires, ambiance',      staticCover: 'https://images.pexels.com/photos/37058553/pexels-photo-37058553.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'inspiration-robe',       label: 'Inspiration Robe & Tenues',        desc: 'Robes, costumes, accessoires',              staticCover: 'https://images.pexels.com/photos/27307456/pexels-photo-27307456.png?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'inspiration-beaute',     label: 'Inspiration Coiffure & Maquillage', desc: 'Chignons, maquillage, soins',              staticCover: 'https://images.pexels.com/photos/15983864/pexels-photo-15983864.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'inspiration-couple',     label: 'Inspiration Photos de couple',     desc: 'Portraits, first look, golden hour',        staticCover: 'https://images.pexels.com/photos/31888283/pexels-photo-31888283.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'inspiration-gourmand',   label: 'Inspiration Gâteau & Gourmandises', desc: 'Wedding cake, candy bar, pièces montées',   staticCover: 'https://images.pexels.com/photos/37907749/pexels-photo-37907749.jpeg?auto=compress&cs=tinysrgb&w=600' },
+  { id: 'inspiration-papeterie',  label: 'Mon dossier personnel',              desc: 'Vos propres photos, idées et inspirations', staticCover: 'https://images.pexels.com/photos/33037285/pexels-photo-33037285.jpeg?auto=compress&cs=tinysrgb&w=600' },
 ];
 
 type AlbumId = typeof ALBUMS[number]['id'];
@@ -27,6 +27,11 @@ export default function GaleriePage() {
   const [uploading, setUploading] = useState(false);
   const [activeAlbum, setActiveAlbum] = useState<AlbumId | null>(null);
   const [preview, setPreview] = useState<{ urls: string[]; idx: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+  }, []);
 
   const fetchGallery = async () => {
     if (!event?.id && !client?.id) { setLoading(false); return; }
@@ -110,22 +115,30 @@ export default function GaleriePage() {
     return (
       <div className="space-y-5">
         {/* Album detail header */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setActiveAlbum(null)} className="flex items-center gap-1.5 text-sm text-charcoal-500 hover:text-charcoal-900 transition-colors">
-              <ChevronLeft className="w-4 h-4" /> Albums
-            </button>
-            <span className="text-charcoal-300">/</span>
-            <div>
+        <div className="space-y-3">
+          <button onClick={() => setActiveAlbum(null)} className="flex items-center gap-1.5 text-sm text-charcoal-500 hover:text-charcoal-900 transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Albums
+          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-xs text-charcoal-400 uppercase tracking-wider">Galerie</p>
-              <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.2rem, 2vw, 1.5rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>{album.label}</h1>
+              <h1 className="font-serif text-charcoal-900 truncate" style={{ fontSize: 'clamp(1.2rem, 2vw, 1.5rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>{album.label}</h1>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <label className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-charcoal-700'} transition-colors`}>
+                {uploading ? <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                {uploading ? 'Upload…' : 'Ajouter'}
+                <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
+              </label>
+              {isMobile && (
+                <label className={`cursor-pointer flex items-center justify-center gap-2 px-3 py-2.5 border border-rose-600 text-rose-600 text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-rose-50'} transition-colors`}>
+                  <Camera className="w-4 h-4" />
+                  <span>Prendre</span>
+                  <input type="file" accept="image/*" capture className="hidden" onChange={e => { handleUpload(e.target.files); e.currentTarget.value = ''; }} />
+                </label>
+              )}
             </div>
           </div>
-          <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 bg-rose-600 text-white text-sm font-medium rounded-xl ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-charcoal-700'} transition-colors`}>
-            {uploading ? <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            {uploading ? 'Upload…' : 'Ajouter des photos'}
-            <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files)} />
-          </label>
         </div>
 
         <p className="text-sm text-charcoal-500">{album.desc}</p>
@@ -198,10 +211,7 @@ export default function GaleriePage() {
   /* ── ALBUMS GRID ── */
   const totalPhotos = Object.values(allGallery).reduce((s, a) => s + a.length, 0);
 
-  const albumCover = (album: typeof ALBUMS[0]) => {
-    const first = allGallery[album.id]?.[0];
-    return first?.url || album.staticCover;
-  };
+  const albumCover = (album: typeof ALBUMS[0]) => album.staticCover;
 
   return (
     <div className="space-y-5">
@@ -232,7 +242,7 @@ export default function GaleriePage() {
                   {album.label}
                 </h3>
                 <p className="text-xs text-white/60 mt-1">
-                  {count > 0 ? `${count} photo${count !== 1 ? 's' : ''}` : 'Aucune photo — cliquez pour ajouter'}
+                  {count > 0 ? `${count} photo${count !== 1 ? 's' : ''}` : '0 photo'}
                 </p>
               </div>
               {count > 0 && (
