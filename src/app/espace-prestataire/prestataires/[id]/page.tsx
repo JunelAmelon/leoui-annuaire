@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getDocument } from '@/lib/db';
 import PrestataireDashboardLayout from '../../PrestataireDashboardLayout';
 import {
-  Star, MapPin, ArrowLeft, Tag, Globe, Instagram,
+  Star, MapPin, ArrowLeft, Tag, Globe, Instagram, Linkedin,
   Award, Users, Zap, ChevronDown, Image as ImageIcon, Check, ExternalLink,
 } from 'lucide-react';
 
@@ -25,6 +25,7 @@ interface VendorProfile {
   weddingsCompleted?: number;
   website?: string;
   instagram?: string;
+  linkedin?: string;
   packages?: { name: string; price: string; items: string[]; popular?: boolean }[];
   faqs?: { q: string; a: string }[];
   team?: { name: string; role: string; bio: string; photo?: string }[];
@@ -141,6 +142,7 @@ export default function VendorProfileInPrestatairePage({ params }: { params: { i
                 {vendor.responseTime && <span className="flex items-center gap-1.5 text-sm text-charcoal-600"><Zap className="w-3.5 h-3.5 text-amber-400" />Répond en {vendor.responseTime}</span>}
                 {vendor.website && <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-rose-600 hover:underline"><Globe className="w-3.5 h-3.5" />Site web</a>}
                 {vendor.instagram && <a href={`https://instagram.com/${vendor.instagram.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-rose-600 hover:underline"><Instagram className="w-3.5 h-3.5" />{vendor.instagram}</a>}
+                {vendor.linkedin && <a href={vendor.linkedin.startsWith('http') ? vendor.linkedin : `https://${vendor.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-rose-600 hover:underline"><Linkedin className="w-3.5 h-3.5" />LinkedIn</a>}
               </div>
             </div>
 

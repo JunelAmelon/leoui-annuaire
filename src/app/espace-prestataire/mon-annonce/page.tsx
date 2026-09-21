@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import CityAutocompleteInput from '@/components/CityAutocompleteInput';
 import { VENDOR_CATEGORY_GROUPS } from '@/lib/vendor-categories';
-import { Camera, MapPin, Save, Plus, X, Eye, ExternalLink, Globe, Star, Clock, Euro, CheckCircle, Instagram, Upload, Loader2, Trash2, ChevronDown, ChevronUp, Video } from 'lucide-react';
+import { Camera, MapPin, Save, Plus, X, Eye, ExternalLink, Globe, Star, Clock, Euro, CheckCircle, Instagram, Linkedin, Upload, Loader2, Trash2, ChevronDown, ChevronUp, Video } from 'lucide-react';
 import { getDocuments, setDocument, updateDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
@@ -86,6 +86,7 @@ export default function MonAnnoncePage() {
     responseTime: '24h',
     website: '',
     instagram: '',
+    linkedin: '',
     tags: [] as string[],
     images: [] as string[],
     videos: [] as string[],
@@ -145,6 +146,7 @@ export default function MonAnnoncePage() {
             responseTime: d.responseTime || '24h',
             website: d.website || '',
             instagram: d.instagram || '',
+            linkedin: d.linkedin || '',
             tags: d.tags || [],
             images: d.images || [],
             videos: d.videos || [],
@@ -641,6 +643,15 @@ export default function MonAnnoncePage() {
                       <input type="text" value={form.instagram} onChange={e => setForm(p => ({ ...p, instagram: e.target.value }))}
                         className="w-full pl-9 pr-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all"
                         placeholder="@moncompte" />
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-charcoal-700 mb-1.5">LinkedIn</label>
+                    <div className="relative">
+                      <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-charcoal-400" />
+                      <input type="url" value={form.linkedin} onChange={e => setForm(p => ({ ...p, linkedin: e.target.value }))}
+                        className="w-full pl-9 pr-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400 transition-all"
+                        placeholder="https://linkedin.com/in/moncompte" />
                     </div>
                   </div>
                 </div>

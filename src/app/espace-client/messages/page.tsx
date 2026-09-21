@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { addDocument, getDocuments, updateDocument, getDocument } from '@/lib/db';
-import { MessageSquare, Send, Paperclip, Camera, Search, Users, Store, ChevronLeft, ChevronRight, Heart, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Paperclip, Camera, Search, Users, Store, ChevronLeft, ChevronRight, Heart, X, FileText, Image as ImageIcon, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFile } from '@/lib/storage';
 import LinkifyText from '@/components/LinkifyText';
@@ -28,6 +28,9 @@ interface Msg {
   sender_name?: string;
   content: string;
   attachments?: Array<{ url: string; name?: string; type?: string }>;
+  type?: string;
+  file_url?: string;
+  document_type?: string;
   created_at?: string;
   sender_id?: string;
 }
@@ -44,7 +47,10 @@ export default function MessagesPage() {
   const [search, setSearch] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingGallery, setPendingGallery] = useState<{ id: string; url: string }[]>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+  const [clientGallery, setClientGallery] = useState<{ id: string; album: string; url: string }[]>([]);
   const [filePreview, setFilePreview] = useState<{ url: string; name: string; type: string } | null>(null);
   const [imageGallery, setImageGallery] = useState<{ attachments: { url: string; name?: string; type?: string }[]; index: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -121,6 +127,19 @@ export default function MessagesPage() {
   }, [client?.id, user?.uid]);
 
   useEffect(() => {
+    if (!client?.id) return;
+    const loadGallery = async () => {
+      try {
+        const docs = await getDocuments('galleries', [
+          { field: 'client_id', operator: '==', value: client.id },
+        ]);
+        setClientGallery((docs as any[]).map(d => ({ id: d.id, album: d.album || 'général', url: d.url })));
+      } catch {}
+    };
+    loadGallery();
+  }, [client?.id]);
+
+  useEffect(() => {
     if (!selected) return;
     const load = async () => {
       try {
@@ -152,19 +171,24 @@ export default function MessagesPage() {
   };
 
   const removePendingFile = (idx: number) => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
+  const removePendingGallery = (id: string) => setPendingGallery(prev => prev.filter(g => g.id !== id));
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && pendingFiles.length === 0) || !selected || !user) return;
+    if ((!newMessage.trim() && pendingFiles.length === 0 && pendingGallery.length === 0) || !selected || !user) return;
     setSending(true);
     const content = newMessage.trim();
     try {
-      const attachments = [];
+      const attachments = [] as { url: string; name: string; type: string }[];
       for (const file of pendingFiles) {
         const url = await uploadFile(file, 'chat');
         attachments.push({ url, name: file.name, type: file.type });
       }
+      for (const img of pendingGallery) {
+        attachments.push({ url: img.url, name: 'galerie.jpg', type: 'image/jpeg' });
+      }
+      const total = pendingFiles.length + pendingGallery.length;
       const lastLabel = attachments.length
-        ? (attachments.length === 1 ? `Fichier : ${attachments[0].name}` : `${attachments.length} fichiers joints`)
+        ? (attachments.length === 1 ? 'Image jointe' : `${total} fichiers joints`)
         : content;
       const msg: any = {
         id: Date.now().toString(),
@@ -187,6 +211,7 @@ export default function MessagesPage() {
       setMessages(prev => [...prev, msg]);
       setNewMessage('');
       setPendingFiles([]);
+      setPendingGallery([]);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch {
       toast.error("Impossible d'envoyer le message");
@@ -392,7 +417,17 @@ export default function MessagesPage() {
                             {!isMe && msg.sender_name && (
                               <p className="text-xs font-semibold mb-1 text-charcoal-500">{msg.sender_name}</p>
                             )}
-                            {msg.content && <p className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></p>}
+                            {msg.type === 'document' && msg.file_url && (
+                              <button
+                                type="button"
+                                onClick={() => setFilePreview({ url: msg.file_url!, name: msg.content.split('\n')[0].replace(/^📄 /, ''), type: 'application/pdf' })}
+                                className={`flex items-center gap-2 w-full text-left p-2.5 rounded-xl mb-2 ${isMe ? 'bg-white/20 text-white' : 'bg-white border border-charcoal-200 text-charcoal-700'}`}
+                              >
+                                <FileText className="w-5 h-5 flex-shrink-0" />
+                                <span className="text-sm font-medium truncate">{msg.content.split('\n')[0].replace(/^📄 /, '')}</span>
+                              </button>
+                            )}
+                            {msg.content && msg.type !== 'document' && <p className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></p>}
                             {(() => {
                               const attachments = msg.attachments || [];
                               const imageAttachments = attachments.filter((a) => (a.type || '').toLowerCase().startsWith('image/'));
@@ -468,13 +503,20 @@ export default function MessagesPage() {
               </div>
 
               <div className="px-4 py-3 border-t border-charcoal-100 flex-shrink-0 space-y-2">
-                {pendingFiles.length > 0 && (
+                {(pendingFiles.length > 0 || pendingGallery.length > 0) && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {pendingFiles.map((file, i) => (
                       <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-ivory-50 border border-charcoal-200 rounded-lg text-xs text-charcoal-700">
                         {file.type.startsWith('image/') ? <ImageIcon className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
                         <span className="max-w-[120px] truncate">{file.name}</span>
                         <button type="button" onClick={() => removePendingFile(i)} className="text-charcoal-400 hover:text-rose-600"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                    {pendingGallery.map((img) => (
+                      <div key={img.id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-ivory-50 border border-charcoal-200 rounded-lg text-xs text-charcoal-700">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span className="max-w-[80px] truncate">Galerie</span>
+                        <button type="button" onClick={() => removePendingGallery(img.id)} className="text-charcoal-400 hover:text-rose-600"><X className="w-3 h-3" /></button>
                       </div>
                     ))}
                   </div>
@@ -500,6 +542,13 @@ export default function MessagesPage() {
                           className="w-full text-left px-3 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 flex items-center gap-2"
                         >
                           <ImageIcon className="w-4 h-4" /> Images
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowGalleryPicker(true); setShowAttachMenu(false); }}
+                          className="w-full text-left px-3 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 flex items-center gap-2"
+                        >
+                          <ImageIcon className="w-4 h-4" /> Depuis ma galerie
                         </button>
                         <button
                           type="button"
@@ -530,7 +579,7 @@ export default function MessagesPage() {
                   />
                   <button
                     onClick={() => void sendMessage()}
-                    disabled={(!newMessage.trim() && pendingFiles.length === 0) || sending}
+                    disabled={(!newMessage.trim() && pendingFiles.length === 0 && pendingGallery.length === 0) || sending}
                     className="p-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-40 transition-colors"
                   >
                     {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -562,6 +611,47 @@ export default function MessagesPage() {
                     {imageGallery.index + 1} / {imageGallery.attachments.length}
                   </div>
                   <img src={imageGallery.attachments[imageGallery.index].url} alt="" className="max-w-full max-h-[85vh] object-contain rounded-xl" onClick={e => e.stopPropagation()} />
+                </div>
+              )}
+
+              {/* Gallery picker */}
+              {showGalleryPicker && (
+                <div className="fixed inset-0 z-50 bg-charcoal-900/80 flex items-center justify-center p-4" onClick={() => setShowGalleryPicker(false)}>
+                  <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-4 border-b border-charcoal-100">
+                      <h3 className="font-medium text-charcoal-900">Envoyer depuis ma galerie</h3>
+                      <button onClick={() => setShowGalleryPicker(false)} className="p-1 text-charcoal-400 hover:text-charcoal-600"><X className="w-5 h-5" /></button>
+                    </div>
+                    <div className="p-4 overflow-y-auto flex-1">
+                      {clientGallery.length === 0 ? (
+                        <p className="text-center text-sm text-charcoal-500 py-10">Aucune photo dans votre galerie.</p>
+                      ) : (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                          {clientGallery.map(img => (
+                            <button
+                              key={img.id}
+                              onClick={() => { setPendingGallery(prev => prev.some(g => g.id === img.id) ? prev : [...prev, img]); setShowGalleryPicker(false); }}
+                              className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-all ${
+                                pendingGallery.some(g => g.id === img.id) ? 'border-rose-600 opacity-60' : 'border-transparent hover:border-rose-300'
+                              }`}
+                            >
+                              <img src={img.url} alt="" className="w-full h-full object-cover" />
+                              {pendingGallery.some(g => g.id === img.id) && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-rose-600/20">
+                                  <Check className="w-6 h-6 text-rose-600" />
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 border-t border-charcoal-100 flex justify-end">
+                      <button onClick={() => setShowGalleryPicker(false)} className="px-4 py-2 text-sm font-medium text-charcoal-600 hover:text-charcoal-900">
+                        Fermer
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 

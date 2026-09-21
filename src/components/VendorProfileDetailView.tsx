@@ -22,6 +22,7 @@ import {
   Tag,
   Globe,
   Instagram,
+  Linkedin,
   Image as ImageIcon,
   ChevronDown,
   ChevronLeft,
@@ -387,11 +388,11 @@ export default function VendorProfileDetailView({
             {/* Photo Gallery — elegant masonry style */}
             <div className="sm:hidden w-full">
               <div className="grid grid-cols-2 gap-1">
-                <div className="col-span-2 aspect-[16/10] overflow-hidden">
+                <div className="col-span-2 aspect-[16/10] overflow-hidden cursor-pointer" onClick={() => { setCurrentPhotoIndex(0); setShowGallery(true); }}>
                   <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover" />
                 </div>
                 {photos.slice(1, 3).map((p, i) => (
-                  <div key={i} className="aspect-square overflow-hidden">
+                  <div key={i} className="aspect-square overflow-hidden cursor-pointer" onClick={() => { setCurrentPhotoIndex(i + 1); setShowGallery(true); }}>
                     <img src={p} alt={`Photo ${i + 2}`} className="w-full h-full object-cover" />
                   </div>
                 ))}
@@ -401,12 +402,12 @@ export default function VendorProfileDetailView({
             <div className="hidden sm:block w-full">
               <div className="grid grid-cols-12 grid-rows-2 gap-1 h-[420px] sm:h-[460px] lg:h-[520px]">
                 {/* Main large image */}
-                <div className="col-span-7 row-span-2 h-full overflow-hidden">
+                <div className="col-span-7 row-span-2 h-full overflow-hidden cursor-pointer" onClick={() => { setCurrentPhotoIndex(0); setShowGallery(true); }}>
                   <img src={photos[0]} alt="Photo principale" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-700" />
                 </div>
                 {/* Side images */}
                 <div className="col-span-5 row-span-2 grid grid-rows-2 gap-1 h-full">
-                  <div className="overflow-hidden relative h-full">
+                  <div className="overflow-hidden relative h-full cursor-pointer" onClick={() => { setCurrentPhotoIndex(1); setShowGallery(true); }}>
                     <img src={photos[1] || photos[0]} alt="Photo 2" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     <button
                       onClick={() => onFavoriteToggle ? onFavoriteToggle() : setInternalFavorite((f) => !f)}
@@ -416,7 +417,7 @@ export default function VendorProfileDetailView({
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-1 h-full">
-                    <div className="overflow-hidden h-full">
+                    <div className="overflow-hidden h-full cursor-pointer" onClick={() => { setCurrentPhotoIndex(2); setShowGallery(true); }}>
                       <img src={photos[2] || photos[0]} alt="Photo 3" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     </div>
                     <div className="overflow-hidden relative cursor-pointer h-full" onClick={() => { setCurrentPhotoIndex(3); setShowGallery(true); }}>
@@ -632,7 +633,7 @@ export default function VendorProfileDetailView({
                     </>
                   )}
 
-                  {(vendor.website || vendor.instagram) && (
+                  {(vendor.website || vendor.instagram || vendor.linkedin) && (
                     <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-charcoal-100">
                       {vendor.website && (
                         <a
@@ -652,6 +653,16 @@ export default function VendorProfileDetailView({
                           className="flex items-center gap-2 px-4 py-2 border border-charcoal-200 rounded-xl text-sm text-charcoal-600 hover:border-rose-300 hover:text-rose-600 transition-all"
                         >
                           <Instagram className="w-4 h-4" /> {vendor.instagram}
+                        </a>
+                      )}
+                      {vendor.linkedin && (
+                        <a
+                          href={vendor.linkedin.startsWith('http') ? vendor.linkedin : `https://${vendor.linkedin}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 border border-charcoal-200 rounded-xl text-sm text-charcoal-600 hover:border-rose-300 hover:text-rose-600 transition-all"
+                        >
+                          <Linkedin className="w-4 h-4" /> LinkedIn
                         </a>
                       )}
                     </div>
@@ -1533,12 +1544,30 @@ export default function VendorProfileDetailView({
           </div>
 
           {/* Main Image */}
-          <div className="flex-1 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="flex-1 min-h-0 relative flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
             <img
               src={photos[currentPhotoIndex]}
               alt={`Photo ${currentPhotoIndex + 1}`}
-              className="max-w-full max-h-full object-contain"
+              className="w-auto h-auto max-w-full max-h-[80vh] object-contain select-none"
             />
+            {photos.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(i => i > 0 ? i - 1 : photos.length - 1); }}
+                  className="absolute left-0 top-0 h-full w-1/2 opacity-0 hover:opacity-100 focus:outline-none"
+                  aria-label="Photo précédente"
+                >
+                  <ChevronLeft className="w-10 h-10 text-white/70 absolute left-4 top-1/2 -translate-y-1/2" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(i => i < photos.length - 1 ? i + 1 : 0); }}
+                  className="absolute right-0 top-0 h-full w-1/2 opacity-0 hover:opacity-100 focus:outline-none"
+                  aria-label="Photo suivante"
+                >
+                  <ChevronRight className="w-10 h-10 text-white/70 absolute right-4 top-1/2 -translate-y-1/2" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Navigation */}

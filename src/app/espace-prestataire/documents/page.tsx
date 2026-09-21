@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import PrestataireDashboardLayout from '../PrestataireDashboardLayout';
 import { FileCheck2, Plus, Search, Download, Eye, Send, Edit, CheckCircle, XCircle, X, Trash2, MoreVertical, Save, Upload, Clock } from 'lucide-react';
-import { getDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/db';
+import { getDocuments, addDocument, updateDocument, deleteDocument, getDocument } from '@/lib/db';
+import { getClientEvent } from '@/lib/client-helpers';
 import { createNotification, resolveClientRecipientId } from '@/lib/notifications';
 import { sendEmail } from '@/lib/email';
 import { renderContractEmail } from '@/lib/email-template';
@@ -20,6 +21,7 @@ interface Contract {
   client_email: string;
   client_id?: string;
   amount: number;
+  documentType: 'contract' | 'quote' | 'invoice' | 'other';
   status: 'draft' | 'sent' | 'signed' | 'cancelled';
   created_at: string;
   signed_at: string | null;
@@ -51,7 +53,7 @@ export default function ContratsPage() {
   const [importedPdfUrl, setImportedPdfUrl] = useState<string>('');
   const [form, setForm] = useState({
     title: '', client_name: '', client_email: '', client_id: '',
-    event_date: '', status: 'draft' as keyof typeof STATUS_CFG
+    event_date: '', documentType: 'contract' as 'contract' | 'quote' | 'invoice' | 'other', status: 'draft' as keyof typeof STATUS_CFG
   });
 
   const vendorName = user?.displayName || user?.email?.split('@')[0] || 'Prestataire';
@@ -78,7 +80,7 @@ export default function ContratsPage() {
       setContracts((data as any[]).map(d => ({
         id: d.id, reference: d.reference || '', title: d.title || '',
         client_name: d.client_name || '', client_email: d.client_email || '', client_id: d.client_id || '',
-        amount: d.amount || 0, status: d.status || 'draft',
+        amount: d.amount || 0, documentType: d.documentType || 'contract', status: d.status || 'draft',
         created_at: d.created_at || new Date().toISOString(), signed_at: d.signed_at || null,
         event_date: d.event_date || '', pdf_url: d.pdf_url || ''
       })));
@@ -112,7 +114,7 @@ export default function ContratsPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ title: '', client_name: '', client_email: '', client_id: '', event_date: '', status: 'draft' });
+    setForm({ title: '', client_name: '', client_email: '', client_id: '', event_date: '', documentType: 'contract', status: 'draft' });
     setImportedPdfUrl('');
     setShowModal(true);
   };
@@ -121,7 +123,8 @@ export default function ContratsPage() {
     setEditItem(c);
     setForm({
       title: c.title, client_name: c.client_name, client_email: c.client_email,
-      client_id: c.client_id || '', event_date: c.event_date || '', status: c.status
+      client_id: c.client_id || '', event_date: c.event_date || '',
+      documentType: c.documentType || 'contract', status: c.status
     });
     setImportedPdfUrl(c.pdf_url || '');
     setShowModal(true);
@@ -143,6 +146,7 @@ export default function ContratsPage() {
         client_email: form.client_email,
         client_id: form.client_id,
         amount: 0,
+        documentType: form.documentType,
         event_date: form.event_date,
         status: form.status,
         pdf_url: importedPdfUrl || (editItem as any)?.pdf_url || '',
@@ -162,6 +166,9 @@ export default function ContratsPage() {
     setSending(c.id);
     try {
       const file_url = c.pdf_url;
+      const docType = c.documentType || 'contract';
+      const typeLabel = docType === 'invoice' ? 'facture' : docType === 'quote' ? 'devis' : docType === 'contract' ? 'contrat' : 'document';
+      const typeLabelCap = docType === 'invoice' ? 'Facture' : docType === 'quote' ? 'Devis' : docType === 'contract' ? 'Contrat' : 'Document';
 
       // Chercher client par email
       const clients = await getDocuments('clients', [{ field: 'email', operator: '==', value: c.client_email }]);
@@ -172,8 +179,8 @@ export default function ContratsPage() {
         // Créer document dans l'espace client
         await addDocument('documents', {
           client_id: resolvedClientId, vendor_id: user.uid,
-          name: `Contrat ${c.reference} — ${c.client_name}`,
-          type: 'contrat', file_url,
+          name: `${typeLabelCap} ${c.reference} — ${c.client_name}`,
+          type: typeLabel, file_url,
           uploaded_by: 'vendor', uploaded_at: new Date().toLocaleDateString('fr-FR'),
           contract_id: c.id, status: 'sent',
         });
@@ -191,7 +198,7 @@ export default function ContratsPage() {
           });
           convId = (newConv as any).id;
         }
-        const msgContent = `📄 Contrat envoyé : ${c.title}\nRéf. ${c.reference}\n${file_url ? `Voir le contrat : ${file_url}` : 'Disponible dans vos documents.'}`;
+        const msgContent = `📄 ${typeLabelCap} envoyé(e) : ${c.title}\nRéf. ${c.reference}\n${file_url ? `Voir le document : ${file_url}` : 'Disponible dans vos documents.'}`;
         await addDocument('messages', {
           conversation_id: convId,
           sender_id: user.uid,
@@ -201,11 +208,11 @@ export default function ContratsPage() {
           created_at: new Date().toISOString(),
           type: 'document',
           file_url,
-          document_type: 'contrat',
+          document_type: typeLabel,
           contract_id: c.id,
         } as any);
         await updateDocument('conversations', convId, {
-          last_message: `Contrat envoyé : ${c.title}`,
+          last_message: `${typeLabelCap} envoyé(e) : ${c.title}`,
           last_message_at: new Date().toISOString(),
           unread_count_client: 1,
           updated_at: new Date().toISOString(),
@@ -216,9 +223,9 @@ export default function ContratsPage() {
         resolveClientRecipientId(resolvedClientId)
           .then((recipientId) => createNotification({
             recipientId,
-            type: 'contrat',
-            title: 'Contrat reçu',
-            message: `${vendorName} vous a envoyé le contrat ${c.reference}. À consulter.`,
+            type: 'document',
+            title: `${typeLabelCap} reçu(e)`,
+            message: `${vendorName} vous a envoyé la ${typeLabel} ${c.reference}. À consulter.`,
             link: '/espace-client/documents',
           }))
           .catch(() => {});
@@ -226,11 +233,11 @@ export default function ContratsPage() {
       // Email au client (on a toujours c.client_email ici)
       sendEmail({
         to: c.client_email,
-        subject: `${vendorName} vous a envoyé un contrat`,
+        subject: `${vendorName} vous a envoyé un${typeLabel === 'facture' ? 'e ' : (typeLabel === 'devis' ? ' ' : ' ')}${typeLabel}`,
         html: renderContractEmail({ clientName: c.client_name || '', vendorName, contractName: c.title || c.reference }),
       });
       await updateDocument('contracts', c.id, { status: 'sent', pdf_url: file_url });
-      toast.success(resolvedClientId ? `Contrat envoyé et visible dans les documents du client` : `Contrat envoyé — email non trouvé dans la base`, { duration: 4000 });
+      toast.success(resolvedClientId ? `${typeLabelCap} envoyé(e) et visible dans les documents du client` : `${typeLabelCap} envoyé(e) — email non trouvé dans la base`, { duration: 4000 });
       load();
     } catch (e) { console.error(e); toast.error('Erreur lors de l\'envoi'); } finally { setSending(null); }
   };
@@ -271,11 +278,11 @@ export default function ContratsPage() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
-            <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Contrats</h1>
-            <p className="text-sm text-charcoal-500 mt-0.5">Importez votre propre contrat PDF pour le partager avec un client.</p>
+            <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Documents</h1>
+            <p className="text-sm text-charcoal-500 mt-0.5">Contrats, devis et factures à partager avec vos clients.</p>
           </div>
           <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors shadow-sm">
-            <Plus className="w-4 h-4" /> Nouveau contrat
+            <Plus className="w-4 h-4" /> Nouveau document
           </button>
         </div>
 
@@ -466,9 +473,16 @@ export default function ContratsPage() {
               {linkedClients.length > 0 && (
                 <div className="bg-rose-50 border border-rose-100 rounded-xl p-4">
                   <label className="block text-sm font-semibold text-rose-700 mb-2">Client lié — sélectionner pour auto-remplir</label>
-                  <select onChange={e => {
+                  <select onChange={async e => {
                     const cl = linkedClients.find(x => x.id === e.target.value);
-                    if (cl) setForm(p => ({ ...p, client_name: cl.name, client_email: cl.email, client_id: cl.client_id || cl.id }));
+                    if (cl) {
+                      const event = await getClientEvent(cl.id);
+                      const eventDate = (event as any)?.event_date;
+                      const formatted = eventDate && !isNaN(new Date(eventDate).getTime())
+                        ? new Date(eventDate).toISOString().split('T')[0]
+                        : '';
+                      setForm(p => ({ ...p, client_name: cl.name, client_email: cl.email, client_id: cl.client_id || cl.id, event_date: formatted }));
+                    }
                   }} className="w-full px-4 py-2.5 border border-rose-200 rounded-xl text-sm bg-white focus:outline-none focus:border-rose-400">
                     <option value="">— Choisir un client lié —</option>
                     {linkedClients.map(c => <option key={c.id} value={c.id}>{c.name}{c.email ? ` (${c.email})` : ''}</option>)}
@@ -478,7 +492,7 @@ export default function ContratsPage() {
 
               {/* Infos principales */}
               <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Intitulé du contrat *</label>
+                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Intitulé du document *</label>
                 <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" placeholder="Ex: Prestation photographique — Mariage Sophie & Thomas" />
               </div>
@@ -500,9 +514,21 @@ export default function ContratsPage() {
                   className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400" />
               </div>
 
+              {/* Type */}
+              <div>
+                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Type de document</label>
+                <select value={form.documentType} onChange={e => setForm(p => ({ ...p, documentType: e.target.value as 'contract' | 'quote' | 'invoice' | 'other' }))}
+                  className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-stone-50 focus:outline-none focus:border-rose-400">
+                  <option value="contract">Contrat</option>
+                  <option value="quote">Devis</option>
+                  <option value="invoice">Facture</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+
               {/* Import PDF */}
               <div className="bg-ivory-50 border border-charcoal-100 rounded-xl p-4">
-                <p className="text-sm font-semibold text-charcoal-900">Importer votre contrat PDF</p>
+                <p className="text-sm font-semibold text-charcoal-900">Importer votre document PDF</p>
                 <p className="text-xs text-charcoal-500 mt-1">Importez votre document officiel signé ou à signer.</p>
                 {importedPdfUrl ? (
                   <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">

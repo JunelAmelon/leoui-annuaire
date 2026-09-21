@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   title: 'LeOui.net — Organisez votre mariage avec élégance',
   description: 'La plateforme premium pour organiser votre mariage de rêve en France. Découvrez les meilleurs prestataires et lieux de réception.',
   keywords: ['mariage', 'wedding', 'france', 'prestataire mariage', 'organisation mariage'],
+  icons: {
+    icon: '/favicon.svg',
+  },
   openGraph: {
     title: 'LeOui.net — Organisez votre mariage avec élégance',
     description: 'La plateforme premium pour organiser votre mariage de rêve en France',

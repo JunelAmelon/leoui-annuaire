@@ -30,6 +30,9 @@ interface Message {
   sender_name?: string;
   content: string;
   attachments?: Array<{ url: string; name?: string; type?: string }>;
+  type?: string;
+  file_url?: string;
+  document_type?: string;
   created_at?: string;
 }
 
@@ -373,7 +376,17 @@ export default function ContactsPage() {
                                 ? 'bg-rose-600 text-white rounded-br-md'
                                 : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
                             }`}>
-                              {msg.content && <p className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></p>}
+                              {msg.type === 'document' && msg.file_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFilePreview({ url: msg.file_url!, name: msg.content.split('\n')[0].replace(/^📄 /, ''), type: 'application/pdf' })}
+                                  className={`flex items-center gap-2 w-full text-left p-2.5 rounded-xl mb-2 ${isVendor ? 'bg-white/20 text-white' : 'bg-white border border-charcoal-200 text-charcoal-700'}`}
+                                >
+                                  <FileText className="w-5 h-5 flex-shrink-0" />
+                                  <span className="text-sm font-medium truncate">{msg.content.split('\n')[0].replace(/^📄 /, '')}</span>
+                                </button>
+                              )}
+                              {msg.content && msg.type !== 'document' && <p className="whitespace-pre-wrap break-words"><LinkifyText text={msg.content} /></p>}
                               {(() => {
                                 const attachments = msg.attachments || [];
                                 const imageAttachments = attachments.filter((a) => (a.type || '').toLowerCase().startsWith('image/'));

@@ -19,7 +19,7 @@ const NAV = [
   { href: '/espace-prestataire',                    label: 'Tableau de bord',  icon: LayoutDashboard, exact: true },
   { href: '/espace-prestataire/mon-annonce',        label: 'Mon profil',       icon: Megaphone },
   { href: '/espace-prestataire/contacts',           label: 'Messages',         icon: MessageSquare },
-  { href: '/espace-prestataire/contrats',           label: 'Contrats',         icon: FileCheck2 },
+  { href: '/espace-prestataire/documents',           label: 'Documents',        icon: FileCheck2 },
   { href: '/espace-prestataire/planning',           label: 'Planning',         icon: CalendarDays },
   { href: '/espace-prestataire/promotions',         label: 'Promotions',       icon: Tag },
   { href: '/espace-prestataire/avis',               label: 'Avis clients',     icon: Star },
