@@ -52,6 +52,47 @@ export const VENDOR_CATEGORIES = [
 
 export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
 
+// Anciens noms de catégories (liens existants, SEO, favoris) → catégories actuelles.
+export const LEGACY_CATEGORY_MAP: Record<string, string[]> = {
+  'Photographes': ['Photo mariage'],
+  'Photographe': ['Photo mariage'],
+  'Vidéastes': ['Vidéo mariage'],
+  'Vidéaste': ['Vidéo mariage'],
+  'Fleuristes': ['Fleurs mariage', 'Décoration mariage'],
+  'Fleuriste': ['Fleurs mariage', 'Décoration mariage'],
+  'Traiteurs': ['Traiteur mariage', 'Wedding cake', 'Food Truck', 'Vin et Spiritueux'],
+  'Traiteur': ['Traiteur mariage'],
+  'DJ & Musiciens': ['Musique mariage'],
+  'DJ': ['Musique mariage'],
+  'Musiciens': ['Musique mariage'],
+  'Lieu de réception': ['Domaine mariage', 'Auberge mariage', 'Hôtel mariage', 'Restaurant mariage', 'Salle mariage', 'Château mariage', 'Bateau mariage', 'Mariages à la plage'],
+  'Faire-part': ['Faire part mariage'],
+  'Cadeaux invités': ['Cadeaux invités mariage'],
+  'Transport': ['Voiture mariage', 'Bus mariage'],
+  'Animations': ['Animation mariage'],
+  'Agences de voyage': ['Lune de miel'],
+  'Pâtissiers': ['Wedding cake'],
+  'Pâtissier': ['Wedding cake'],
+  'Boutiques de robes': ['Robe de mariée', 'Robe de cocktail'],
+  'Accessoires': ['Accessoires mariage', 'Accessoires marié'],
+  'Bijoux': ['Bijoux mariage'],
+  'Coiffeurs & Maquilleurs': ['Esthétique coiffure mariage', 'Soins beauté'],
+  'Costumes': ['Costumes mariage'],
+};
+
+// Toutes les valeurs de `v.category` qui doivent matcher `category` :
+// - si `category` est un ancien nom → ses catégories cibles + l'ancien nom
+// - si `category` est un nom actuel → lui-même + les anciens noms qui y renvoient
+//   (pour les prestataires enregistrés avec l'ancienne taxonomie)
+export function categoryMatchValues(category: string): string[] {
+  const matches = new Set<string>([category]);
+  for (const t of LEGACY_CATEGORY_MAP[category] || []) matches.add(t);
+  for (const [legacy, targets] of Object.entries(LEGACY_CATEGORY_MAP)) {
+    if (targets.includes(category)) matches.add(legacy);
+  }
+  return [...matches];
+}
+
 export const VENDOR_CATEGORY_GROUPS = [
   {
     label: 'Lieux de mariage',

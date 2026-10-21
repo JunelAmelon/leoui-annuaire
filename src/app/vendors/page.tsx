@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import { Search, MapPin, Star, Heart, Zap, ChevronDown, Grid3X3, List, Tag, ChevronLeft, ChevronRight, Crown, ArrowRight, Gift } from 'lucide-react';
 import { TIER_BADGE } from '@/lib/subscription-plans';
 import type { SubscriptionTier } from '@/lib/subscription-plans';
-import { VENDOR_CATEGORIES } from '@/lib/vendor-categories';
+import { VENDOR_CATEGORIES, categoryMatchValues } from '@/lib/vendor-categories';
 import CategoryPicker from '@/components/CategoryPicker';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 import CityAutocompleteInput, { LocationSuggestion } from '@/components/CityAutocompleteInput';
@@ -152,13 +152,13 @@ function VendorsPageContent() {
   const serviceOptions = ['Séance d\'engagement', 'Après le mariage', 'Album photo', 'Album digital', 'Photos haute résolution', 'Blu-ray / DVD'];
 
   const categoryMapping: Record<string, string[]> = {};
-  VENDOR_CATEGORIES.forEach(c => { categoryMapping[c] = [c]; });
+  VENDOR_CATEGORIES.forEach(c => { categoryMapping[c] = categoryMatchValues(c); });
 
   const normalizedLocation = (loc: string) => (loc || '').split(',')[0].trim().toLowerCase();
 
   const filteredVendors = allVendors
     .filter(v => {
-      const possibleMatches = categoryMapping[selectedCategory] || [selectedCategory];
+      const possibleMatches = categoryMapping[selectedCategory] || categoryMatchValues(selectedCategory);
       const matchCategory = selectedCategory === 'Tous' || possibleMatches.some(cat => 
         v.category?.toLowerCase().includes(cat.toLowerCase())
       );

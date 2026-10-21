@@ -10,7 +10,7 @@ import { ArrowRight, MapPin, Heart, Camera, Utensils, Flower2, Music, Star, Tren
 import { useEffect, useState } from 'react';
 
 const MÉTIERS = [
-  { n: '01', label: 'Photographie',   icon: Camera,   href: '/vendors?cat=Photographes', img: 'https://images.pexels.com/photos/33996615/pexels-photo-33996615.jpeg' },
+  { n: '01', label: 'Photographie',   icon: Camera,   href: '/vendors?cat=Photo+mariage', img: 'https://images.pexels.com/photos/33996615/pexels-photo-33996615.jpeg' },
   { n: '02', label: 'Fleurs & Décor', icon: Flower2,   href: '/vendors?cat=Fleuristes',   img: 'https://images.pexels.com/photos/5789240/pexels-photo-5789240.jpeg' },
   { n: '03', label: 'Gastronomie',    icon: Utensils,  href: '/vendors?cat=Traiteurs',    img: 'https://images.pexels.com/photos/17906675/pexels-photo-17906675.jpeg' },
   { n: '04', label: 'Musique & Son',  icon: Music,     href: '/vendors?cat=DJ+%26+Musiciens', img: 'https://images.pexels.com/photos/15865408/pexels-photo-15865408.jpeg' },
@@ -458,14 +458,14 @@ export default function HomePage() {
               <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Réception</h4>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {[
-                  { label: 'Domaine mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Auberge mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Hôtel mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Restaurant mariage', href: '/vendors?cat=Traiteurs' },
-                  { label: 'Salle mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Château mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Mariages à la plage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Bateau mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
+                  { label: 'Domaine mariage', href: '/vendors?cat=Domaine+mariage' },
+                  { label: 'Auberge mariage', href: '/vendors?cat=Auberge+mariage' },
+                  { label: 'Hôtel mariage', href: '/vendors?cat=H%C3%B4tel+mariage' },
+                  { label: 'Restaurant mariage', href: '/vendors?cat=Restaurant+mariage' },
+                  { label: 'Salle mariage', href: '/vendors?cat=Salle+mariage' },
+                  { label: 'Château mariage', href: '/vendors?cat=Ch%C3%A2teau+mariage' },
+                  { label: 'Mariages à la plage', href: '/vendors?cat=Mariages+%C3%A0+la+plage' },
+                  { label: 'Bateau mariage', href: '/vendors?cat=Bateau+mariage' },
                 ].map((link, i) => (
                   <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
                     {link.label}
@@ -479,25 +479,25 @@ export default function HomePage() {
               <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Prestataires</h4>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {[
-                  { label: 'Traiteur mariage', href: '/vendors?cat=Traiteurs' },
-                  { label: 'Faire part mariage', href: '/vendors?cat=Faire-part' },
-                  { label: 'Cadeaux invités mariage', href: '/vendors?cat=Cadeaux+invit%C3%A9s' },
-                  { label: 'Photo mariage', href: '/vendors?cat=Photographes' },
-                  { label: 'Vidéo mariage', href: '/vendors?cat=Vid%C3%A9astes' },
-                  { label: 'Musique mariage', href: '/vendors?cat=DJ+%26+Musiciens' },
-                  { label: 'Voiture mariage', href: '/vendors?cat=Transport' },
-                  { label: 'Bus mariage', href: '/vendors?cat=Transport' },
-                  { label: 'Décoration mariage', href: '/vendors?cat=Fleuristes' },
-                  { label: 'Chapiteau mariage', href: '/vendors?cat=Lieu+de+r%C3%A9ception' },
-                  { label: 'Animation mariage', href: '/vendors?cat=Animations' },
-                  { label: 'Fleurs mariage', href: '/vendors?cat=Fleuristes' },
+                  { label: 'Traiteur mariage', href: '/vendors?cat=Traiteur+mariage' },
+                  { label: 'Faire part mariage', href: '/vendors?cat=Faire+part+mariage' },
+                  { label: 'Cadeaux invités mariage', href: '/vendors?cat=Cadeaux+invit%C3%A9s+mariage' },
+                  { label: 'Photo mariage', href: '/vendors?cat=Photo+mariage' },
+                  { label: 'Vidéo mariage', href: '/vendors?cat=Vid%C3%A9o+mariage' },
+                  { label: 'Musique mariage', href: '/vendors?cat=Musique+mariage' },
+                  { label: 'Voiture mariage', href: '/vendors?cat=Voiture+mariage' },
+                  { label: 'Bus mariage', href: '/vendors?cat=Bus+mariage' },
+                  { label: 'Décoration mariage', href: '/vendors?cat=D%C3%A9coration+mariage' },
+                  { label: 'Chapiteau mariage', href: '/vendors?cat=Chapiteau+mariage' },
+                  { label: 'Animation mariage', href: '/vendors?cat=Animation+mariage' },
+                  { label: 'Fleurs mariage', href: '/vendors?cat=Fleurs+mariage' },
                   { label: 'Liste de mariage', href: '/vendors?cat=Liste+de+mariage' },
                   { label: 'Organisation mariage', href: '/planifier-votre-mariage' },
-                  { label: 'Lune de miel', href: '/vendors?cat=Agences+de+voyage' },
-                  { label: 'Wedding cake', href: '/vendors?cat=P%C3%A2tissiers' },
+                  { label: 'Lune de miel', href: '/vendors?cat=Lune+de+miel' },
+                  { label: 'Wedding cake', href: '/vendors?cat=Wedding+cake' },
                   { label: 'Food Truck', href: '/vendors?cat=Food+Truck' },
                   { label: 'Mariements', href: '/vendors' },
-                  { label: 'DJ mariage', href: '/vendors?cat=DJ+%26+Musiciens' },
+                  { label: 'DJ mariage', href: '/vendors?cat=Musique+mariage' },
                 ].map((link, i) => (
                   <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
                     {link.label}
@@ -511,11 +511,11 @@ export default function HomePage() {
               <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Mariée</h4>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {[
-                  { label: 'Robe de mariée', href: '/vendors?cat=Boutiques+de+robes' },
-                  { label: 'Accessoires mariage', href: '/vendors?cat=Accessoires' },
-                  { label: 'Bijoux mariage', href: '/vendors?cat=Bijoux' },
-                  { label: 'Esthétique coiffure mariage', href: '/vendors?cat=Coiffeurs+%26+Maquilleurs' },
-                  { label: 'Robe de cocktail', href: '/vendors?cat=Boutiques+de+robes' },
+                  { label: 'Robe de mariée', href: '/vendors?cat=Robe+de+mari%C3%A9e' },
+                  { label: 'Accessoires mariage', href: '/vendors?cat=Accessoires+mariage' },
+                  { label: 'Bijoux mariage', href: '/vendors?cat=Bijoux+mariage' },
+                  { label: 'Esthétique coiffure mariage', href: '/vendors?cat=Esth%C3%A9tique+coiffure+mariage' },
+                  { label: 'Robe de cocktail', href: '/vendors?cat=Robe+de+cocktail' },
                 ].map((link, i) => (
                   <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
                     {link.label}
@@ -529,9 +529,9 @@ export default function HomePage() {
               <h4 className="text-sm font-semibold text-charcoal-700 mb-3 uppercase tracking-wide">Marié</h4>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {[
-                  { label: 'Costumes mariage', href: '/vendors?cat=Costumes' },
-                  { label: 'Accessoires marié', href: '/vendors?cat=Accessoires' },
-                  { label: 'Soins beauté', href: '/vendors?cat=Coiffeurs+%26+Maquilleurs' },
+                  { label: 'Costumes mariage', href: '/vendors?cat=Costumes+mariage' },
+                  { label: 'Accessoires marié', href: '/vendors?cat=Accessoires+mari%C3%A9' },
+                  { label: 'Soins beauté', href: '/vendors?cat=Soins+beaut%C3%A9' },
                 ].map((link, i) => (
                   <Link key={i} href={link.href} className="text-sm text-charcoal-500 hover:text-rose-600 transition-colors">
                     {link.label}

@@ -36,10 +36,10 @@ export default function Footer() {
           <div>
             <h3 className="label-xs text-charcoal-400 mb-5">Prestataires</h3>
             <ul className="space-y-3">
-              <li><Link href="/vendors?cat=Photographes" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Photographes de mariage professionnels" aria-label="Trouver un photographe de mariage">Photographes</Link></li>
-              <li><Link href="/vendors?cat=Traiteurs" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Traiteurs et cuisine de mariage" aria-label="Trouver un traiteur pour mariage">Traiteurs</Link></li>
-              <li><Link href="/vendors?cat=Fleuristes" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Fleuristes pour bouquets et décorations" aria-label="Trouver un fleuriste pour mariage">Fleuristes</Link></li>
-              <li><Link href="/vendors?cat=DJ+%26+Musiciens" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="DJ et musiciens pour animation mariage" aria-label="Trouver un DJ ou musicien pour mariage">DJ & Musiciens</Link></li>
+              <li><Link href="/vendors?cat=Photo+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Photographes de mariage professionnels" aria-label="Trouver un photographe de mariage">Photographes</Link></li>
+              <li><Link href="/vendors?cat=Traiteur+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Traiteurs et cuisine de mariage" aria-label="Trouver un traiteur pour mariage">Traiteurs</Link></li>
+              <li><Link href="/vendors?cat=Fleurs+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Fleuristes pour bouquets et décorations" aria-label="Trouver un fleuriste pour mariage">Fleuristes</Link></li>
+              <li><Link href="/vendors?cat=Musique+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="DJ et musiciens pour animation mariage" aria-label="Trouver un DJ ou musicien pour mariage">DJ & Musiciens</Link></li>
               <li><Link href="/bon-plan" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Bons plans mariage" aria-label="Bons plans mariage">Bon plans</Link></li>
               <li><Link href="/vendors" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Tous les prestataires mariage" aria-label="Voir tous les prestataires de mariage">Tous les prestataires</Link></li>
             </ul>
