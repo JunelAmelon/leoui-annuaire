@@ -1,5 +1,31 @@
-// Service de gestion des commandes et du séquestre (Escrow)
-// Respect strict de SOLID / DIP : dépend de Firestore injecté
+/**
+ * Service de gestion des commandes et du séquestre (Escrow) — LeOui Market.
+ *
+ * Architecture SOLID / DIP :
+ *  ─ SRP : ce fichier gère uniquement les règles métier des commandes.
+ *    Persistance (Firestore) reçue par injection → testable avec un fake db.
+ *  ─ DIP : dépend de `Firestore` (interface Admin SDK), pas d'une implémentation
+ *    concrète. L'injection est faite dans server.ts (composition root).
+ *  ─ OCP : ajouter un mode de livraison = étendre l'enum DeliveryMode et ajouter
+ *    une branche dans createOrder, sans modifier les méthodes existantes.
+ *
+ * Méthodes exposées par createOrderService(db) :
+ *  1. createOrder    — crée commande + paiement, réserve le stock (transaction)
+ *  2. shipOrder      — vendeur renseigne transporteur + n° de suivi
+ *  3. confirmReceipt — acheteur confirme la réception → libère les fonds (payout)
+ *  4. confirmPickup  — vendeur saisit le code de remise → libère les fonds
+ *  5. listUserOrders — liste les commandes d'un utilisateur (acheteur ou vendeur)
+ *  6. getOrderById   — détail d'une commande (accès restreint aux participants)
+ *
+ * Règles CDC respectées :
+ *  RM-010/011 : réservation atomique du stock (transaction Firestore)
+ *  RM-012/013 : seul l'acheteur confirme ; litige actif bloque la libération
+ *  RM-016    : history[] horodatée sur chaque commande
+ *  RM-019    : commission figée à la création via MARKET_COMMISSION_RATE
+ *
+ * Note PSP : les références psp_ref / psp_payout_ref sont simulées ('pi_test_…')
+ * en attendant l'intégration Stripe Connect ou Mangopay.
+ */
 
 import type { Firestore } from 'firebase-admin/firestore';
 import {
@@ -265,7 +291,65 @@ export function createOrderService(db: Firestore) {
       });
     },
 
-    // 4. Consulter les commandes d'un utilisateur (acheteur ou vendeur)
+    // 4. Remise en main propre : le vendeur saisit le pickup_code affiché
+    // chez l'acheteur → commande complétée + libération des fonds (RM-012 bis).
+    async confirmPickup(sellerId: string, orderId: string, pickupCode: string): Promise<{ order: MarketOrder; payout: MarketPayout }> {
+      const orderRef = ordersCol().doc(orderId);
+      const code = (pickupCode || '').trim();
+
+      return await db.runTransaction(async (transaction) => {
+        const orderSnap = await transaction.get(orderRef);
+        if (!orderSnap.exists) throw new NotFoundError('Commande introuvable');
+        const order = orderSnap.data() as MarketOrder;
+
+        if (order.seller_id !== sellerId) {
+          throw new ForbiddenError('Seul le vendeur peut confirmer la remise en main propre');
+        }
+        if (order.delivery_mode !== 'pickup') {
+          throw new ValidationError('Cette commande n’est pas en remise en main propre');
+        }
+        if (order.order_status !== 'paid' && order.order_status !== 'pickup_scheduled') {
+          throw new ConflictError(`Impossible de confirmer la remise au statut : ${order.order_status}`);
+        }
+        if (!order.pickup_code || order.pickup_code !== code) {
+          throw new ValidationError('Code de remise incorrect');
+        }
+
+        const paymentsSnap = await transaction.get(paymentsCol().where('order_id', '==', orderId).limit(1));
+        if (paymentsSnap.empty) throw new NotFoundError('Paiement lié introuvable');
+        const paymentDoc = paymentsSnap.docs[0];
+        const payment = paymentDoc.data() as MarketPayment;
+
+        const now = new Date().toISOString();
+        const payoutRef = payoutsCol().doc();
+        const payout: MarketPayout = {
+          id: payoutRef.id,
+          payment_id: payment.id,
+          order_id: order.id,
+          seller_id: order.seller_id,
+          amount: payment.seller_net,
+          currency: 'eur',
+          payout_status: 'requested',
+          psp_payout_ref: `tr_test_${Date.now()}`,
+          requested_at: now,
+          created_at: now,
+          updated_at: now,
+        };
+
+        transaction.update(orderRef, {
+          order_status: 'completed',
+          receipt_confirmed_at: now,
+          history: [...order.history, { status: 'completed', at: now, by: sellerId }],
+          updated_at: now,
+        });
+        transaction.update(paymentDoc.ref, { payment_status: 'payout_requested', updated_at: now });
+        transaction.set(payoutRef, stripUndefined(payout));
+
+        return { order: { ...order, order_status: 'completed', receipt_confirmed_at: now }, payout };
+      });
+    },
+
+    // 5. Consulter les commandes d'un utilisateur (acheteur ou vendeur)
     async listUserOrders(userId: string, role: 'buyer' | 'seller'): Promise<MarketOrder[]> {
       const field = role === 'buyer' ? 'buyer_id' : 'seller_id';
       const snap = await ordersCol().where(field, '==', userId).get();

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, Truck, Wallet } from 'lucide-react';
+import { Loader2, Truck, Wallet, Handshake } from 'lucide-react';
 import { toast } from 'sonner';
 import { StatusTag, Leader, Field, inputCls, primaryBtn, ghostBtn } from '@/components/market/ui';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +38,10 @@ export default function MesVentesPage() {
   const [carrier, setCarrier] = useState('Colissimo');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [submittingShip, setSubmittingShip] = useState(false);
+
+  const [pickupOrderId, setPickupOrderId] = useState<string | null>(null);
+  const [pickupCode, setPickupCode] = useState('');
+  const [submittingPickup, setSubmittingPickup] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -78,6 +82,30 @@ export default function MesVentesPage() {
     }
   };
 
+  const confirmPickup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pickupOrderId || !pickupCode.trim()) return toast.error('Saisissez le code de remise');
+    setSubmittingPickup(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/market/orders/${pickupOrderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'confirm_pickup', pickup_code: pickupCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Erreur lors de la confirmation');
+      toast.success('Remise confirmée — paiement libéré.');
+      setPickupOrderId(null);
+      setPickupCode('');
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.message || 'Code incorrect');
+    } finally {
+      setSubmittingPickup(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -111,6 +139,7 @@ export default function MesVentesPage() {
           {orders.map((o) => {
             const tag = saleTag(o);
             const canShip = o.delivery_mode === 'shipping' && ['paid', 'preparing'].includes(o.order_status);
+            const canPickup = o.delivery_mode === 'pickup' && ['paid', 'pickup_scheduled'].includes(o.order_status);
             const commission = Math.round(o.amounts.items * MARKET_COMMISSION_RATE * 100) / 100;
             return (
               <article key={o.id} className="bg-white border border-charcoal-200">
@@ -166,7 +195,7 @@ export default function MesVentesPage() {
                   </div>
                 </div>
 
-                {(canShip || o.order_status === 'disputed') && (
+                {(canShip || canPickup || o.order_status === 'disputed') && (
                   <footer className="px-5 py-4 border-t border-charcoal-200 flex flex-wrap items-center justify-between gap-3">
                     {o.order_status === 'disputed' ? (
                       <>
@@ -174,6 +203,13 @@ export default function MesVentesPage() {
                         <Link href="/app/market/litiges" className={ghostBtn}>
                           Voir le litige
                         </Link>
+                      </>
+                    ) : canPickup ? (
+                      <>
+                        <p className="text-xs text-charcoal-500">À la remise, demandez le code affiché chez l’acheteur pour libérer le paiement.</p>
+                        <button type="button" onClick={() => setPickupOrderId(o.id)} className={primaryBtn}>
+                          <Handshake className="w-4 h-4" /> Confirmer la remise
+                        </button>
                       </>
                     ) : (
                       <>
@@ -222,6 +258,39 @@ export default function MesVentesPage() {
               </button>
               <button type="submit" disabled={submittingShip} className={primaryBtn}>
                 {submittingShip ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer l’envoi'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {pickupOrderId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-charcoal-950/60">
+          <form onSubmit={confirmPickup} className="bg-white border border-charcoal-200 w-full max-w-md p-6 sm:p-8 space-y-5">
+            <div>
+              <p className="label-xs text-rose-600 mb-2">Remise en main propre</p>
+              <h3 className="font-serif text-2xl text-charcoal-900">Code de remise</h3>
+              <p className="text-xs text-charcoal-500 mt-2">
+                L’acheteur vous montre son code à 6 chiffres lors de l’échange. Saisissez-le pour libérer le paiement.
+              </p>
+            </div>
+
+            <Field label="Code à 6 chiffres" required>
+              <input
+                value={pickupCode}
+                onChange={(e) => setPickupCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                inputMode="numeric"
+                className={`${inputCls} text-center font-display text-xl tracking-[0.3em]`}
+              />
+            </Field>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button type="button" onClick={() => setPickupOrderId(null)} className={ghostBtn}>
+                Annuler
+              </button>
+              <button type="submit" disabled={submittingPickup || pickupCode.length !== 6} className={primaryBtn}>
+                {submittingPickup ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer la remise'}
               </button>
             </div>
           </form>

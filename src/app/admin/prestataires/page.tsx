@@ -25,7 +25,7 @@ interface Vendor {
   updatedAt?: string;
 }
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 5;
 
 export default function AdminPrestatairesPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -59,19 +59,33 @@ export default function AdminPrestatairesPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
+  /**
+   * Bascule le statut actif/inactif d'un prestataire.
+   * Utilise la route PATCH /api/admin/vendors/[id] (Admin SDK) au lieu de
+   * l'ancien workaround vendors-seed qui recréait un compte Firebase Auth
+   * complet pour chaque toggle — ce qui était incorrect.
+   * L'email de notification au prestataire est envoyé de façon non-bloquante.
+   */
   const toggleStatus = async (vendor: Vendor) => {
     setUpdatingId(vendor.id);
     try {
       const token = await auth.currentUser?.getIdToken();
+      if (!token) { toast.error('Session expirée'); return; }
       const newStatus = vendor.status === 'active' ? 'inactive' : 'active';
-      const res = await fetch('/api/admin/vendors-seed', {
-        method: 'POST',
+
+      // Route dédiée — ne recrée pas de compte Firebase Auth
+      const res = await fetch(`/api/admin/vendors/${vendor.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ vendors: [{ ...vendor, status: newStatus }] }),
+        body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error('Erreur');
+      const data = await res.json() as { ok: boolean; error?: string };
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Erreur serveur');
+
+      // Mise à jour optimiste de l'état local
       setVendors(p => p.map(v => v.id === vendor.id ? { ...v, status: newStatus } : v));
-      // Email au prestataire (non-bloquant)
+
+      // Notification email au prestataire (non-bloquante, échec ignoré)
       const isActive = newStatus === 'active';
       const sendStatusEmail = (to: string) => sendEmail({
         to,
@@ -86,9 +100,10 @@ export default function AdminPrestatairesPage() {
           .then((p: any) => { if (p?.email) sendStatusEmail(p.email); })
           .catch(() => {});
       }
-      toast.success(`Statut mis à jour : ${newStatus}`);
-    } catch {
-      toast.error('Erreur lors de la mise à jour');
+
+      toast.success(`Prestataire ${isActive ? 'activé' : 'désactivé'}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur lors de la mise à jour');
     } finally {
       setUpdatingId(null);
     }

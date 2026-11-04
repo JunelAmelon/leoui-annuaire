@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '@/lib/db';
 import { SEED_ARTICLES } from '@/lib/articles';
 import type { Article } from '@/lib/articles';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2, CheckCircle, X, Zap, Clock, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2, CheckCircle, X, Zap, Clock, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
+const ITEMS_PER_PAGE = 5;
 const CATS = ['Real Wedding', 'Tendances', 'Conseils', 'Décoration', 'Mode'];
 const EMPTY: Omit<Article, 'id'> = {
   title: '', excerpt: '', content: '', imageUrl: '', category: 'Conseils',
@@ -27,6 +28,7 @@ export default function AdminArticlesPage() {
   const [form, setForm] = useState<Omit<Article, 'id'>>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const load = async () => {
     setLoading(true);
@@ -153,7 +155,7 @@ export default function AdminArticlesPage() {
           </div>
         ) : (
           <div className="divide-y divide-charcoal-50">
-            {articles.map(a => (
+            {articles.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).map(a => (
               <div key={a.id} className="flex items-start gap-4 px-5 py-4 hover:bg-stone-50 transition-colors">
                 <img src={a.imageUrl || 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?w=80'} alt={a.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -190,6 +192,29 @@ export default function AdminArticlesPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination — 5 articles par page */}
+      {articles.length > ITEMS_PER_PAGE && (() => {
+        const totalPages = Math.ceil(articles.length / ITEMS_PER_PAGE);
+        return (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-charcoal-400">
+              {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, articles.length)} sur {articles.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="p-2 border border-charcoal-200 rounded-xl disabled:opacity-40 hover:bg-white transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-charcoal-600 font-medium px-1">{page} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="p-2 border border-charcoal-200 rounded-xl disabled:opacity-40 hover:bg-white transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Create/Edit modal */}
       {modal && (

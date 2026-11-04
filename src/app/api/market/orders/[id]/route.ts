@@ -43,6 +43,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ ok: true, order, payout });
     }
 
+    if (body.action === 'confirm_pickup') {
+      const code = typeof body.pickup_code === 'string' ? body.pickup_code.trim() : '';
+      if (!code) throw new ValidationError('Le code de remise est obligatoire');
+      const { order, payout } = await getOrderService().confirmPickup(decoded.uid, params.id, code);
+      return NextResponse.json({ ok: true, order, payout });
+    }
+
     throw new ValidationError('Action non reconnue');
   } catch (e) {
     return errorResponse(e);

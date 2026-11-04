@@ -20,7 +20,7 @@ interface Client {
   created_at?: any;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 5;
 const BLANK_FORM = { name: '', partner: '', email: '', phone: '', event_date: '', budget: '' };
 
 export default function AdminClientsPage() {

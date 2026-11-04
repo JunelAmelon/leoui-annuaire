@@ -1,10 +1,30 @@
-// Litiges LeOui Market — CDC §litiges.
-// Règles pures (testables sans Firestore) + service qui reçoit `db` par injection.
-//
-// Périmètre implémenté : ouverture par l'acheteur, échange de messages,
-// réponse du vendeur, retrait par l'acheteur.
-// NON implémenté : arbitrage par l'équipe LeOui et remboursement PSP
-// (nécessitent une interface admin et le choix du prestataire de paiement).
+/**
+ * Litiges LeOui Market — CDC §litiges.
+ *
+ * Architecture SOLID / DIP :
+ *  ─ SRP : ce fichier gère uniquement les règles métier des litiges.
+ *    Persistance (Firestore) injectée via `db: Firestore` → testable avec un fake.
+ *  ─ DIP : le service dépend de l'abstraction `Firestore` (interface Admin SDK),
+ *    pas d'une implémentation concrète. L'injection a lieu dans server.ts.
+ *  ─ OCP : ajouter un motif ou un statut = modifier uniquement les unions de
+ *    types.ts et les labels ici, sans toucher aux méthodes du service.
+ *
+ * Structure :
+ *  1. Constantes et labels (DISPUTE_REASON_LABELS, DISPUTE_STATUS_LABELS)
+ *  2. Règles pures exportées (canOpenDispute, isDisputeActive…) — sans I/O
+ *  3. Factory createDisputeService(db) → retourne les méthodes du service
+ *     ├─ Méthodes admin  : listAll, getForAdmin, resolve
+ *     └─ Méthodes public : open, get, addMessage, withdraw, listForUser
+ *
+ * Périmètre implémenté :
+ *  ✅ Ouverture par l'acheteur
+ *  ✅ Échange de messages acheteur / vendeur / admin
+ *  ✅ Réponse vendeur → passage en under_review
+ *  ✅ Retrait par l'acheteur (→ closed, commande restaurée)
+ *  ✅ Arbitrage admin (resolve) : transaction atomique sur dispute + order + payment + payout
+ *  ⏳ Remboursement PSP réel : simulé (psp_ref = 'tr_test_…') tant que Stripe Connect /
+ *     Mangopay n'est pas sélectionné.
+ */
 
 import type { Firestore } from 'firebase-admin/firestore';
 import {
@@ -13,6 +33,8 @@ import {
   DisputeStatus,
   MarketDispute,
   MarketOrder,
+  MarketPayment,
+  MarketPayout,
   OrderStatus,
 } from './types';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from './errors';
@@ -78,6 +100,131 @@ export function createDisputeService(db: Firestore) {
   };
 
   return {
+    // ── Admin : arbitrage des litiges ─────────────────────────────────────────
+    // Réservé aux routes /api/admin/* (rôle vérifié en amont).
+    async listAll(status?: string): Promise<MarketDispute[]> {
+      const col = disputes();
+      const snap = status ? await col.where('status', '==', status).get() : await col.get();
+      return snap.docs
+        .map((d) => ({ ...(d.data() as MarketDispute), id: d.id }))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    },
+
+    async getForAdmin(id: string): Promise<MarketDispute> {
+      const snap = await disputes().doc(id).get();
+      if (!snap.exists) throw new NotFoundError('Litige introuvable');
+      return { ...(snap.data() as MarketDispute), id: snap.id };
+    },
+
+    // Décision d'arbitrage : 'buyer' → remboursement simulé + commande refunded ;
+    // 'seller' → libération des fonds (payout) + commande completed.
+    async resolve(
+      adminId: string,
+      id: string,
+      input: { decision: 'buyer' | 'seller'; note: unknown }
+    ): Promise<MarketDispute> {
+      if (input.decision !== 'buyer' && input.decision !== 'seller') {
+        throw new ValidationError('Décision invalide', { decision: 'buyer ou seller attendu' });
+      }
+      const note = validateDisputeText(input.note, 10, 'Note de résolution');
+
+      const disputeRef = disputes().doc(id);
+      const orderRefById = (orderId: string) => orders().doc(orderId);
+      const payments = () => db.collection('market_payments');
+      const payouts = () => db.collection('market_payouts');
+
+      return db.runTransaction(async (tx) => {
+        const disputeSnap = await tx.get(disputeRef);
+        if (!disputeSnap.exists) throw new NotFoundError('Litige introuvable');
+        const dispute = { ...(disputeSnap.data() as MarketDispute), id: disputeSnap.id };
+        if (!isDisputeActive(dispute)) throw new ConflictError('Ce litige est déjà tranché');
+
+        const orderRef = orderRefById(dispute.order_id);
+        const orderSnap = await tx.get(orderRef);
+        const order = orderSnap.exists ? (orderSnap.data() as MarketOrder) : null;
+
+        const paymentsSnap = await tx.get(
+          payments().where('order_id', '==', dispute.order_id).limit(1)
+        );
+        const paymentDoc = paymentsSnap.empty ? null : paymentsSnap.docs[0];
+        const payment = paymentDoc ? (paymentDoc.data() as MarketPayment) : null;
+
+        const now = nowIso();
+        const status: DisputeStatus =
+          input.decision === 'buyer' ? 'resolved_buyer' : 'resolved_seller';
+        const messages = [
+          ...dispute.messages,
+          { by: adminId, role: 'admin' as const, body: `[Arbitrage] ${note}`, at: now },
+        ];
+
+        tx.update(disputeRef, {
+          status,
+          messages,
+          resolution_note: note,
+          decided_by: adminId,
+          decided_at: now,
+          updated_at: now,
+        });
+
+        if (order) {
+          if (input.decision === 'buyer') {
+            // Remboursement de l'acheteur (simulé tant que le PSP n'est pas branché).
+            tx.update(orderRef, {
+              order_status: 'refunded',
+              history: [...order.history, { status: 'refunded', at: now, by: adminId }],
+              updated_at: now,
+            });
+            if (paymentDoc) {
+              tx.update(paymentDoc.ref, {
+                payment_status: 'refunded',
+                events: [
+                  ...(payment?.events ?? []),
+                  { type: 'refund_executed_dispute', at: now },
+                ],
+                updated_at: now,
+              });
+            }
+          } else {
+            // En faveur du vendeur : même libération que confirmReceipt.
+            if (paymentDoc && payment) {
+              const payoutRef = payouts().doc();
+              tx.set(payoutRef, stripUndefined({
+                id: payoutRef.id,
+                payment_id: payment.id,
+                order_id: order.id,
+                seller_id: order.seller_id,
+                amount: payment.seller_net,
+                currency: 'eur',
+                payout_status: 'requested',
+                psp_payout_ref: `tr_test_${Date.now()}`,
+                requested_at: now,
+                created_at: now,
+                updated_at: now,
+              } satisfies MarketPayout));
+              tx.update(paymentDoc.ref, { payment_status: 'payout_requested', updated_at: now });
+            }
+            tx.update(orderRef, {
+              order_status: 'completed',
+              receipt_confirmed_at: now,
+              history: [...order.history, { status: 'completed', at: now, by: adminId }],
+              updated_at: now,
+            });
+          }
+        }
+
+        return {
+          ...dispute,
+          status,
+          messages,
+          resolution_note: note,
+          decided_by: adminId,
+          decided_at: now,
+          updated_at: now,
+        } as MarketDispute;
+      });
+    },
+
+    // ── Utilisateurs ──────────────────────────────────────────────────────────
     async open(
       buyerId: string,
       input: { order_id: string; reason: unknown; description: unknown }
