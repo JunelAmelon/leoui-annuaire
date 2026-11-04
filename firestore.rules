@@ -13,19 +13,52 @@ service cloud.firestore {
       return request.resource.data.diff(resource == null ? {} : resource.data).changedKeys().hasAny(keys);
     }
 
+    // La liaison au lieu partenaire (venue_vendor_id non null, venue_address,
+    // venue_set_at) ne se crée que via /api/client/venue — sinon un client
+    // pourrait s'attribuer le lieu d'un prestataire sans son accord.
+    // Le client peut écrire librement venue/reception_venue et retirer un lien (null).
+    function canWriteVenue() {
+      return !hasAny(['venue_address', 'venue_set_at'])
+        && (!hasAny(['venue_vendor_id'])
+            || request.resource.data.venue_vendor_id == null
+            || (resource != null && request.resource.data.venue_vendor_id == resource.data.venue_vendor_id));
+    }
+
     match /clients/{clientId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
+      allow write: if isSignedIn() && canWriteVenue() || isAdmin();
     }
 
     match /events/{eventId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
+      allow write: if isSignedIn() && canWriteVenue() || isAdmin();
     }
 
-    // Default fallback
-    match /{document=**} {
-      allow read, write: if isSignedIn();
+    // Messagerie Market — lecture directe temps réel, réservée aux participants.
+    // TOUTES les écritures passent par /api/market/* (Admin SDK, qui ignore les règles).
+    match /market_conversations/{convId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participant_ids;
+      allow write: if false;
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/market_conversations/$(convId)).data.participant_ids;
+        allow write: if false;
+      }
+    }
+
+    // Présence : « en ligne / vu il y a… », lisible par tout utilisateur connecté.
+    match /market_presence/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Default fallback. Les collections market_* sont volontairement exclues :
+    // aucun accès direct client, tout passe par /api/market/* (Admin SDK, qui
+    // contourne les règles). Les règles s'additionnent (OR) : il ne faut donc
+    // surtout pas laisser un wildcard global autoriser market_*.
+    match /{collection}/{doc=**} {
+      allow read, write: if isSignedIn() && !collection.matches('market_.*');
     }
   }
 }

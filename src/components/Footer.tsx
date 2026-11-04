@@ -1,78 +1,164 @@
+'use client';
+
 import Link from 'next/link';
-import { Heart, Instagram, Facebook, Twitter } from 'lucide-react';
+import { Heart, Instagram, Facebook, Youtube, Linkedin, Twitter, ArrowUpRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+
+const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
+  {
+    title: 'Explorer',
+    links: [
+      { href: '/vendors', label: 'Prestataires' },
+      { href: '/market', label: 'Marketplace' },
+      { href: '/bon-plan', label: 'Bon plans' },
+      { href: '/inspiration', label: 'Inspiration' },
+      { href: '/planifier-votre-mariage', label: 'Planifier votre mariage' },
+    ],
+  },
+  {
+    title: 'Market',
+    links: [
+      { href: '/market/annonces', label: 'Parcourir les annonces' },
+      { href: '/market/deposer-une-annonce', label: 'Déposer une annonce' },
+      { href: '/app/market/mes-commandes', label: 'Mes achats' },
+      { href: '/app/market/mes-ventes', label: 'Mes ventes' },
+      { href: '/app/market/litiges', label: 'Litiges' },
+    ],
+  },
+  {
+    title: 'Informations',
+    links: [
+      { href: '/contact', label: 'Contact' },
+      { href: '/about', label: 'Qui sommes-nous' },
+      { href: '/vendors/join', label: 'Devenir prestataire' },
+      { href: '/terms', label: 'Conditions générales' },
+      { href: '/privacy', label: 'Protection des données' },
+    ],
+  },
+];
+
+const SOCIALS = [
+  { href: '#', label: 'Instagram', icon: Instagram },
+  { href: '#', label: 'Facebook', icon: Facebook },
+  { href: '#', label: 'YouTube', icon: Youtube },
+  { href: '#', label: 'LinkedIn', icon: Linkedin },
+  { href: '#', label: 'X (Twitter)', icon: Twitter },
+];
 
 export default function Footer() {
-  return (
-    <footer className="bg-white border-t border-rose-100">
-      {/* Top accent line */}
-      <div className="h-1 bg-gradient-to-r from-rose-200 via-rose-400 to-rose-200" />
+  const { user, hasCoupleSpace } = useAuth();
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
-          <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-6 group" title="LeOui.net - Plateforme de mariage" aria-label="Retour à l'accueil LeOui.net">
-              <div className="w-9 h-9 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center transition-colors duration-300 group-hover:bg-rose-600 group-hover:border-rose-600">
-                <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors duration-300" />
-              </div>
-              <span className="font-serif text-[1.5rem] leading-none tracking-wide text-charcoal-900">LeOui.net</span>
+  // Colonne « Votre espace » : adaptée au compte réel. Un compte purement
+  // Market (sans projet mariage) ne voit aucun lien vers l'espace couple.
+  const spaceLinks: { href: string; label: string }[] = user
+    ? [
+        ...(hasCoupleSpace ? [{ href: '/espace-client', label: 'Espace couple' }] : []),
+        ...(user.role === 'admin' ? [{ href: '/admin', label: 'Administration' }] : []),
+        ...(user.role === 'planner' || user.role === 'vendor'
+          ? [{ href: '/espace-prestataire', label: 'Espace prestataire' }]
+          : []),
+        { href: '/app/market', label: 'Espace Market' },
+        { href: '/app/market/messages', label: 'Messages' },
+      ]
+    : [
+        { href: '/market/connexion', label: 'Espace Market' },
+        { href: '/login', label: 'Connexion' },
+      ];
+
+  return (
+    <footer className="bg-charcoal-950 text-ivory-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
+        {/* Bandeau marque + appel Market */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pb-12 border-b border-white/10">
+          <div>
+            <Link href="/" className="inline-flex items-center gap-2.5 group" aria-label="Retour à l'accueil LeOui.net">
+              <span className="w-9 h-9 rounded-full bg-rose-600 flex items-center justify-center">
+                <Heart className="w-4 h-4 text-white fill-white" />
+              </span>
+              <span className="font-serif text-2xl text-ivory-50">LeOui.net</span>
             </Link>
-            <p className="text-body-md text-charcoal-500 mb-6 max-w-md">
-              La plateforme premium pour organiser votre mariage de rêve en France.
-              Découvrez les meilleurs prestataires et créez des moments inoubliables.
+            <p className="font-serif text-xl text-ivory-50/80 leading-relaxed mt-6 max-w-md">
+              Organisez votre mariage où et quand vous voulez.
             </p>
-            <div className="flex space-x-3">
-              <a href="#" aria-label="Instagram" className="w-10 h-10 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-full flex items-center justify-center transition-colors duration-200">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" aria-label="Facebook" className="w-10 h-10 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-full flex items-center justify-center transition-colors duration-200">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" aria-label="Twitter" className="w-10 h-10 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-full flex items-center justify-center transition-colors duration-200">
-                <Twitter className="w-5 h-5" />
-              </a>
+            <p className="text-sm text-ivory-50/50 mt-2 max-w-md">
+              Prestataires, outils de planification et seconde main entre particuliers.
+            </p>
+            <div className="flex gap-2.5 mt-6">
+              {SOCIALS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  aria-label={s.label}
+                  className="w-9 h-9 rounded-full border border-white/15 text-ivory-50/60 hover:text-rose-400 hover:border-rose-400/50 flex items-center justify-center transition-colors"
+                >
+                  <s.icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           </div>
 
-          <div>
-            <h3 className="label-xs text-charcoal-400 mb-5">Prestataires</h3>
-            <ul className="space-y-3">
-              <li><Link href="/vendors?cat=Photo+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Photographes de mariage professionnels" aria-label="Trouver un photographe de mariage">Photographes</Link></li>
-              <li><Link href="/vendors?cat=Traiteur+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Traiteurs et cuisine de mariage" aria-label="Trouver un traiteur pour mariage">Traiteurs</Link></li>
-              <li><Link href="/vendors?cat=Fleurs+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Fleuristes pour bouquets et décorations" aria-label="Trouver un fleuriste pour mariage">Fleuristes</Link></li>
-              <li><Link href="/vendors?cat=Musique+mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="DJ et musiciens pour animation mariage" aria-label="Trouver un DJ ou musicien pour mariage">DJ & Musiciens</Link></li>
-              <li><Link href="/bon-plan" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Bons plans mariage" aria-label="Bons plans mariage">Bon plans</Link></li>
-              <li><Link href="/vendors" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Tous les prestataires mariage" aria-label="Voir tous les prestataires de mariage">Tous les prestataires</Link></li>
-            </ul>
+          <div className="lg:border-l lg:border-white/10 lg:pl-10 flex flex-col justify-center">
+            <p className="label-xs text-rose-400">LeOui Market</p>
+            <p className="font-serif text-2xl sm:text-3xl text-ivory-50 leading-snug mt-3">
+              Donnez une seconde vie aux beaux objets de mariage.
+            </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-6">
+              <Link
+                href="/market/annonces"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-ivory-50 hover:text-rose-300 transition-colors"
+              >
+                Parcourir les annonces <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/market/deposer-une-annonce"
+                className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold transition-colors"
+              >
+                Vendre un article
+              </Link>
+            </div>
           </div>
+        </div>
 
+        {/* Colonnes de liens */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-10 py-12">
+          {COLUMNS.map((col) => (
+            <div key={col.title}>
+              <h3 className="label-xs text-ivory-50/40 pb-3 border-b border-white/10 mb-4">{col.title}</h3>
+              <ul className="space-y-2.5">
+                {col.links.map((l) => (
+                  <li key={l.href + l.label}>
+                    <Link href={l.href} className="text-sm text-ivory-50/65 hover:text-rose-300 transition-colors">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
           <div>
-            <h3 className="label-xs text-charcoal-400 mb-5">Ressources</h3>
-            <ul className="space-y-3">
-              <li><Link href="/inspiration" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Inspiration et idées pour votre mariage" aria-label="Inspiration mariage">Inspiration</Link></li>
-              <li><Link href="/planifier-votre-mariage" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Outils pour planifier votre mariage" aria-label="Planifier mon mariage">Planifier mon mariage</Link></li>
-              <li><Link href="/guide" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Guide complet du mariage" aria-label="Guide du mariage">Guide du mariage</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="label-xs text-charcoal-400 mb-5">LeOui.net</h3>
-            <ul className="space-y-3">
-              <li><Link href="/about" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="À propos de LeOui.net" aria-label="À propos">À propos</Link></li>
-              <li><Link href="/vendors/join" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Devenir prestataire sur LeOui.net" aria-label="Devenir prestataire mariage">Devenir prestataire</Link></li>
-              <li><Link href="/contact" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Contacter LeOui.net" aria-label="Contact">Contact</Link></li>
-              <li><Link href="/privacy" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Politique de confidentialité" aria-label="Confidentialité">Confidentialité</Link></li>
-              <li><Link href="/terms" className="text-sm text-charcoal-600 hover:text-rose-600 transition-colors" title="Conditions d'utilisation" aria-label="Conditions">Conditions</Link></li>
+            <h3 className="label-xs text-ivory-50/40 pb-3 border-b border-white/10 mb-4">Votre espace</h3>
+            <ul className="space-y-2.5">
+              {spaceLinks.map((l) => (
+                <li key={l.href + l.label}>
+                  <Link href={l.href} className="text-sm text-ivory-50/65 hover:text-rose-300 transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-rose-100 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-body-sm text-charcoal-400">
-            © 2026 LeOui.net. Tous droits réservés.
-          </p>
-          <p className="text-body-sm text-charcoal-400 flex items-center gap-1.5">
-            Fait avec <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> en France
-          </p>
+        {/* Barre basse */}
+        <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-ivory-50/40">© 2026 LeOui.net · Tous droits réservés</p>
+          <div className="flex items-center gap-5">
+            <Link href="/terms" className="text-xs text-ivory-50/40 hover:text-rose-300 transition-colors">Conditions</Link>
+            <Link href="/privacy" className="text-xs text-ivory-50/40 hover:text-rose-300 transition-colors">Confidentialité</Link>
+            <p className="text-xs text-ivory-50/40 flex items-center gap-1.5">
+              Fait avec <Heart className="w-3 h-3 text-rose-400 fill-rose-400" /> en France
+            </p>
+          </div>
         </div>
       </div>
     </footer>

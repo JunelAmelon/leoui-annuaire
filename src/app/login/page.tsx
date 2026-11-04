@@ -23,6 +23,7 @@ export default function LoginPage() {
     if (n && n.startsWith('/')) return decodeURIComponent(n);
     return '/espace-client';
   })();
+  const fromMarket = nextUrl.startsWith('/market') || nextUrl.startsWith('/app/market');
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
@@ -134,11 +135,18 @@ export default function LoginPage() {
         </div>
 
         <div className="max-w-md w-full mx-auto">
+          {fromMarket && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
+              LeOui Market
+            </span>
+          )}
           <h1 className="font-display text-[2rem] leading-tight text-charcoal-900 mb-2">
-            Bon retour
+            {fromMarket ? 'Connectez-vous pour continuer' : 'Bon retour'}
           </h1>
           <p className="text-charcoal-500 text-sm mb-7">
-            Continuez la planification de votre mariage.
+            {fromMarket
+              ? 'Connectez-vous pour acheter ou vendre des articles de mariage sur LeOui Market. Aucun projet de mariage requis.'
+              : 'Continuez la planification de votre mariage.'}
           </p>
 
           {error && (

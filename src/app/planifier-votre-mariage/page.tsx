@@ -4,11 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import {
-  Check, ArrowRight, Calendar, Users, Sparkles, CreditCard,
-  MessageCircle, Image, ClipboardList, LayoutDashboard, CalendarDays,
-  FileText, Star, Heart, ArrowUpRight, Play, Quote
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Quote, Star } from 'lucide-react';
+import TitleDecoration from '@/components/market/TitleDecoration';
 
 // Animation hook for scroll reveal
 function useScrollReveal() {
@@ -51,7 +48,6 @@ function AnimatedSection({ children, className = '', delay = 0 }: { children: Re
 }
 
 export default function WeddingPlannerPageV1() {
-  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   const TESTIMONIALS = [
@@ -94,41 +90,6 @@ export default function WeddingPlannerPageV1() {
     return () => clearInterval(timer);
   }, [TESTIMONIALS.length]);
 
-  const features = [
-    {
-      icon: LayoutDashboard,
-      title: 'Tableau de bord',
-      desc: 'Visualisez votre progression en un coup d\'œil. Compte à rebours, budget, invités — tout est là.',
-      color: 'from-rose-50 to-rose-100',
-      iconColor: 'text-rose-600',
-      stat: 'J-145'
-    },
-    {
-      icon: CalendarDays,
-      title: 'Planning intelligent',
-      desc: 'Un calendrier qui s\'adapte à votre rythme. Rappels automatiques et synchronisation facile.',
-      color: 'from-champagne-50 to-champagne-100',
-      iconColor: 'text-champagne-700',
-      stat: '24/7'
-    },
-    {
-      icon: Users,
-      title: 'Prestataires vérifiés',
-      desc: 'Accédez à notre réseau exclusif de professionnels sélectionnés avec soin.',
-      color: 'from-stone-100 to-stone-200',
-      iconColor: 'text-stone-700',
-      stat: '500+'
-    },
-    {
-      icon: CreditCard,
-      title: 'Budget maîtrisé',
-      desc: 'Suivez chaque dépense et anticipez votre budget au plus juste.',
-      color: 'from-amber-50 to-amber-100',
-      iconColor: 'text-amber-700',
-      stat: '0€'
-    },
-  ];
-
   const steps = [
     {
       num: '01',
@@ -165,14 +126,15 @@ export default function WeddingPlannerPageV1() {
       <Header />
 
       {/* HERO — Harmonized Style */}
-      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '580px' }}>
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '580px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920"
             alt="Wedding Planner"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
@@ -185,17 +147,16 @@ export default function WeddingPlannerPageV1() {
             </div>
 
             {/* Title */}
-            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl text-white mb-3 leading-tight">
-              Organisez votre mariage
+            <h1 className="font-serif text-white mb-3" style={{ fontSize: 'clamp(2.1rem, 4vw, 3.5rem)', fontWeight: 400, lineHeight: 1.15 }}>
+              Organisez votre{' '}
+              <span className="relative inline-block">
+                mariage
+                <TitleDecoration />
+              </span>
               <span className="block italic text-champagne-300 mt-1">avec sérénité</span>
             </h1>
 
-            {/* Subtitle */}
-            <p className="text-lg text-white/80 mb-6 max-w-xl leading-relaxed">
-              Votre espace couple numérique tout-en-un. Planning, prestataires, budget et documents — centralisés avec l'accompagnement d'experts.
-            </p>
-
-            {/* CTA Buttons */}
+            {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Link
                 href="/signup"
@@ -203,12 +164,6 @@ export default function WeddingPlannerPageV1() {
               >
                 Commencer l'aventure <ArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="#decouvrir"
-                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium px-6 py-3 rounded-xl transition-colors"
-              >
-                <Play className="w-4 h-4" /> Découvrir en vidéo
-              </a>
             </div>
 
             {/* Stats */}
@@ -262,36 +217,87 @@ export default function WeddingPlannerPageV1() {
           </AnimatedSection>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, i) => (
-              <AnimatedSection key={i} delay={i * 100}>
-                <div
-                  className="group relative bg-white rounded-2xl p-6 h-full border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
-                  onMouseEnter={() => setHoveredFeature(i)}
-                  onMouseLeave={() => setHoveredFeature(null)}
-                >
-                  {/* Top stat badge */}
-                  <div className="absolute top-4 right-4 bg-stone-50 rounded-full px-2.5 py-1">
-                    <span className="text-xs font-semibold text-stone-500">{feature.stat}</span>
-                  </div>
-
-                  {/* Icon circle */}
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110`}>
-                    <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
-                  </div>
-
-                  <h3 className="font-serif text-lg text-stone-800 mb-2">{feature.title}</h3>
-                  <p className="text-sm text-stone-500 leading-relaxed mb-4 flex-1">{feature.desc}</p>
-
-                  <Link
-                    href="/signup"
-                    className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-rose-600"
-                  >
-                    <span>Découvrir</span>
-                    <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            {/* 1 — Tableau de bord · carte photo */}
+            <AnimatedSection delay={0}>
+              <div className="group relative rounded-2xl overflow-hidden h-full min-h-[320px] bg-charcoal-900">
+                <img
+                  src="/mariage%20(1).jpg"
+                  alt="Tableau de bord mariage"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/85 via-charcoal-950/25 to-transparent" />
+                <span className="absolute top-4 right-4 bg-white/95 text-charcoal-900 text-xs font-semibold px-2.5 py-1 rounded-full tabular-nums">J-145</span>
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <h3 className="font-serif text-xl text-white mb-1.5">Tableau de bord</h3>
+                  <p className="text-xs text-white/70 leading-relaxed mb-3">
+                    Visualisez votre progression en un coup d'œil. Compte à rebours, budget, invités — tout est là.
+                  </p>
+                  <Link href="/signup" className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:text-rose-300 transition-colors">
+                    Découvrir <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
-              </AnimatedSection>
-            ))}
+              </div>
+            </AnimatedSection>
+
+            {/* 2 — Planning intelligent · bloc rose affirmé */}
+            <AnimatedSection delay={100}>
+              <div className="group relative rounded-2xl bg-rose-600 p-6 h-full min-h-[320px] flex flex-col overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+                <span className="self-start border border-white/30 text-white/80 text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                  Connecté en continu
+                </span>
+                <p className="font-serif text-5xl text-white mt-8 mb-auto tabular-nums">24/7</p>
+                <h3 className="font-serif text-xl text-white mt-8 mb-1.5">
+                  Planning <span className="bg-white text-rose-600 px-1.5">intelligent</span>
+                </h3>
+                <p className="text-xs text-white/70 leading-relaxed mb-3">
+                  Un calendrier qui s'adapte à votre rythme. Rappels automatiques et synchronisation facile.
+                </p>
+                <Link href="/signup" className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:text-white/80 transition-colors">
+                  Découvrir <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </AnimatedSection>
+
+            {/* 3 — Prestataires vérifiés · carte photo */}
+            <AnimatedSection delay={200}>
+              <div className="group relative rounded-2xl overflow-hidden h-full min-h-[320px] bg-charcoal-900">
+                <img
+                  src="/mariage%20(2).jpg"
+                  alt="Prestataires de mariage"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/85 via-charcoal-950/25 to-transparent" />
+                <span className="absolute top-4 right-4 bg-white/95 text-charcoal-900 text-xs font-semibold px-2.5 py-1 rounded-full tabular-nums">500+</span>
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <h3 className="font-serif text-xl text-white mb-1.5">Prestataires vérifiés</h3>
+                  <p className="text-xs text-white/70 leading-relaxed mb-3">
+                    Accédez à notre réseau exclusif de professionnels sélectionnés avec soin.
+                  </p>
+                  <Link href="/vendors" className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:text-rose-300 transition-colors">
+                    Découvrir <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </AnimatedSection>
+
+            {/* 4 — Budget maîtrisé · bloc charbon */}
+            <AnimatedSection delay={300}>
+              <div className="group relative rounded-2xl bg-charcoal-900 p-6 h-full min-h-[320px] flex flex-col overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+                <span className="self-start border border-white/20 text-white/70 text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                  Inclus dans votre espace
+                </span>
+                <p className="font-serif text-5xl text-champagne-300 mt-8 mb-auto tabular-nums">0&nbsp;€</p>
+                <h3 className="font-serif text-xl text-white mt-8 mb-1.5">
+                  Budget <span className="bg-rose-600 text-white px-1.5">maîtrisé</span>
+                </h3>
+                <p className="text-xs text-white/60 leading-relaxed mb-3">
+                  Suivez chaque dépense et anticipez votre budget au plus juste.
+                </p>
+                <Link href="/signup" className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:text-rose-300 transition-colors">
+                  Découvrir <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </AnimatedSection>
           </div>
         </div>
       </section>

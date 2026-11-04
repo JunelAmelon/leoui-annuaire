@@ -72,6 +72,7 @@ export default {
           700: '#403830',
           800: '#2A2420',
           900: '#1C1814',
+          950: '#0F0D0B',
         },
         'brand-purple': '#2e1065',
         'brand-turquoise': '#DD6B8D',

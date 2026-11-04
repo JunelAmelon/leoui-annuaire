@@ -18,6 +18,7 @@ export interface SignUpData {
   guestCount?: number;
   budget?: number;
   role?: 'client' | 'planner';
+  marketOnly?: boolean;
   address?: {
     street?: string;
     city?: string;
@@ -42,6 +43,9 @@ export async function signUp(data: SignUpData): Promise<User> {
     phone: data.phone || null,
     address: data.address || null,
     role: data.role || 'client',
+    // true uniquement pour les comptes créés via le parcours LeOui.net (espace couple).
+    // Les comptes purement Market n'ont pas ce flag → pas de bouton Espace couple.
+    couple_space: !data.marketOnly,
     created_at: new Date(),
   });
 
@@ -52,14 +56,16 @@ export async function signUp(data: SignUpData): Promise<User> {
     created_at: new Date().toISOString(),
   });
 
-  await addDocument('events', {
-    client_id: user.uid,
-    couple_names: `${data.name}${data.partner ? ' & ' + data.partner : ''}`.trim(),
-    event_date: data.eventDate || null,
-    guest_count: data.guestCount || 0,
-    budget: data.budget || 0,
-    created_at: new Date().toISOString(),
-  });
+  if (!data.marketOnly) {
+    await addDocument('events', {
+      client_id: user.uid,
+      couple_names: `${data.name}${data.partner ? ' & ' + data.partner : ''}`.trim(),
+      event_date: data.eventDate || null,
+      guest_count: data.guestCount || 0,
+      budget: data.budget || 0,
+      created_at: new Date().toISOString(),
+    });
+  }
 
   return user;
 }
