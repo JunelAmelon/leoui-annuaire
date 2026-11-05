@@ -11,6 +11,39 @@ import type { IGuestbookRepository } from '../repositories/guestbook.repository.
 export class GuestbookService {
   constructor(private readonly repository: IGuestbookRepository) {}
 
+  private checkWindowStatus(guestbook: Guestbook): {
+    isOpen: boolean;
+    reasonClosed?: string;
+  } {
+    const now = new Date();
+    if (
+      guestbook.settings.window_open_at &&
+      new Date(guestbook.settings.window_open_at) > now
+    ) {
+      return {
+        isOpen: false,
+        reasonClosed: 'Le livre d’or n’est pas encore ouvert aux dépôts.',
+      };
+    }
+    if (
+      guestbook.settings.window_close_at &&
+      new Date(guestbook.settings.window_close_at) < now
+    ) {
+      return {
+        isOpen: false,
+        reasonClosed: 'La période de dépôt des messages est terminée.',
+      };
+    }
+    return { isOpen: true };
+  }
+
+  private assertWindowOpen(guestbook: Guestbook): void {
+    const { isOpen, reasonClosed } = this.checkWindowStatus(guestbook);
+    if (!isOpen) {
+      throw new Error(reasonClosed || 'Le livre d’or est fermé aux dépôts.');
+    }
+  }
+
   /**
    * Récupère ou initialise le livre d'or d'un mariage.
    * L'ID du document est strictement l'event_id (schéma déterministe).
@@ -62,17 +95,7 @@ export class GuestbookService {
     const guestbook = await this.repository.getByPublicToken(token);
     if (!guestbook) return null;
 
-    const now = new Date();
-    let isOpen = true;
-    let reasonClosed: string | undefined;
-
-    if (guestbook.settings.window_open_at && new Date(guestbook.settings.window_open_at) > now) {
-      isOpen = false;
-      reasonClosed = 'Le livre d’or n’est pas encore ouvert aux dépôts.';
-    } else if (guestbook.settings.window_close_at && new Date(guestbook.settings.window_close_at) < now) {
-      isOpen = false;
-      reasonClosed = 'La période de dépôt des messages est terminée.';
-    }
+    const { isOpen, reasonClosed } = this.checkWindowStatus(guestbook);
 
     return {
       title: guestbook.title,
@@ -110,9 +133,11 @@ export class GuestbookService {
       throw new Error('Lien ou QR Code invalide ou expiré.');
     }
 
+    this.assertWindowOpen(guestbook);
+
     const name = input.guest_name?.trim();
-    if (!name || name.length < 2) {
-      throw new Error('Veuillez indiquer votre prénom ou nom.');
+    if (!name || name.length < 2 || name.length > 80) {
+      throw new Error('Veuillez indiquer votre prénom ou nom (2 à 80 caractères).');
     }
 
     const body = input.body?.trim();
@@ -134,7 +159,7 @@ export class GuestbookService {
       status: 'ready',
       body,
       guest_name: name,
-      guest_key: input.guest_key || null,
+      guest_key: input.guest_key ? String(input.guest_key).slice(0, 64) : null,
       favorite: false,
       hidden: false,
       created_at: new Date().toISOString(),
@@ -155,9 +180,11 @@ export class GuestbookService {
       throw new Error('Lien ou QR Code invalide ou expiré.');
     }
 
+    this.assertWindowOpen(guestbook);
+
     const name = input.guest_name?.trim();
-    if (!name || name.length < 2) {
-      throw new Error('Veuillez indiquer votre prénom ou nom.');
+    if (!name || name.length < 2 || name.length > 80) {
+      throw new Error('Veuillez indiquer votre prénom ou nom (2 à 80 caractères).');
     }
 
     if (!input.audio_base64) {
@@ -165,12 +192,38 @@ export class GuestbookService {
     }
 
     const maxSec = guestbook.settings.max_duration_sec || GUESTBOOK_DEFAULTS.MAX_DURATION_SEC;
+    if (!Number.isFinite(input.duration_sec) || input.duration_sec <= 0) {
+      throw new Error('Durée d’enregistrement invalide.');
+    }
     if (input.duration_sec > maxSec + 5) {
       throw new Error(`La durée dépasse la limite de ${maxSec} secondes.`);
     }
 
-    // Normalisation de la forme d'onde (max 100 points)
-    const waveform = (input.waveform || []).slice(0, 100).map((v) => Math.max(0, Math.min(1, Number(v) || 0)));
+    const maxMb = guestbook.settings.max_audio_mb || GUESTBOOK_DEFAULTS.MAX_AUDIO_MB;
+    const maxBytes = maxMb * 1024 * 1024;
+    const estimatedBytes =
+      input.size_bytes && input.size_bytes > 0
+        ? input.size_bytes
+        : Math.ceil((input.audio_base64.length * 3) / 4);
+
+    if (estimatedBytes > maxBytes) {
+      throw new Error(`Le fichier audio dépasse la taille maximale autorisée (${maxMb} Mo).`);
+    }
+
+    // Normalisation de la forme d'onde (max 100 points entre 0 et 1)
+    const waveform = (input.waveform || [])
+      .slice(0, 100)
+      .map((v) => Math.max(0, Math.min(1, Number(v) || 0)));
+
+    // Résolution de la source audio : data URI directement lisible si compacte (< 750 Ko), sinon chemin Storage
+    const isDataAudio = /^data:audio\/[a-zA-Z0-9.+-]+;?(?:codecs=[^;]+)?;base64,/.test(
+      input.audio_base64
+    );
+    const isHttpsUrl = /^https:\/\//.test(input.audio_base64);
+    const audioPath =
+      (isDataAudio && input.audio_base64.length <= 750_000) || isHttpsUrl
+        ? input.audio_base64
+        : `guestbooks/${guestbook.event_id}/audios/${crypto.randomUUID()}.${input.mime_type?.includes('mp4') ? 'm4a' : 'webm'}`;
 
     const entryId = await this.repository.addEntry({
       guestbook_id: guestbook.event_id,
@@ -178,13 +231,13 @@ export class GuestbookService {
       owner_id: guestbook.owner_id,
       type: 'audio',
       status: 'ready',
-      audio_path: `guestbooks/${guestbook.event_id}/audios/${crypto.randomUUID()}.${input.mime_type?.includes('mp4') ? 'm4a' : 'webm'}`,
+      audio_path: audioPath,
       mime_type: input.mime_type || 'audio/webm',
-      size_bytes: input.size_bytes || 0,
+      size_bytes: estimatedBytes,
       duration_sec: Math.round(input.duration_sec),
       waveform,
       guest_name: name,
-      guest_key: input.guest_key || null,
+      guest_key: input.guest_key ? String(input.guest_key).slice(0, 64) : null,
       favorite: false,
       hidden: false,
       created_at: new Date().toISOString(),
@@ -193,4 +246,3 @@ export class GuestbookService {
     return { id: entryId };
   }
 }
-

@@ -7,12 +7,15 @@
  * Body :
  *  { uid?: string, email?: string, role: string, vendorType?: string }
  *
- * Sécurité : token admin requis (role === 'admin' dans le claim).
+ * Sécurité : token admin requis (role === 'admin' dans le claim) + whitelist des rôles.
  * Réponse : { ok: true } ou { ok: false, error: string }
  */
 
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+
+const ALLOWED_ROLES = ['admin', 'vendor', 'planner', 'client'] as const;
+type AllowedRole = (typeof ALLOWED_ROLES)[number];
 
 export async function POST(req: Request) {
   try {
@@ -27,7 +30,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    // 3. Parser le body — uid OU email requis
+    // 3. Parser le body — uid OU email requis + validation stricte du rôle
     const { uid: rawUid, email, role, vendorType } = await req.json() as {
       uid?: string;
       email?: string;
@@ -35,8 +38,11 @@ export async function POST(req: Request) {
       vendorType?: string;
     };
 
-    if (!role) {
-      return NextResponse.json({ ok: false, error: '`role` est requis' }, { status: 400 });
+    if (!role || !ALLOWED_ROLES.includes(role as AllowedRole)) {
+      return NextResponse.json(
+        { ok: false, error: `Rôle invalide. Valeurs autorisées : ${ALLOWED_ROLES.join(', ')}` },
+        { status: 400 }
+      );
     }
 
     // 4. Résoudre l'UID — soit directement, soit via lookup par email

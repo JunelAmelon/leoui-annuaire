@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin';
+import { consumeRateLimit } from '@/lib/rate-limit';
 import { AdminGuestbookRepository } from '@/features/guestbook/repositories/admin-guestbook.repository';
 import { GuestbookService } from '@/features/guestbook/services/guestbook.service';
 
 const repository = new AdminGuestbookRepository();
 const service = new GuestbookService(repository);
+
+function getClientKey(request: NextRequest, guestKey?: unknown): string {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const rawKey = forwarded || (typeof guestKey === 'string' && guestKey.trim()) || 'anon';
+  return rawKey.replace(/[^a-zA-Z0-9._:-]/g, '_').slice(0, 64);
+}
 
 export async function GET(
   _request: NextRequest,
@@ -62,6 +70,24 @@ export async function POST(
     }
 
     const body = await request.json();
+
+    // Anti-spam / Rate-limit : max 10 soumissions par fenêtre de 10 minutes par invité/IP
+    const rateKey = `guestbook_${token.slice(0, 24)}_${getClientKey(request, body?.guest_key)}`;
+    try {
+      const allowed = await consumeRateLimit(adminDb as any, rateKey, Date.now(), {
+        limit: 10,
+        windowMs: 10 * 60 * 1000,
+      });
+      if (!allowed) {
+        return NextResponse.json(
+          { error: 'Trop de messages envoyés récemment. Veuillez patienter quelques minutes.' },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // Fallback gracieux si la transaction rate-limit n'est pas joignable en environnement local sans credentials
+    }
+
     const type = body.type;
 
     if (type === 'text') {
@@ -96,4 +122,3 @@ export async function POST(
     );
   }
 }
-

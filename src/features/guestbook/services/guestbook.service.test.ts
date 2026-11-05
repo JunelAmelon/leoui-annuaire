@@ -38,7 +38,7 @@ test('GuestbookService - Unit Tests', async (t) => {
     );
   });
 
-  await t.test('3. getPublicGuestbookInfo - Gestion de la fenêtre d’ouverture et token', async () => {
+  await t.test('3. getPublicGuestbookInfo & Soumission - Gestion stricte de la fenêtre d’ouverture', async () => {
     const gb = await service.getOrCreateGuestbook('event-1', 'owner-1', 'Livre de Test');
 
     // Token valide & sans restriction temporelle
@@ -54,12 +54,31 @@ test('GuestbookService - Unit Tests', async (t) => {
     assert.equal(infoFuture?.isOpen, false);
     assert.match(infoFuture?.reasonClosed || '', /pas encore ouvert/);
 
+    // Sécurité serveur : empêcher un POST direct quand la fenêtre est fermée
+    await assert.rejects(
+      () => service.submitTextEntry(gb.public_token, { guest_name: 'Alice', body: 'Coucou !' }),
+      /pas encore ouvert/
+    );
+
     // Fenêtre fermée : date de fermeture passée
     const pastDate = new Date(Date.now() - 1000 * 3600).toISOString();
     await repository.updateSettings('event-1', { window_open_at: null, window_close_at: pastDate });
     const infoPast = await service.getPublicGuestbookInfo(gb.public_token);
     assert.equal(infoPast?.isOpen, false);
     assert.match(infoPast?.reasonClosed || '', /terminée/);
+
+    await assert.rejects(
+      () =>
+        service.submitAudioEntry(gb.public_token, {
+          guest_name: 'Alice',
+          duration_sec: 10,
+          waveform: [0.5],
+          audio_base64: 'data:audio/webm;base64,GkXfo59ChoEBQveBAULygQ8=',
+          mime_type: 'audio/webm',
+          size_bytes: 1024,
+        }),
+      /terminée/
+    );
 
     // Token inconnu
     const unknownInfo = await service.getPublicGuestbookInfo('token-inconnu');
@@ -113,16 +132,17 @@ test('GuestbookService - Unit Tests', async (t) => {
     );
   });
 
-  await t.test('5. submitAudioEntry - Validation de la durée et normalisation waveform', async () => {
+  await t.test('5. submitAudioEntry - Validation durée, quota Mo et normalisation waveform', async () => {
     const gb = await service.getOrCreateGuestbook('event-audio', 'owner-audio');
 
     // Soumission audio valide avec waveform brute
     const rawWaveform = [0.1, 0.5, 1.2, -0.4, 0.8]; // Contient des valeurs hors bornes
+    const sampleDataUri = 'data:audio/webm;base64,GkXfo59ChoEBQveBAULygQ8=';
     const result = await service.submitAudioEntry(gb.public_token, {
       guest_name: 'Tonton Daniel',
       duration_sec: 45,
       waveform: rawWaveform,
-      audio_base64: 'data:audio/webm;base64,GkXfo59ChoEBQveBAULygQ8=',
+      audio_base64: sampleDataUri,
       mime_type: 'audio/webm',
       size_bytes: 10240,
     });
@@ -131,7 +151,7 @@ test('GuestbookService - Unit Tests', async (t) => {
     assert.ok(entry);
     assert.equal(entry.type, 'audio');
     assert.equal(entry.duration_sec, 45);
-    assert.ok(entry.audio_path?.startsWith('guestbooks/event-audio/audios/'));
+    assert.equal(entry.audio_path, sampleDataUri, 'Une data URI compacte est conservée pour lecture directe');
 
     // Vérifier la normalisation entre 0 et 1 de la waveform
     assert.ok(entry.waveform);
@@ -146,11 +166,25 @@ test('GuestbookService - Unit Tests', async (t) => {
           guest_name: 'Tonton Daniel',
           duration_sec: 130, // max par défaut = 120s
           waveform: [0.5],
-          audio_base64: 'data:audio/webm...',
+          audio_base64: sampleDataUri,
           mime_type: 'audio/webm',
           size_bytes: 5000,
         }),
       /dépasse la limite/
+    );
+
+    // Rejet si taille dépasse max_audio_mb (par défaut 15 Mo)
+    await assert.rejects(
+      () =>
+        service.submitAudioEntry(gb.public_token, {
+          guest_name: 'Tonton Daniel',
+          duration_sec: 30,
+          waveform: [0.5],
+          audio_base64: sampleDataUri,
+          mime_type: 'audio/webm',
+          size_bytes: 20 * 1024 * 1024, // 20 Mo > 15 Mo
+        }),
+      /taille maximale autorisée/
     );
 
     // Rejet si audio_base64 est vide
@@ -175,7 +209,7 @@ test('GuestbookService - Unit Tests', async (t) => {
       guest_name: 'Mamy Hélène',
       duration_sec: 25,
       waveform: [0.3, 0.4],
-      audio_base64: 'data:audio/webm;base64,...',
+      audio_base64: 'data:audio/webm;base64,GkXfo59ChoEBQveBAULygQ8=',
       mime_type: 'audio/webm',
       size_bytes: 5000,
     });
@@ -206,7 +240,7 @@ test('GuestbookService - Unit Tests', async (t) => {
       guest_name: 'Ami 2',
       duration_sec: 15,
       waveform: [0.2],
-      audio_base64: 'data:audio/...',
+      audio_base64: 'data:audio/webm;base64,GkXfo59ChoEBQveBAULygQ8=',
       mime_type: 'audio/webm',
       size_bytes: 1000,
     });
@@ -235,4 +269,3 @@ test('GuestbookService - Unit Tests', async (t) => {
     assert.equal(counts.total, 0);
   });
 });
-
