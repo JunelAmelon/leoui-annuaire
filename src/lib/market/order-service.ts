@@ -155,7 +155,8 @@ export function createOrderService(db: Firestore) {
           commission_amount: commissionAmount,
           seller_net: sellerNet,
           psp: 'stripe_connect',
-          psp_ref: `pi_test_${Date.now()}`,
+          // Référence PaymentIntent réelle en mode Stripe, marqueur test sinon
+          psp_ref: input.psp_ref || `pi_test_${Date.now()}`,
           idempotency_key: `idemp_${orderRef.id}_${Date.now()}`,
           payment_status: 'payout_pending', // L'argent est bloqué sous séquestre !
           events: [{ type: 'payment_confirmed_escrow', at: now }],

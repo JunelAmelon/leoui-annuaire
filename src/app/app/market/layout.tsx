@@ -76,20 +76,26 @@ export default function MarketSpaceLayout({ children }: { children: React.ReactN
 
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10 grid grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)] gap-8 lg:gap-12 items-start">
         <aside className="lg:sticky lg:top-32 space-y-5">
-          <div className="flex items-center gap-3">
-            <Avatar name={displayName} photoUrl={user.photoURL} size={44} />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-charcoal-900 truncate">{displayName}</p>
-              <p className="flex items-center gap-1.5 text-xs text-charcoal-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" aria-hidden />
-                Vous êtes connecté
-              </p>
+          {/* Identité — éditorial pur : caps label + nom serif + avatar discret */}
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-charcoal-400 font-semibold mb-3">
+              Espace Market
+            </p>
+            <div className="flex items-center gap-3 pb-5 border-b border-charcoal-200">
+              <Avatar name={displayName} photoUrl={user.photoURL} size={40} />
+              <div className="min-w-0">
+                <p className="font-serif text-xl text-charcoal-950 leading-none truncate">{displayName}</p>
+                {user.email && (
+                  <p className="text-xs text-charcoal-400 truncate mt-1">{user.email}</p>
+                )}
+              </div>
             </div>
           </div>
 
+          {/* CTA — bouton rose franc, angles droits, caps espacé (anti-pilule) */}
           <Link
             href="/market/deposer-une-annonce"
-            className="flex items-center justify-center gap-2 h-11 w-full rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold tracking-[0.03em] whitespace-nowrap transition-colors"
+            className="group flex items-center justify-center gap-2 w-full py-3 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors"
           >
             <Plus className="w-4 h-4 flex-shrink-0" /> Déposer une annonce
           </Link>

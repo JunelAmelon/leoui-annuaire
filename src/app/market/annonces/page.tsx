@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ListingCard from '@/components/market/ListingCard';
+import ListingRow from '@/components/market/ListingRow';
 import MarketSearchBar from '@/components/market/MarketSearchBar';
 import TitleDecoration from '@/components/market/TitleDecoration';
 import { MARKET_CATEGORIES, CONDITION_LABELS } from '@/lib/market/categories';
 import { MarketListing } from '@/lib/market/types';
 import { Search, MapPin, SlidersHorizontal, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-const PER_PAGE = 24;
+const PER_PAGE = 12;
 
 function CatalogueContent() {
   const searchParams = useSearchParams();
@@ -263,33 +263,38 @@ function CatalogueContent() {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="space-y-3">
                 {listings.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
+                  <ListingRow key={l.id} listing={l} />
                 ))}
               </div>
             )}
 
-            {/* Pagination */}
-            {!loading && listings.length > 0 && (
-              <div className="flex items-center justify-center gap-3 mt-10">
-                <button
-                  disabled={offset === 0}
-                  onClick={() => setParam('offset', String(Math.max(offset - PER_PAGE, 0)))}
-                  className="flex items-center gap-1 px-4 py-2 border border-charcoal-200 rounded-lg text-sm text-charcoal-700 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"
+            {/* Pagination — segmented control éditorial */}
+            {!loading && listings.length > 0 && (offset > 0 || listings.length === PER_PAGE) && (
+              <div className="flex items-center justify-center mt-12">
+                <nav
+                  className="flex items-center bg-white border border-charcoal-200 rounded-full divide-x divide-charcoal-200 overflow-hidden"
+                  aria-label="Pagination"
                 >
-                  <ChevronLeft className="w-4 h-4" /> Précédent
-                </button>
-                <span className="text-sm text-charcoal-500">
-                  Page {Math.floor(offset / PER_PAGE) + 1}
-                </span>
-                <button
-                  disabled={listings.length < PER_PAGE}
-                  onClick={() => setParam('offset', String(offset + PER_PAGE))}
-                  className="flex items-center gap-1 px-4 py-2 border border-charcoal-200 rounded-lg text-sm text-charcoal-700 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"
-                >
-                  Suivant <ChevronRight className="w-4 h-4" />
-                </button>
+                  <button
+                    disabled={offset === 0}
+                    onClick={() => setParam('offset', String(Math.max(offset - PER_PAGE, 0)))}
+                    className="flex items-center gap-1.5 px-6 py-2.5 text-xs font-semibold uppercase tracking-wide text-charcoal-700 disabled:opacity-35 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Précédent
+                  </button>
+                  <span className="px-6 py-2.5 font-serif text-base text-charcoal-900 tabular-nums">
+                    {Math.floor(offset / PER_PAGE) + 1}
+                  </span>
+                  <button
+                    disabled={listings.length < PER_PAGE}
+                    onClick={() => setParam('offset', String(offset + PER_PAGE))}
+                    className="flex items-center gap-1.5 px-6 py-2.5 text-xs font-semibold uppercase tracking-wide text-charcoal-700 disabled:opacity-35 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                  >
+                    Suivant <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </nav>
               </div>
             )}
           </main>

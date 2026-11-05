@@ -6,6 +6,8 @@ export interface CreateOrderInput {
   listing_id: string;
   quantity: number;
   delivery_mode: DeliveryMode;
+  /** Réf. PaymentIntent Stripe réelle (webhook checkout). Absent = mode démo. */
+  psp_ref?: string;
   shipping_address?: {
     full_name: string;
     street: string;

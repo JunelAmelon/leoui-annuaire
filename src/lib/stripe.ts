@@ -1,7 +1,10 @@
 import Stripe from 'stripe';
 import type { SubscriptionTier } from './subscription-plans';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Fallback 'sk_test_placeholder' évite que le constructeur Stripe lance une
+// exception à l'import quand la clé est absente (ex. tests, CI sans secrets).
+// Toute vraie tentative d'appel API échouera — c'est le comportement attendu.
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2026-02-25.clover' as any,
 });
 

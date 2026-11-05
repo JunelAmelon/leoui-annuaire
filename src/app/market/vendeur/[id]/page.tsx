@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { BadgeCheck, CalendarDays, Clock, Loader2, MapPin, Mail, Phone, Star } from 'lucide-react';
+import { CheckCircle2, Loader2, MapPin, Star } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ListingCard from '@/components/market/ListingCard';
+import ListingRow from '@/components/market/ListingRow';
 import ContactSeller from '@/components/market/ContactSeller';
 import { Avatar } from '@/components/market/ui';
 import { useAuth } from '@/contexts/AuthContext';
@@ -74,66 +74,87 @@ export default function SellerPublicPage() {
 
   return shell(
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      <section className="bg-white border border-charcoal-200 p-6 sm:p-10 flex flex-col md:flex-row md:items-start gap-8">
-        <Avatar name={seller.display_name} photoUrl={seller.photo_url} size={112} />
+      {/* ── Profil vendeur — éditorial, aucune box décorative ─────────── */}
+      <section className="flex flex-col sm:flex-row gap-6 sm:gap-10 pb-10 border-b border-charcoal-200">
+        <Avatar name={seller.display_name} photoUrl={seller.photo_url} size={88} />
 
-        <div className="flex-1 min-w-0 space-y-4">
-          <div>
-            <p className="label-xs text-rose-600 mb-2">{seller.status === 'professionnel' ? 'Vendeur professionnel' : 'Vendeur particulier'}</p>
-            <h1 className="font-serif text-4xl text-charcoal-900 leading-none">{seller.display_name}</h1>
-          </div>
+        <div className="flex-1 min-w-0">
+          <p className="label-xs text-rose-600 mb-1.5">
+            {seller.status === 'professionnel' ? 'Vendeur professionnel' : 'Vendeur particulier'}
+          </p>
+          <h1 className="font-serif text-4xl text-charcoal-900 leading-none">{seller.display_name}</h1>
 
-          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-charcoal-600">
+          {/* Méta — une seule ligne, séparateurs typographiques */}
+          <p className="mt-3 text-sm text-charcoal-500 flex flex-wrap items-center gap-x-2 gap-y-1">
             {seller.city && (
-              <li className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-charcoal-400" /> {seller.city}</li>
+              <>
+                <MapPin className="w-3.5 h-3.5 text-charcoal-400" />
+                <span>{seller.city}</span>
+                <span className="text-charcoal-200">·</span>
+              </>
             )}
-            <li className="flex items-center gap-1.5">
-              <CalendarDays className="w-4 h-4 text-charcoal-400" />
-              Membre depuis {new Date(seller.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-            </li>
+            <span>Membre depuis {new Date(seller.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
             {seller.activity && (
-              <li className="flex items-center gap-1.5">
-                {seller.activity === 'online' ? (
-                  <span className="w-2 h-2 rounded-full bg-green-500" aria-hidden />
-                ) : (
-                  <Clock className="w-4 h-4 text-charcoal-400" />
-                )}
-                {ACTIVITY[seller.activity]}
-              </li>
+              <>
+                <span className="text-charcoal-200">·</span>
+                <span className="flex items-center gap-1.5">
+                  {seller.activity === 'online' && <span className="w-1.5 h-1.5 rounded-full bg-green-500" aria-hidden />}
+                  {ACTIVITY[seller.activity]}
+                </span>
+              </>
             )}
             {seller.rating_count > 0 && (
-              <li className="flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> {seller.rating_avg.toFixed(1)} · {seller.rating_count} avis
-              </li>
+              <>
+                <span className="text-charcoal-200">·</span>
+                <span className="flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  {seller.rating_avg.toFixed(1)} ({seller.rating_count} avis)
+                </span>
+              </>
             )}
-          </ul>
+          </p>
 
-          {seller.bio && <p className="text-sm text-charcoal-700 leading-relaxed whitespace-pre-line max-w-2xl">{seller.bio}</p>}
+          {seller.bio && (
+            <p className="text-sm text-charcoal-700 leading-relaxed whitespace-pre-line max-w-2xl mt-4">
+              {seller.bio}
+            </p>
+          )}
 
-          <div className="flex flex-wrap gap-2.5">
-            {seller.verified.email && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-charcoal-600 border border-charcoal-200 px-3 py-1.5"><Mail className="w-3.5 h-3.5 text-rose-600" /> Email vérifié</span>
-            )}
-            {seller.verified.phone && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-charcoal-600 border border-charcoal-200 px-3 py-1.5"><Phone className="w-3.5 h-3.5 text-rose-600" /> Numéro vérifié</span>
-            )}
-            {seller.verified.identity && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-charcoal-600 border border-charcoal-200 px-3 py-1.5"><BadgeCheck className="w-3.5 h-3.5 text-rose-600" /> Identité vérifiée</span>
-            )}
-          </div>
+          {/* Badges — checks inline, pas de pills */}
+          {(seller.verified.email || seller.verified.phone || seller.verified.identity) && (
+            <ul className="flex flex-wrap gap-x-5 gap-y-2 mt-4">
+              {seller.verified.email && (
+                <li className="flex items-center gap-1.5 text-xs text-charcoal-600">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Email vérifié
+                </li>
+              )}
+              {seller.verified.phone && (
+                <li className="flex items-center gap-1.5 text-xs text-charcoal-600">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Numéro vérifié
+                </li>
+              )}
+              {seller.verified.identity && (
+                <li className="flex items-center gap-1.5 text-xs text-charcoal-600">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Identité vérifiée
+                </li>
+              )}
+            </ul>
+          )}
         </div>
 
-        <div className="md:w-56 flex-shrink-0">
+        {/* CTA */}
+        <div className="flex-shrink-0 sm:self-start">
           {isMe ? (
-            <Link href="/app/market/profil" className="flex items-center justify-center h-11 px-5 rounded-xl border border-charcoal-300 hover:border-charcoal-900 text-sm font-semibold text-charcoal-900 transition-colors">
+            <Link href="/app/market/profil" className="inline-flex items-center justify-center h-10 px-5 rounded-lg border border-charcoal-300 hover:border-charcoal-900 text-sm font-semibold text-charcoal-900 transition-colors">
               Modifier mon profil
             </Link>
           ) : (
-            <ContactSeller sellerId={seller.id} sellerName={seller.display_name} sellerPhoto={seller.photo_url} variant="primary" className="w-full" />
+            <ContactSeller sellerId={seller.id} sellerName={seller.display_name} sellerPhoto={seller.photo_url} variant="primary" />
           )}
         </div>
       </section>
 
+      {/* ── Annonces en lignes horizontales ──────────────────────────── */}
       <section>
         <div className="flex items-end justify-between pb-3 mb-6 border-b border-charcoal-900">
           <h2 className="font-serif text-2xl text-charcoal-900 leading-none">Ses annonces</h2>
@@ -142,9 +163,9 @@ export default function SellerPublicPage() {
         {listings.length === 0 ? (
           <p className="text-sm text-charcoal-500 py-8">Ce vendeur n’a aucune annonce en ligne pour le moment.</p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="space-y-3">
             {listings.map((l) => (
-              <ListingCard key={l.id} listing={l} />
+              <ListingRow key={l.id} listing={l} />
             ))}
           </div>
         )}

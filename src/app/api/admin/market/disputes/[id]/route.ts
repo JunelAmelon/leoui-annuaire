@@ -32,9 +32,59 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin';
 import { errorResponse, requireAuth } from '@/lib/api-auth';
 import { getDisputeService } from '@/lib/market/server';
 import { ForbiddenError, ValidationError } from '@/lib/market/errors';
+import { executeSellerTransfer, refundPayment, isPspEnabled } from '@/lib/market/psp';
+
+/**
+ * Exécute le mouvement d'argent réel après arbitrage (séquestre).
+ *  'buyer'  → refund du PaymentIntent (psp_ref réel uniquement — les
+ *             paiements pi_test_* de la démo sont ignorés silencieusement)
+ *  'seller' → transfer vers le compte Connect du vendeur + payout 'paid'
+ * Toute erreur Stripe est loguée sans faire échouer la décision d'arbitrage.
+ */
+async function settleDispute(decision: 'buyer' | 'seller', orderId: string) {
+  if (!isPspEnabled() || !orderId) return;
+  try {
+    const paySnap = await adminDb
+      .collection('market_payments')
+      .where('order_id', '==', orderId)
+      .limit(1)
+      .get();
+    if (paySnap.empty) return;
+    const payment = paySnap.docs[0].data() as { psp_ref?: string; seller_net?: number; seller_id?: string };
+
+    if (decision === 'buyer') {
+      if (payment.psp_ref?.startsWith('pi_') && !payment.psp_ref.startsWith('pi_test_')) {
+        await refundPayment({ paymentIntentId: payment.psp_ref, orderId });
+      }
+    } else {
+      const sellerSnap = await adminDb.collection('market_seller_profiles').doc(payment.seller_id!).get();
+      const accountId = sellerSnap.data()?.psp_account_id as string | undefined;
+      if (!accountId || !payment.seller_net) return;
+      const payoutSnap = await adminDb
+        .collection('market_payouts')
+        .where('order_id', '==', orderId)
+        .limit(1)
+        .get();
+      if (payoutSnap.empty) return;
+      const transferId = await executeSellerTransfer({
+        payoutId: payoutSnap.docs[0].id,
+        sellerConnectId: accountId,
+        amountEur: payment.seller_net,
+        orderId,
+      });
+      await payoutSnap.docs[0].ref.set(
+        { payout_status: 'executed', psp_payout_ref: transferId, executed_at: new Date().toISOString() },
+        { merge: true }
+      );
+    }
+  } catch (e) {
+    console.error('[psp] dispute settlement failed:', e);
+  }
+}
 
 /**
  * Guard réutilisable pour les deux verbes :
@@ -90,6 +140,10 @@ export async function PATCH(
       decision: body.decision as 'buyer' | 'seller',
       note: body.note,
     });
+
+    // Mouvement d'argent réel : refund acheteur ou transfer vendeur.
+    // Fire-finally : la décision d'arbitrage est actée quoi qu'il arrive.
+    await settleDispute(body.decision as 'buyer' | 'seller', dispute.order_id);
 
     return NextResponse.json({ ok: true, dispute });
   } catch (e) {

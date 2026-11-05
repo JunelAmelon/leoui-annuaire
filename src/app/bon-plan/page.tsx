@@ -209,31 +209,37 @@ export default function BonPlanPage() {
       {/* PROMOS */}
       <section id="offres" className="py-14 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-charcoal-100">
             <div>
-              <h2 className="font-display text-2xl text-charcoal-900">
+              <h2 className="font-serif text-2xl text-charcoal-950" style={{ letterSpacing: '-0.01em' }}>
                 {activeCategory === 'Toutes les catégories' ? 'Tous les bons plans' : activeCategory}
               </h2>
-              <p className="text-charcoal-500 text-sm mt-1">
-                {filtered.length} bon plan{filtered.length !== 1 ? 's' : ''} trouvé{filtered.length !== 1 ? 's' : ''}
+              <p className="text-charcoal-400 text-xs mt-1 uppercase tracking-wider font-medium">
+                {filtered.length} offre{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-charcoal-500">Trier par</span>
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="h-10 px-3 text-sm bg-stone-50 border border-stone-200 rounded-xl outline-none focus:border-rose-400"
-              >
-                {SORTS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
+            {/* Tri en pilules segmentées — plus pro qu'un select natif */}
+            <div className="flex items-center gap-1 bg-stone-100 rounded-full p-1 self-start sm:self-auto">
+              {SORTS.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => setSortBy(s.key)}
+                  className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all ${
+                    sortBy === s.key
+                      ? 'bg-white text-charcoal-950 shadow-sm'
+                      : 'text-charcoal-500 hover:text-charcoal-800'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-96 bg-stone-100 rounded-2xl animate-pulse" />
+                <div key={i} className="h-80 bg-stone-100 rounded-2xl animate-pulse" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
@@ -246,7 +252,7 @@ export default function BonPlanPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map(promo => (
                 <PromoCard key={promo.id} promo={promo} onCopy={() => copyCode(promo.code, promo.id)} copied={copied === promo.id} />
               ))}
@@ -297,63 +303,93 @@ function PromoCard({
   const image = promo.vendor.imageUrl || DEFAULT_CARD_IMAGE;
 
   return (
-    <article className="group bg-white rounded-2xl overflow-hidden shadow-soft hover:shadow-soft-xl transition-all duration-300 flex flex-col">
-      <div className="relative aspect-[3/2] overflow-hidden">
+    <article className="group bg-white border border-charcoal-100 rounded-2xl overflow-hidden hover:border-rose-200 hover:shadow-soft transition-all duration-300 flex flex-col">
+      {/* Visuel — bandeau photo compact, badge d'urgence seulement si pertinent */}
+      <div className="relative aspect-[16/9] overflow-hidden bg-charcoal-100">
         <img
           src={image}
           alt={promo.vendor.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-        <div className="absolute top-4 right-4 bg-rose-600 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg">
-          {formatDiscount(promo)}
-        </div>
         {remaining !== null && remaining <= 5 && (
-          <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-champagne-300" /> {remaining}j restants
+          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur text-charcoal-900 text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            Plus que {remaining} jour{remaining !== 1 ? 's' : ''}
           </div>
         )}
       </div>
 
-      <div className="p-6 flex-1 flex flex-col">
-        <p className="text-xs uppercase tracking-wider text-rose-600 font-semibold mb-2">{promo.vendor.category}</p>
-        <h3 className="font-serif text-2xl text-charcoal-900 mb-1 group-hover:text-rose-700 transition-colors">
-          {promo.vendor.name}
-        </h3>
-        <p className="text-sm text-charcoal-500 flex items-center gap-1 mb-4">
-          <MapPin className="w-3.5 h-3.5" /> {promo.vendor.location || 'France'}
-        </p>
+      <div className="p-5 flex-1 flex flex-col">
+        {/* En-tête : prestataire à gauche, remise en serif à droite */}
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-widest text-charcoal-400 font-semibold mb-1">
+              {promo.vendor.category}
+            </p>
+            <h3 className="font-serif text-lg text-charcoal-950 leading-tight group-hover:text-rose-700 transition-colors truncate">
+              {promo.vendor.name}
+            </h3>
+            <p className="text-xs text-charcoal-400 flex items-center gap-1 mt-1">
+              <MapPin className="w-3 h-3" /> {promo.vendor.location || 'France'}
+            </p>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <p className="font-serif text-[1.7rem] leading-none text-rose-600" style={{ letterSpacing: '-0.02em' }}>
+              {formatDiscount(promo)}
+            </p>
+            <p className="text-[9px] uppercase tracking-widest text-charcoal-400 mt-1">de remise</p>
+          </div>
+        </div>
 
-        <p className="text-sm text-charcoal-700 font-medium mb-2">{promo.title}</p>
+        {/* Offre */}
+        <p className="text-sm text-charcoal-800 font-medium leading-snug">{promo.title}</p>
         {promo.description && (
-          <p className="text-sm text-charcoal-500 line-clamp-2 mb-4">{promo.description}</p>
+          <p className="text-xs text-charcoal-500 leading-relaxed line-clamp-2 mt-1.5">{promo.description}</p>
         )}
 
-        {promo.min_amount > 0 && (
-          <p className="text-xs text-charcoal-400 mb-4">Dès {promo.min_amount} € de prestation</p>
-        )}
+        {/* Conditions + validité — ligne méta discrète */}
+        <div className="flex items-center gap-3 mt-3 text-[11px] text-charcoal-400">
+          {promo.valid_to && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Jusqu'au {new Date(promo.valid_to).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+          {promo.min_amount > 0 && (
+            <span>Dès {promo.min_amount} € de prestation</span>
+          )}
+        </div>
 
-        <div className="mt-auto pt-4 border-t border-stone-100 space-y-4">
-          <div className="flex items-center justify-between gap-3 p-3 bg-stone-50 rounded-xl">
-            <code className="font-mono text-sm font-semibold text-charcoal-900 tracking-widest truncate">
-              {promo.code}
-            </code>
+        {/* Zone coupon — séparateur pointillé façon ticket */}
+        <div className="mt-4 pt-4 border-t border-dashed border-charcoal-200">
+          <div className="flex items-center justify-between gap-3 bg-ivory-50 border border-charcoal-100 rounded-lg px-3.5 py-2.5">
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-widest text-charcoal-400 font-semibold">Code promo</p>
+              <code className="font-mono text-sm font-bold text-charcoal-950 tracking-[0.15em] truncate block">
+                {promo.code}
+              </code>
+            </div>
             <button
               onClick={onCopy}
-              className="flex-shrink-0 flex items-center gap-1.5 bg-white border border-stone-200 hover:border-rose-400 hover:text-rose-600 text-charcoal-700 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+              className={`flex-shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                copied
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-white border border-charcoal-200 text-charcoal-700 hover:border-rose-400 hover:text-rose-600'
+              }`}
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Copié' : 'Copier'}
             </button>
           </div>
-
-          <Link
-            href={`/vendors/${promo.vendor.id}`}
-            className="flex items-center justify-center gap-2 w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 rounded-xl transition-colors text-sm"
-          >
-            Voir le prestataire <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
+
+        {/* CTA discret */}
+        <Link
+          href={`/vendors/${promo.vendor.id}`}
+          className="mt-4 flex items-center justify-center gap-1.5 w-full border border-charcoal-200 hover:border-rose-500 hover:text-rose-700 text-charcoal-800 font-semibold py-2.5 rounded-xl transition-all text-sm"
+        >
+          Voir le prestataire <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
     </article>
   );

@@ -119,7 +119,7 @@ export default function AdminLitigesPage() {
       // Si null : layout aurait dû redirecter, mais on gère le cas défensif.
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        setError('Session expirée — veuillez vous reconnecter.');
+        setError('Session expirée. Veuillez vous reconnecter.');
         return;
       }
 
@@ -184,7 +184,7 @@ export default function AdminLitigesPage() {
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        toast.error('Session expirée — veuillez vous reconnecter.');
+        toast.error('Session expirée. Veuillez vous reconnecter.');
         return;
       }
 

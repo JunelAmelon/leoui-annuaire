@@ -237,7 +237,7 @@ export default function ContratsPage() {
         html: renderContractEmail({ clientName: c.client_name || '', vendorName, contractName: c.title || c.reference }),
       });
       await updateDocument('contracts', c.id, { status: 'sent', pdf_url: file_url });
-      toast.success(resolvedClientId ? `${typeLabelCap} envoyé(e) et visible dans les documents du client` : `${typeLabelCap} envoyé(e) — email non trouvé dans la base`, { duration: 4000 });
+      toast.success(resolvedClientId ? `${typeLabelCap} envoyé(e) et visible dans les documents du client` : `${typeLabelCap} envoyé(e), email non trouvé dans la base`, { duration: 4000 });
       load();
     } catch (e) { console.error(e); toast.error('Erreur lors de l\'envoi'); } finally { setSending(null); }
   };

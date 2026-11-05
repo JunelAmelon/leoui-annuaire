@@ -109,7 +109,9 @@ export default function CheckoutPage() {
     setSubmitting(true);
     try {
       const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/market/orders', {
+      // Crée la Stripe Checkout Session : la commande est enregistrée
+      // par le webhook après paiement confirmé (séquestre réel).
+      const res = await fetch('/api/market/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,13 +137,11 @@ export default function CheckoutPage() {
         throw new Error(data.error || 'Erreur lors de la commande');
       }
 
-      toast.success('Paiement sécurisé effectué avec succès !');
-      // Redirection vers le tableau de bord des commandes de l'acheteur
-      router.push(`/app/market/mes-commandes`);
+      // Redirection vers la page de paiement hébergée Stripe
+      window.location.href = data.url;
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Impossible de finaliser la commande');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -394,10 +394,8 @@ export default function CheckoutPage() {
               </button>
 
               <p className="text-[11px] text-charcoal-400 text-center leading-relaxed">
-                En confirmant, vous acceptez les conditions de LeOui Market. Vos fonds sont protégés jusqu'à validation de la commande.
-              </p>
-              <p className="text-[11px] text-charcoal-400 text-center leading-relaxed">
-                Paiement de démonstration : aucun montant n'est débité en attendant l'intégration du prestataire de paiement.
+                En confirmant, vous serez redirigé vers le paiement sécurisé Stripe.
+                Vos fonds sont conservés en séquestre jusqu'à validation de la commande.
               </p>
             </div>
           </div>

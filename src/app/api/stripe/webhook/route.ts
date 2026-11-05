@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { stripe } from '@/lib/stripe';
+import { getOrderService } from '@/lib/market/server';
 import { syncVendorSubscriptionFromStripe } from '@/lib/stripe-sync';
 import { syncStripeSubscription, cleanupActiveSubscriptions } from '@/lib/subscription-manager';
 import { sendEmailServer } from '@/lib/email.server';
@@ -41,6 +42,26 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // ── LeOui Market : commande séquestre ─────────────────────────────
+        // metadata.kind === 'market_order' → création de la commande après
+        // paiement confirmé (fonds sur solde plateforme = séquestre).
+        if (session.metadata?.kind === 'market_order') {
+          const m = session.metadata;
+          const paymentIntentId =
+            typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id || '';
+          await getOrderService().createOrder(m.buyer_uid!, {
+            listing_id: m.listing_id!,
+            quantity: parseInt(m.quantity || '1', 10) || 1,
+            delivery_mode: (m.delivery_mode === 'pickup' ? 'pickup' : 'shipping') as 'shipping' | 'pickup',
+            shipping_address: m.shipping_address ? JSON.parse(m.shipping_address) : undefined,
+            psp_ref: paymentIntentId,
+          });
+          break;
+        }
+
         let uid = session.metadata?.uid || '';
         if (!uid && typeof session.customer === 'string') {
           const vendorSnap = await adminDb.collection('vendors').where('stripeCustomerId', '==', session.customer).limit(1).get();
@@ -242,6 +263,26 @@ export async function POST(req: Request) {
           subscriptionProvider: 'stripe',
           updatedAt: new Date().toISOString(),
         }, { merge: true });
+        break;
+      }
+
+      // ── Connect : fin d'onboarding vendeur → psp_onboarded synchronisé ──
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        const snap = await adminDb
+          .collection('market_seller_profiles')
+          .where('psp_account_id', '==', account.id)
+          .limit(1)
+          .get();
+        if (!snap.empty) {
+          await snap.docs[0].ref.set(
+            {
+              psp_onboarded: Boolean(account.payouts_enabled),
+              updated_at: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        }
         break;
       }
 

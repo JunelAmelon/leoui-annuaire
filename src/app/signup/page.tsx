@@ -66,7 +66,7 @@ export default function SignupPage() {
     try {
       hasRedirectedRef.current = true;
       const { isNew } = await signInWithGoogle(nextUrl);
-      if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui.net 🎉');
+      if (isNew) toast.success('Compte créé avec succès ! Bienvenue sur LeOui.net.');
       else toast.success('Connexion réussie !');
     } catch (err: any) {
       const code = err?.code || '';

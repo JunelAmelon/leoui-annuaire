@@ -116,7 +116,7 @@ export default function AdminParametresPage() {
       // Mettre à jour Firebase Auth + Firestore (merge pour ne pas écraser les autres champs)
       await updateProfile(auth.currentUser!, { photoURL: url });
       await updateDocument('users', uid, { photoURL: url, updatedAt: new Date().toISOString() });
-      toast.success('Photo mise à jour — rechargez la page pour voir le résultat dans la sidebar');
+      toast.success('Photo mise à jour. Rechargez la page pour voir le résultat dans la sidebar');
     } catch { toast.error('Erreur lors de l\'upload'); }
     finally { setPhotoUploading(false); }
   };
@@ -221,7 +221,7 @@ export default function AdminParametresPage() {
       });
       const data = await res.json() as { ok: boolean; error?: string };
       if (!res.ok || !data.ok) throw new Error(data.error || `Erreur ${res.status}`);
-      toast.success(`Rôle "${roleTarget}" accordé — l'utilisateur doit se reconnecter`);
+      toast.success(`Rôle "${roleTarget}" accordé. L'utilisateur doit se reconnecter`);
       setRoleEmail(''); setRoleVendorType('');
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Erreur inconnue');
