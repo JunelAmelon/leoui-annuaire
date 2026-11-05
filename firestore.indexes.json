@@ -5,6 +5,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "guestbook_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "guestbook_entries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "guestbook_id", "order": "ASCENDING" },
         { "fieldPath": "hidden", "order": "ASCENDING" },
         { "fieldPath": "created_at", "order": "DESCENDING" }
       ]
