@@ -23,6 +23,19 @@ service cloud.firestore {
       allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
     }
 
+    // --- Livre d'Or (Sprint Novembre 2026 - Adnane) ---
+    match /guestbooks/{eventId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /guestbook_entries/{entryId} {
+      allow read: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isAdmin());
+      // Écriture invité : uniquement via API route (adminDb) avec validation du public_token
+    }
+
     // Default fallback
     match /{document=**} {
       allow read, write: if isSignedIn();
