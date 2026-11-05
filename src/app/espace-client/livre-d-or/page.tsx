@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import {
-  Mic,
   MessageSquare,
   Heart,
   Eye,
@@ -23,6 +22,8 @@ import {
   SkipBack,
   Radio,
   Printer,
+  PenLine,
+  User,
   X,
 } from 'lucide-react';
 import { FirestoreGuestbookRepository } from '@/features/guestbook/repositories/firestore-guestbook.repository';
@@ -260,49 +261,41 @@ export default function CoupleGuestbookPage() {
     );
   }
 
+  const fmtDur = (s?: number) => s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '';
+
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-16">
-      {/* ── En-tête de page ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200/70 pb-6">
+    <div className="space-y-10 max-w-4xl mx-auto pb-16">
+      {/* ── En-tête — même DA que les autres pages ───────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
-            <p className="text-xs uppercase tracking-widest text-charcoal-400 font-medium">
-              Espace Mariés · Souvenirs
-            </p>
-          </div>
+          <p className="label-xs text-rose-600 mb-2 tracking-[0.1em]">Souvenirs</p>
           <h1
-            className="font-serif text-charcoal-900 leading-tight"
-            style={{ fontSize: 'clamp(1.75rem, 3vw, 2.25rem)', fontWeight: 400 }}
+            className="font-serif text-charcoal-900"
+            style={{ fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', fontWeight: 400, letterSpacing: '-0.01em' }}
           >
-            {guestbook?.title || 'Livre d’or audio & écrit'}
+            {guestbook?.title || 'Livre d’or'}
           </h1>
-          <p className="text-sm text-charcoal-600 mt-1.5 leading-relaxed">
-            Consultez les mots doux et réécoutez les voix de vos proches enregistrées lors de votre mariage.
+          <p className="text-sm text-charcoal-500 mt-2 max-w-xl leading-relaxed">
+            Les mots doux et les voix de vos proches, recueillis le jour de votre mariage.
           </p>
         </div>
-
-        {/* Boutons d'action hauts */}
-        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
-          {/* Bouton Export PDF du Livre */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handleExportBookPdf}
             disabled={exportingBookPdf || entries.filter((e) => !e.hidden).length === 0}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 h-9 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors disabled:opacity-50"
           >
             <FileDown className="w-3.5 h-3.5" />
-            <span>{exportingBookPdf ? 'Génération…' : 'Exporter le Livre d’Or (PDF)'}</span>
+            {exportingBookPdf ? 'Génération…' : 'Exporter en PDF'}
           </button>
-
-          {/* Bouton Paramètres */}
           <button
             type="button"
             onClick={() => setShowSettingsModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-white border border-stone-200 text-charcoal-700 hover:border-charcoal-400 hover:text-charcoal-900 transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 h-9 rounded-lg border border-charcoal-200 text-xs font-semibold text-charcoal-700 hover:border-charcoal-400 transition-colors"
           >
-            <Settings className="w-3.5 h-3.5 text-charcoal-400" />
-            <span>Paramètres</span>
+            <Settings className="w-3.5 h-3.5" />
+            Paramètres
           </button>
         </div>
       </div>
@@ -316,136 +309,50 @@ export default function CoupleGuestbookPage() {
         />
       )}
 
-      {/* ── Chiffres clés ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-4 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-charcoal-400 font-medium">Total reçus</p>
-          <p className="font-serif text-charcoal-900 text-2xl font-normal mt-1">
-            {entries.filter((e) => !e.hidden).length}
-          </p>
-        </div>
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-4 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-charcoal-400 font-medium">Messages vocaux</p>
-          <p className="font-serif text-rose-600 text-2xl font-normal mt-1">{totalAudio}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-4 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-charcoal-400 font-medium">Mots écrits</p>
-          <p className="font-serif text-charcoal-900 text-2xl font-normal mt-1">{totalText}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-4 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-charcoal-400 font-medium">Favoris</p>
-          <p className="font-serif text-rose-600 text-2xl font-normal mt-1">{totalFavorites}</p>
-        </div>
-      </div>
+      {/* ── Bandeau stats sombre + écoute ── */}
+      <div className="flex items-center gap-x-5 gap-y-2 flex-wrap bg-charcoal-900 rounded-xl px-5 py-3.5 overflow-x-auto scrollbar-none">
+        {[
+          { n: entries.filter((e) => !e.hidden).length, l: 'reçus' },
+          { n: totalAudio, l: 'vocaux', accent: true },
+          { n: totalText, l: 'écrits' },
+          { n: totalFavorites, l: 'favoris', accent: true },
+        ].map((s, i) => (
+          <span key={i} className="flex items-baseline gap-1.5 whitespace-nowrap">
+            <span className={`font-serif text-lg ${s.accent ? 'text-rose-300' : 'text-white'}`}>{s.n}</span>
+            <span className="text-[11px] text-white/50">{s.l}</span>
+            {i < 3 && <span className="text-white/15 ml-3">·</span>}
+          </span>
+        ))}
 
-      {/* ── Barre de filtres & Mode Podcast ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setFilterType('all')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-              filterType === 'all'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white border border-stone-200 text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Tous ({entries.filter((e) => !e.hidden).length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('audio')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-              filterType === 'audio'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white border border-stone-200 text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Vocaux ({totalAudio})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('text')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-              filterType === 'text'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white border border-stone-200 text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Écrits ({totalText})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('favorites')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-              filterType === 'favorites'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white border border-stone-200 text-charcoal-600 hover:text-charcoal-900'
-            }`}
-          >
-            Favoris ({totalFavorites})
-          </button>
-          {totalHidden > 0 && (
-            <button
-              type="button"
-              onClick={() => setFilterType('hidden')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-                filterType === 'hidden'
-                  ? 'bg-charcoal-800 text-white shadow-xs'
-                  : 'bg-white border border-stone-200 text-charcoal-400 hover:text-charcoal-700'
-              }`}
-            >
-              Masqués ({totalHidden})
-            </button>
-          )}
-        </div>
-
-        {/* Bouton Mode Podcast (lecture continue) */}
         {totalAudio > 0 && (
           <button
             type="button"
             onClick={() => (podcastIndex === null ? startPodcast(0) : setPodcastIndex(null))}
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-              podcastIndex !== null
-                ? 'bg-rose-50 text-rose-700 border border-rose-300 shadow-xs'
-                : 'bg-white border border-stone-200 text-charcoal-700 hover:border-charcoal-400'
-            }`}
+            className="ml-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white hover:bg-white/20 transition-colors flex-shrink-0"
           >
-            <Radio className="w-3.5 h-3.5 text-rose-600" />
-            <span>
-              {podcastIndex !== null
-                ? 'Quitter l’écoute continue'
-                : `Tout écouter en continu (${totalAudio} vocaux)`}
-            </span>
+            <Radio className="w-3.5 h-3.5 text-rose-300" />
+            {podcastIndex !== null ? 'Arrêter' : `Écouter tout (${totalAudio})`}
           </button>
         )}
       </div>
 
-      {/* ── Lecteur Continu (Podcast des mariés) ── */}
+      {/* ── (Filtres supprimés) ── */}
+
+      {/* ── Lecteur continu — barre fine ── */}
       {podcastIndex !== null && currentPodcastTrack && (
-        <div className="bg-charcoal-900 text-white rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3.5 w-full sm:w-auto">
-            <div className="w-10 h-10 rounded-full bg-rose-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-              <Radio className="w-5 h-5 animate-pulse" />
-            </div>
+        <div className="flex items-center justify-between gap-4 py-3 px-4 bg-charcoal-900 rounded-lg">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-[10px] uppercase tracking-[0.15em] text-rose-300 font-semibold flex-shrink-0">
+              {podcastIndex + 1}/{audioEntries.length}
+            </span>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-rose-300">
-                  Vocal {podcastIndex + 1} / {audioEntries.length}
-                </span>
-                <span className="text-xs text-white/50">
-                  {currentPodcastTrack.duration_sec
-                    ? `${Math.floor(currentPodcastTrack.duration_sec / 60)}:${currentPodcastTrack.duration_sec % 60 < 10 ? '0' : ''}${currentPodcastTrack.duration_sec % 60}`
-                    : ''}
-                </span>
-              </div>
-              <p className="font-serif text-white text-base font-normal truncate mt-0.5">
-                {currentPodcastTrack.guest_name}
-              </p>
+              <p className="font-serif text-white text-sm truncate">{currentPodcastTrack.guest_name}</p>
+              {currentPodcastTrack.duration_sec && (
+                <p className="text-[11px] text-white/40 tabular-nums">{fmtDur(currentPodcastTrack.duration_sec)}</p>
+              )}
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <audio
               ref={podcastAudioRef}
               src={currentPodcastTrack.audio_path || undefined}
@@ -453,54 +360,28 @@ export default function CoupleGuestbookPage() {
               onEnded={handlePodcastNext}
               className="hidden"
             />
-
-            <button
-              type="button"
-              onClick={handlePodcastPrev}
-              disabled={podcastIndex === 0}
-              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30"
-              title="Précédent"
-            >
+            <button type="button" onClick={handlePodcastPrev} disabled={podcastIndex === 0}
+              className="p-1.5 text-white/60 hover:text-white transition-colors disabled:opacity-30" title="Précédent">
               <SkipBack className="w-4 h-4" />
             </button>
-
             <button
               type="button"
               onClick={() => {
                 if (!podcastAudioRef.current) return;
-                if (isPodcastPlaying) {
-                  podcastAudioRef.current.pause();
-                  setIsPodcastPlaying(false);
-                } else {
-                  podcastAudioRef.current.play();
-                  setIsPodcastPlaying(true);
-                }
+                if (isPodcastPlaying) { podcastAudioRef.current.pause(); setIsPodcastPlaying(false); }
+                else { podcastAudioRef.current.play(); setIsPodcastPlaying(true); }
               }}
-              className="w-10 h-10 rounded-full bg-white text-charcoal-900 flex items-center justify-center hover:bg-rose-50 transition-colors shadow-xs"
+              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-500 transition-colors"
               title={isPodcastPlaying ? 'Pause' : 'Lecture'}
             >
-              {isPodcastPlaying ? (
-                <Pause className="w-4 h-4 fill-charcoal-900" />
-              ) : (
-                <Play className="w-4 h-4 fill-charcoal-900 ml-0.5" />
-              )}
+              {isPodcastPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
             </button>
-
-            <button
-              type="button"
-              onClick={handlePodcastNext}
-              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              title="Suivant"
-            >
+            <button type="button" onClick={handlePodcastNext}
+              className="p-1.5 text-white/60 hover:text-white transition-colors" title="Suivant">
               <SkipForward className="w-4 h-4" />
             </button>
-
-            <button
-              type="button"
-              onClick={() => setPodcastIndex(null)}
-              className="p-2 rounded-xl text-white/40 hover:text-white/80 transition-colors ml-2"
-              title="Fermer le lecteur"
-            >
+            <button type="button" onClick={() => setPodcastIndex(null)}
+              className="p-1.5 text-white/30 hover:text-white/70 transition-colors" title="Fermer">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -533,78 +414,87 @@ export default function CoupleGuestbookPage() {
             return (
               <div
                 key={entry.id}
-                className={`bg-white rounded-2xl border p-5 shadow-xs transition-shadow hover:shadow-md ${
-                  entry.hidden ? 'border-stone-200 bg-stone-50/60 opacity-75' : 'border-stone-200/80'
+                className={`flex gap-3.5 pb-6 border-b border-charcoal-100 last:border-b-0 ${
+                  entry.hidden ? 'opacity-50' : ''
                 }`}
               >
-                {/* Ligne haute : Nom, Date & Actions */}
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 text-xs font-semibold">
-                      {entry.guest_name.slice(0, 1).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-serif text-charcoal-900 text-base font-medium leading-snug">
-                        {entry.guest_name}
-                      </p>
-                      <p className="text-[11px] text-charcoal-400">{formattedDate}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    {/* Bouton Favori */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleFavorite(entry)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        entry.favorite
-                          ? 'text-rose-600 bg-rose-50'
-                          : 'text-charcoal-400 hover:text-rose-600 hover:bg-stone-50'
-                      }`}
-                      title={entry.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                    >
-                      <Heart className={`w-4 h-4 ${entry.favorite ? 'fill-rose-600' : ''}`} />
-                    </button>
-
-                    {/* Bouton Masquer / Rendre visible */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleHidden(entry)}
-                      className="p-2 rounded-lg text-charcoal-400 hover:text-charcoal-700 hover:bg-stone-50 transition-colors"
-                      title={entry.hidden ? 'Rendre visible' : 'Masquer du livre'}
-                    >
-                      {entry.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-
-                    {/* Bouton Supprimer */}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteEntry(entry)}
-                      className="p-2 rounded-lg text-charcoal-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                      title="Supprimer définitivement"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                {/* Avatar neutre — icône profil */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-stone-100 text-charcoal-500">
+                  <User className="w-6 h-6" />
                 </div>
 
-                {/* Contenu : Vocal ou Texte */}
-                {entry.type === 'audio' ? (
-                  <div className="mt-2">
-                    <WaveformPlayer
-                      src={entry.audio_path}
-                      waveform={entry.waveform}
-                      durationSec={entry.duration_sec}
-                      guestName={entry.guest_name}
-                    />
+                {/* Contenu */}
+                <div className="flex-1 min-w-0">
+                  {/* Ligne haute : Nom, Date & Actions */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-serif text-charcoal-900 text-lg leading-snug truncate">
+                          {entry.guest_name}
+                        </p>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            entry.type === 'audio'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-champagne-50 text-charcoal-600 border-champagne-200'
+                          }`}
+                        >
+                          {entry.type === 'audio' ? 'Vocal' : 'Écrit'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-charcoal-400 mt-1">{formattedDate}</p>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFavorite(entry)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          entry.favorite
+                            ? 'text-rose-600 bg-rose-50'
+                            : 'text-charcoal-400 hover:text-rose-600 hover:bg-stone-50'
+                        }`}
+                        title={entry.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      >
+                        <Heart className={`w-4 h-4 ${entry.favorite ? 'fill-rose-600' : ''}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleHidden(entry)}
+                        className="p-2 rounded-lg text-charcoal-400 hover:text-charcoal-700 hover:bg-stone-50 transition-colors"
+                        title={entry.hidden ? 'Rendre visible' : 'Masquer du livre'}
+                      >
+                        {entry.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEntry(entry)}
+                        className="p-2 rounded-lg text-charcoal-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="Supprimer définitivement"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="mt-2 rounded-xl bg-[#FAF6F8]/60 border border-stone-200/50 p-4">
-                    <p className="text-sm text-charcoal-800 leading-relaxed font-serif italic">
-                      « {entry.body} »
-                    </p>
-                  </div>
-                )}
+
+                  {/* Contenu : Vocal ou Texte */}
+                  {entry.type === 'audio' ? (
+                    <div className="mt-3 rounded-xl bg-[#FAF6F2] border border-stone-100 px-4 py-3">
+                      <WaveformPlayer
+                        src={entry.audio_path}
+                        waveform={entry.waveform}
+                        durationSec={entry.duration_sec}
+                        guestName={entry.guest_name}
+                      />
+                    </div>
+                  ) : (
+                    <blockquote className="mt-3 rounded-lg bg-[#FAF6F2]/70 px-3.5 py-2.5">
+                      <p className="text-[13px] text-charcoal-700 leading-relaxed font-serif italic">
+                        « {entry.body} »
+                      </p>
+                    </blockquote>
+                  )}
+                </div>
               </div>
             );
           })}

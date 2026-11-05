@@ -213,7 +213,7 @@ export default function PublicGuestbookPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF6F8] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAF6F2] flex items-center justify-center p-4">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-2 border-rose-600 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="font-serif text-charcoal-700 text-sm">Chargement du livre d’or…</p>
@@ -224,7 +224,7 @@ export default function PublicGuestbookPage({
 
   if (error || !info) {
     return (
-      <div className="min-h-screen bg-[#FAF6F8] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAF6F2] flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-stone-200 p-8 max-w-md text-center space-y-4 shadow-sm">
           <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
             <AlertCircle className="w-6 h-6" />
@@ -240,7 +240,7 @@ export default function PublicGuestbookPage({
 
   if (!info.isOpen) {
     return (
-      <div className="min-h-screen bg-[#FAF6F8] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAF6F2] flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-stone-200 p-8 max-w-md text-center space-y-4 shadow-sm">
           <div className="w-12 h-12 rounded-full bg-champagne-100 text-champagne-700 flex items-center justify-center mx-auto">
             <Clock className="w-6 h-6" />
@@ -257,7 +257,7 @@ export default function PublicGuestbookPage({
   // Écran de remerciement après envoi réussi
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#FAF6F8] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAF6F2] flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-stone-200 p-8 max-w-md w-full text-center space-y-5 shadow-xs">
           <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
             <Heart className="w-7 h-7 fill-rose-600" />
@@ -286,24 +286,31 @@ export default function PublicGuestbookPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6F8] py-8 px-4 flex flex-col justify-center items-center">
-      <div className="w-full max-w-lg space-y-6">
-        {/* En-tête romantique & sobre */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/60 text-rose-700 text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Livre d’or des mariés</span>
-          </div>
-          <h1
-            className="font-serif text-charcoal-900 leading-tight"
-            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.25rem)', fontWeight: 400 }}
-          >
+    <div className="min-h-screen bg-[#1C1417] sm:flex">
+      {/* ── Panneau visuel immersif — image du couple ─────────────────── */}
+      <aside className="relative h-52 sm:h-auto sm:w-[42%] sm:min-h-screen overflow-hidden flex-shrink-0">
+        <img
+          src="/mariage%20(5).jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1C1417] via-[#1C1417]/35 to-[#1C1417]/15 sm:bg-gradient-to-r sm:from-transparent sm:via-[#1C1417]/20 sm:to-[#1C1417]/70" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 sm:bottom-10">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-white/70 mb-2">
+            Livre d’or des mariés
+          </p>
+          <h1 className="font-serif text-white leading-tight" style={{ fontSize: 'clamp(1.9rem, 4vw, 3rem)', fontWeight: 400 }}>
             {info.title}
           </h1>
-          <p className="text-xs text-charcoal-500 max-w-sm mx-auto leading-relaxed">
-            Partagez vos vœux, un souvenir chaleureux ou un message vocal spontané avec les mariés.
+          <p className="text-sm text-white/75 mt-3 max-w-sm leading-relaxed font-light hidden sm:block">
+            Partagez vos vœux, un souvenir chaleureux ou un message vocal spontané.
           </p>
         </div>
+      </aside>
+
+      {/* ── Zone formulaire — fond clair chaud ─────────────────────────── */}
+      <main className="flex-1 bg-[#FAF6F2] px-4 sm:px-8 lg:px-14 py-8 sm:py-12 flex flex-col justify-center">
+        <div className="w-full max-w-xl mx-auto space-y-6">
 
         {/* ── Souvenir scanné depuis le livre imprimé (si paramètre ?entry=...) ── */}
         {info.entry && (
@@ -412,34 +419,62 @@ export default function PublicGuestbookPage({
           {/* Mode Audio */}
           {mode === 'audio' && (
             <div className="space-y-4 pt-1">
-              <div className="rounded-2xl border border-stone-200/80 bg-[#FAF6F8]/60 p-6 text-center space-y-4">
-                {/* Visualiseur de capture */}
-                <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-                  {isRecording && (
-                    <span
-                      className="absolute inset-0 rounded-full bg-rose-500/20 animate-ping"
-                      style={{ transform: `scale(${1 + instantLevel})` }}
-                    />
-                  )}
-                  <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                      isRecording
-                        ? 'bg-rose-600 text-white shadow-md'
-                        : audioResult
-                        ? 'bg-stone-100 text-charcoal-700'
-                        : 'bg-rose-50 text-rose-600'
-                    }`}
-                  >
-                    <Mic className="w-7 h-7" />
+              {/* Pod d'enregistrement — sombre, waveform décoratif */}
+              <div className="rounded-2xl bg-charcoal-900 p-6 text-center space-y-5">
+                {/* Visualiseur : barres waveform + micro central */}
+                <div className="flex items-center justify-center gap-3 h-20">
+                  {/* Barres gauche */}
+                  <div className="flex items-center gap-1 flex-1 justify-end">
+                    {[14, 22, 34, 26, 40, 18].map((h, i) => (
+                      <span
+                        key={i}
+                        className={`w-1 rounded-full transition-all ${
+                          isRecording ? 'bg-rose-400 animate-pulse' : 'bg-white/20'
+                        }`}
+                        style={{ height: `${h}px`, animationDelay: `${i * 0.12}s` }}
+                      />
+                    ))}
+                  </div>
+                  {/* Micro central */}
+                  <div className="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
+                    {isRecording && (
+                      <span
+                        className="absolute inset-0 rounded-full bg-rose-500/25 animate-ping"
+                        style={{ transform: `scale(${1 + instantLevel})` }}
+                      />
+                    )}
+                    <div
+                      className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                        isRecording
+                          ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/40'
+                          : audioResult
+                          ? 'bg-white/15 text-white'
+                          : 'bg-white/10 text-rose-300 hover:bg-white/15'
+                      }`}
+                    >
+                      <Mic className="w-6 h-6" />
+                    </div>
+                  </div>
+                  {/* Barres droite */}
+                  <div className="flex items-center gap-1 flex-1">
+                    {[18, 40, 26, 34, 22, 14].map((h, i) => (
+                      <span
+                        key={i}
+                        className={`w-1 rounded-full transition-all ${
+                          isRecording ? 'bg-rose-400 animate-pulse' : 'bg-white/20'
+                        }`}
+                        style={{ height: `${h}px`, animationDelay: `${(i + 3) * 0.12}s` }}
+                      />
+                    ))}
                   </div>
                 </div>
 
                 {/* Chronomètre & Statut */}
                 <div>
-                  <p className="font-mono text-charcoal-900 text-2xl font-semibold">
+                  <p className="font-serif text-white text-2xl tabular-nums">
                     {formatSeconds(isRecording ? recordedSeconds : audioResult ? audioResult.durationSec : 0)}
                   </p>
-                  <p className="text-xs text-charcoal-400 mt-0.5">
+                  <p className="text-xs text-white/50 mt-1">
                     {isRecording
                       ? 'Enregistrement en cours… Parlez au micro'
                       : audioResult
@@ -449,12 +484,12 @@ export default function PublicGuestbookPage({
                 </div>
 
                 {/* Boutons d'action enregistrement */}
-                <div className="flex items-center justify-center gap-3 pt-2">
+                <div className="flex items-center justify-center gap-3 pt-1">
                   {!isRecording && !audioResult && (
                     <button
                       type="button"
                       onClick={handleStartRecording}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-medium bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-xs"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-rose-600 text-white hover:bg-rose-500 transition-colors"
                     >
                       <Mic className="w-4 h-4" />
                       <span>Commencer l’enregistrement</span>
@@ -465,9 +500,9 @@ export default function PublicGuestbookPage({
                     <button
                       type="button"
                       onClick={handleStopRecording}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-medium bg-charcoal-900 text-white hover:bg-charcoal-800 transition-colors shadow-xs animate-pulse"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-white text-charcoal-900 hover:bg-stone-100 transition-colors"
                     >
-                      <Square className="w-3.5 h-3.5 fill-white" />
+                      <Square className="w-3.5 h-3.5 fill-charcoal-900" />
                       <span>Terminer le message</span>
                     </button>
                   )}
@@ -476,7 +511,7 @@ export default function PublicGuestbookPage({
                     <button
                       type="button"
                       onClick={handleResetAudio}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-white border border-stone-200 text-charcoal-700 hover:bg-stone-50 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-white/10 border border-white/15 text-white/80 hover:bg-white/15 transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Ré-enregistrer</span>
@@ -486,7 +521,7 @@ export default function PublicGuestbookPage({
 
                 {/* Lecteur de réécoute avant envoi */}
                 {audioResult && (
-                  <div className="pt-3 border-t border-stone-200/60">
+                  <div className="pt-3 border-t border-white/10">
                     <audio
                       ref={audioPreviewRef}
                       src={audioResult.base64}
@@ -505,7 +540,7 @@ export default function PublicGuestbookPage({
                           setIsPlayingPreview(true);
                         }
                       }}
-                      className="inline-flex items-center gap-2 text-xs font-medium text-rose-600 hover:text-rose-700"
+                      className="inline-flex items-center gap-2 text-xs font-medium text-rose-300 hover:text-rose-200"
                     >
                       <Volume2 className="w-4 h-4" />
                       <span>{isPlayingPreview ? 'Mettre en pause' : 'Réécouter votre vocal'}</span>
@@ -532,7 +567,12 @@ export default function PublicGuestbookPage({
             )}
           </button>
         </form>
+
+        <p className="text-center text-[11px] text-charcoal-400 pt-2">
+          Votre message est déposé directement dans le livre d'or des mariés.
+        </p>
       </div>
+      </main>
     </div>
   );
 }

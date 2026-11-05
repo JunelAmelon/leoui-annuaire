@@ -63,36 +63,30 @@ export function QRCodeCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-xs flex flex-col md:flex-row items-center gap-6">
-      {/* Aperçu du QR Code */}
-      <div className="w-36 h-36 rounded-xl bg-white border border-stone-200 p-2 shadow-xs flex items-center justify-center flex-shrink-0">
-        {qrDataUrl ? (
-          <img
-            src={qrDataUrl}
-            alt="QR Code Livre d'Or"
-            className="w-full h-full object-contain rounded-lg"
-          />
-        ) : (
-          <QrCode className="w-12 h-12 text-charcoal-300 animate-pulse" />
-        )}
-      </div>
+    <div className="relative rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-sm">
+      {/* Image de fond — table de mariage */}
+      <img
+        src="/mariage%20(1).jpg"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-[#1D0D12]/60" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#1D0D12]/80 via-[#2A141A]/55 to-[#2A141A]/35" />
 
-      {/* Informations & Actions */}
-      <div className="flex-1 min-w-0 text-center md:text-left space-y-3">
+      {/* Informations & Actions — texte sur l'image */}
+      <div className="relative flex-1 min-w-0 p-5 sm:p-8 space-y-4">
         <div>
-          <span className="text-[11px] font-medium tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-100">
-            Accès Invité Sans Compte
-          </span>
-          <h3 className="font-serif text-charcoal-900 text-lg font-normal mt-1.5">
-            QR Code & Cartons à poser sur les tables
+          <p className="label-xs text-rose-200 mb-1.5">Accès invité sans compte</p>
+          <h3 className="font-serif text-white text-2xl leading-snug">
+            QR Code & cartons de table
           </h3>
-          <p className="text-xs text-charcoal-500 leading-relaxed max-w-lg mt-1">
-            Vos invités scannent ce code avec leur téléphone (sans application ni création de compte) pour vous laisser un mot doux ou un message vocal.
+          <p className="text-sm text-white/75 leading-relaxed max-w-lg mt-2 font-light">
+            Vos invités scannent ce code avec leur téléphone — sans application ni création de compte — pour vous laisser un mot doux ou un message vocal.
           </p>
         </div>
 
         {/* Boutons d'action */}
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {/* Télécharger le carton de table PDF prêt à poser */}
           {onDownloadFlyer && (
             <button
@@ -109,7 +103,7 @@ export function QRCodeCard({
           <button
             type="button"
             onClick={handleDownloadQR}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-stone-100 text-charcoal-800 hover:bg-stone-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Image QR Code PNG</span>
@@ -119,16 +113,16 @@ export function QRCodeCard({
           <button
             type="button"
             onClick={handleCopyLink}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-white border border-stone-200 text-charcoal-700 hover:border-charcoal-400 hover:text-charcoal-900 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-colors"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-rose-600" />
+                <Check className="w-3.5 h-3.5 text-rose-300" />
                 <span>Lien copié !</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-charcoal-400" />
+                <Copy className="w-3.5 h-3.5 text-white/60" />
                 <span>Copier le lien</span>
               </>
             )}
@@ -139,12 +133,25 @@ export function QRCodeCard({
             href={publicUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-charcoal-500 hover:text-charcoal-800 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-white/70 hover:text-white transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>Vue invité</span>
           </a>
         </div>
+      </div>
+
+      {/* QR Code — droite desktop / centré mobile */}
+      <div className="relative flex w-full md:w-44 flex-shrink-0 items-center justify-center p-5 pt-0 md:pt-5">
+        {qrDataUrl ? (
+          <img
+            src={qrDataUrl}
+            alt="QR Code Livre d'Or"
+            className="w-28 h-28 md:w-32 md:h-32 rounded-xl border-4 border-white shadow-lg"
+          />
+        ) : (
+          <QrCode className="w-10 h-10 text-white/40 animate-pulse" />
+        )}
       </div>
     </div>
   );
