@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 import { getActiveSubscription, getUserSubscriptions } from '@/lib/subscription-manager';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get('authorization') || '';

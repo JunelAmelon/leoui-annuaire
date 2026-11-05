@@ -34,6 +34,43 @@ service cloud.firestore {
       allow write: if isSignedIn() && canWriteVenue() || isAdmin();
     }
 
+    // --- Livre d'Or (Sprint Novembre 2026 - Adnane) ---
+    match /guestbooks/{eventId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.owner_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.event_id == eventId
+        || isAdmin();
+      allow update: if isSignedIn()
+        && resource.data.owner_id == request.auth.uid
+        && request.resource.data.owner_id == resource.data.owner_id
+        && request.resource.data.event_id == resource.data.event_id
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /guestbook_entries/{entryId} {
+      allow read: if isSignedIn() && (
+        resource.data.owner_id == request.auth.uid ||
+        get(/databases/$(database)/documents/guestbooks/$(resource.data.guestbook_id)).data.owner_id == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isSignedIn()
+        && (
+          resource.data.owner_id == request.auth.uid ||
+          get(/databases/$(database)/documents/guestbooks/$(resource.data.guestbook_id)).data.owner_id == request.auth.uid
+        )
+        && !hasAny(['guestbook_id', 'event_id', 'owner_id', 'type', 'audio_path', 'created_at'])
+        || isAdmin();
+      allow delete: if isSignedIn() && (
+        resource.data.owner_id == request.auth.uid ||
+        get(/databases/$(database)/documents/guestbooks/$(resource.data.guestbook_id)).data.owner_id == request.auth.uid ||
+        isAdmin()
+      );
+      // Écriture invité : uniquement via API route (adminDb) avec validation du public_token
+      allow create: if false;
+    }
+
     // Messagerie Market — lecture directe temps réel, réservée aux participants.
     // TOUTES les écritures passent par /api/market/* (Admin SDK, qui ignore les règles).
     match /market_conversations/{convId} {
@@ -53,12 +90,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Default fallback. Les collections market_* sont volontairement exclues :
-    // aucun accès direct client, tout passe par /api/market/* (Admin SDK, qui
-    // contourne les règles). Les règles s'additionnent (OR) : il ne faut donc
-    // surtout pas laisser un wildcard global autoriser market_*.
+    // Default fallback. Les collections market_*, guestbooks, guestbook_entries,
+    // clients et events sont volontairement exclues : les règles s'additionnent (OR),
+    // il ne faut donc pas laisser le wildcard global court-circuiter leurs règles dédiées.
     match /{collection}/{doc=**} {
-      allow read, write: if isSignedIn() && !collection.matches('market_.*');
+      allow read, write: if isSignedIn()
+        && !collection.matches('market_.*|guestbooks|guestbook_entries|clients|events');
     }
   }
 }
