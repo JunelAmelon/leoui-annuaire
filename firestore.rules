@@ -13,32 +13,89 @@ service cloud.firestore {
       return request.resource.data.diff(resource == null ? {} : resource.data).changedKeys().hasAny(keys);
     }
 
+    // La liaison au lieu partenaire (venue_vendor_id non null, venue_address,
+    // venue_set_at) ne se crée que via /api/client/venue — sinon un client
+    // pourrait s'attribuer le lieu d'un prestataire sans son accord.
+    // Le client peut écrire librement venue/reception_venue et retirer un lien (null).
+    function canWriteVenue() {
+      return !hasAny(['venue_address', 'venue_set_at'])
+        && (!hasAny(['venue_vendor_id'])
+            || request.resource.data.venue_vendor_id == null
+            || (resource != null && request.resource.data.venue_vendor_id == resource.data.venue_vendor_id));
+    }
+
     match /clients/{clientId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
+      allow write: if isSignedIn() && canWriteVenue() || isAdmin();
     }
 
     match /events/{eventId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && !hasAny(['venue', 'reception_venue', 'venue_vendor_id', 'venue_address', 'venue_set_at']) || isAdmin();
+      allow write: if isSignedIn() && canWriteVenue() || isAdmin();
     }
 
     // --- Livre d'Or (Sprint Novembre 2026 - Adnane) ---
     match /guestbooks/{eventId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isAdmin());
+      allow read: if isSignedIn() && (resource == null || resource.data.owner_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.event_id == eventId
+        || isAdmin();
+      allow update: if isSignedIn()
+        && resource.data.owner_id == request.auth.uid
+        && request.resource.data.owner_id == resource.data.owner_id
+        && request.resource.data.event_id == resource.data.event_id
+        || isAdmin();
       allow delete: if isAdmin();
     }
 
     match /guestbook_entries/{entryId} {
-      allow read: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isAdmin());
-      allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isAdmin());
+      allow read: if isSignedIn() && (
+        resource.data.owner_id == request.auth.uid ||
+        get(/databases/$(database)/documents/guestbooks/$(resource.data.guestbook_id)).data.owner_id == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isSignedIn()
+        && (
+          resource.data.owner_id == request.auth.uid ||
+          get(/databases/$(database)/documents/guestbooks/$(resource.data.guestbook_id)).data.owner_id == request.auth.uid
+        )
+        && !hasAny(['guestbook_id', 'event_id', 'owner_id', 'type', 'audio_path', 'created_at'])
+        || isAdmin();
+      allow delete: if isSignedIn() && (
+        resource.data.owner_id == request.auth.uid ||
+        get(/databases/$(database)/documents/guestbooks/$(resource.data.guestbook_id)).data.owner_id == request.auth.uid ||
+        isAdmin()
+      );
       // Écriture invité : uniquement via API route (adminDb) avec validation du public_token
+      allow create: if false;
     }
 
-    // Default fallback
-    match /{document=**} {
-      allow read, write: if isSignedIn();
+    // Messagerie Market — lecture directe temps réel, réservée aux participants.
+    // TOUTES les écritures passent par /api/market/* (Admin SDK, qui ignore les règles).
+    match /market_conversations/{convId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participant_ids;
+      allow write: if false;
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/market_conversations/$(convId)).data.participant_ids;
+        allow write: if false;
+      }
+    }
+
+    // Présence : « en ligne / vu il y a… », lisible par tout utilisateur connecté.
+    match /market_presence/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Default fallback. Les collections market_*, guestbooks, guestbook_entries,
+    // clients et events sont volontairement exclues : les règles s'additionnent (OR),
+    // il ne faut donc pas laisser le wildcard global court-circuiter leurs règles dédiées.
+    match /{collection}/{doc=**} {
+      allow read, write: if isSignedIn()
+        && !collection.matches('market_.*|guestbooks|guestbook_entries|clients|events');
     }
   }
 }

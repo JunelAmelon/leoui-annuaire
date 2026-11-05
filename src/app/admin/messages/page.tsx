@@ -36,6 +36,8 @@ export default function AdminMessagesPage() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(5);
+  useEffect(() => setVisibleCount(5), [search]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -142,6 +144,8 @@ export default function AdminMessagesPage() {
   const filtered = conversations.filter((c) =>
     (c.client_name || '').toLowerCase().includes(search.toLowerCase())
   );
+  // Affichage progressif — 5 conversations visibles, bouton "Voir plus"
+  const visible = filtered.slice(0, visibleCount);
 
   return (
     <div className="space-y-6">
@@ -173,7 +177,7 @@ export default function AdminMessagesPage() {
               ) : filtered.length === 0 ? (
                 <p className="text-center p-4 text-charcoal-400 text-sm">Aucune conversation</p>
               ) : (
-                filtered.map(conv => (
+                visible.map(conv => (
                   <div key={conv.id} onClick={() => selectConversation(conv)}
                     className={`group p-3.5 border-b border-charcoal-50 cursor-pointer transition-colors ${
                       selectedConv?.id === conv.id
@@ -196,6 +200,14 @@ export default function AdminMessagesPage() {
                     </div>
                   </div>
                 ))
+              )}
+              {!loading && filtered.length > visibleCount && (
+                <button
+                  onClick={() => setVisibleCount(c => c + 5)}
+                  className="w-full py-2.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  Voir plus ({filtered.length - visibleCount} restantes)
+                </button>
               )}
             </div>
           </div>

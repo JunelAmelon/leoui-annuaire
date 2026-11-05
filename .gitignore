@@ -60,3 +60,6 @@ out
 
 # vercel
 .vercel
+
+# devin skills (local only, never pushed)
+.devin/

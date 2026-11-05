@@ -12,6 +12,7 @@ import { VENDOR_CATEGORIES, categoryMatchValues } from '@/lib/vendor-categories'
 import CategoryPicker from '@/components/CategoryPicker';
 import VendorSearchAutocomplete from '@/components/VendorSearchAutocomplete';
 import CityAutocompleteInput, { LocationSuggestion } from '@/components/CityAutocompleteInput';
+import TitleDecoration from '@/components/market/TitleDecoration';
 
 const bounceXKeyframes = `
 @keyframes bounce-x {
@@ -218,15 +219,16 @@ function VendorsPageContent() {
       <style>{bounceXKeyframes}</style>
       <Header />
 
-      {/* HERO — same style as wedding planner page */}
-      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '380px' }}>
+      {/* HERO — même dégradé et style calligraphique */}
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '380px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/32291227/pexels-photo-32291227.jpeg"
             alt="Prestataires de mariage"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
@@ -236,25 +238,42 @@ function VendorsPageContent() {
               <span>/</span>
               <span className="text-white/90">{selectedCategory === 'Tous' ? 'Tous les prestataires' : selectedCategory}</span>
             </div>
-            <h1 className="font-display text-display-md text-white mb-3">
-              {selectedCategory === 'Tous' ? 'Prestataires de mariage' : selectedCategory + ' de mariage'}
+            <h1 className="font-serif text-white mb-3" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)', fontWeight: 400, lineHeight: 1.15 }}>
+              {selectedCategory === 'Tous' ? (
+                <>
+                  Prestataires de{' '}
+                  <span className="relative inline-block">
+                    mariage
+                    <TitleDecoration />
+                  </span>
+                </>
+              ) : (
+                <>
+                  {selectedCategory} de{' '}
+                  <span className="relative inline-block">
+                    mariage
+                    <TitleDecoration />
+                  </span>
+                </>
+              )}
             </h1>
-            <p className="text-body-md text-white/80 mb-7 max-w-lg">
+            <p className="text-white/85 mb-7 max-w-lg text-sm sm:text-base leading-relaxed font-light">
               Choisir le bon prestataire est essentiel pour capturer l'essence de votre union. Explorez notre sélection et trouvez celui qui saura mettre en lumière votre amour unique.
             </p>
-            {/* Search bar matching wedding planner style */}
-            <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-lg border border-white/15">
-              <VendorSearchAutocomplete
-                placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
-                value={searchQuery}
-                onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
-                dropdownPosition="top"
-                maxHeight="max-h-48"
-                className="flex-1"
-                inputClassName="flex items-center bg-white/10 rounded-xl"
-                showIcon
-                dark
-              />
+            {/* Search bar matching LeOui Market style (pilule blanche slim) */}
+            <div className="flex flex-col sm:flex-row items-stretch bg-white rounded-2xl sm:rounded-full p-1.5 shadow-soft-xl max-w-2xl">
+              <div className="flex items-center flex-[1.4] px-4 border-b sm:border-b-0 sm:border-r border-charcoal-100">
+                <VendorSearchAutocomplete
+                  placeholder={selectedCategory === 'Tous' ? 'Photographe, traiteur...' : selectedCategory + '...'}
+                  value={searchQuery}
+                  onValueChange={v => { setSearchQuery(v); setCurrentPage(1); }}
+                  dropdownPosition="top"
+                  maxHeight="max-h-48"
+                  className="w-full"
+                  inputClassName="flex items-center bg-transparent !border-transparent py-2.5 text-sm text-charcoal-900 placeholder-charcoal-400 focus:!ring-0"
+                  showIcon
+                />
+              </div>
               <CityAutocompleteInput
                 value={cityFilter}
                 onChange={handleCityChange}
@@ -262,13 +281,16 @@ function VendorsPageContent() {
                 types="all"
                 dropdownPosition="top"
                 maxHeight="max-h-48"
-                placeholder="Où ?"
-                dark
+                placeholder="Où ? Ville, département..."
+                icon
                 showPostalCode={false}
-                inputClassName="py-2.5"
                 className="flex-1"
+                inputClassName="!border-transparent !bg-transparent focus:!ring-0 focus:!border-transparent py-2.5"
               />
-              <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 text-sm transition-colors">
+              <button
+                onClick={() => setCurrentPage(1)}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-2.5 rounded-xl sm:rounded-full text-sm transition-colors flex-shrink-0"
+              >
                 Rechercher
               </button>
             </div>

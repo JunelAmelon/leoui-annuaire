@@ -37,6 +37,7 @@ export default function SignupPage() {
     if (n && n.startsWith('/')) return decodeURIComponent(n);
     return '/espace-client';
   })();
+  const fromMarket = nextUrl.startsWith('/market') || nextUrl.startsWith('/app/market');
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
   const hasRedirectedRef = useRef(false);
 
@@ -89,10 +90,14 @@ export default function SignupPage() {
     try {
       hasRedirectedRef.current = true;
       await signUp({
-        email, password, name, partner, role: 'client',
-        eventDate: weddingDate,
-        guestCount: Number(guestCount) || 0,
-        budget: Number(budget) || 0,
+        email, password, name, role: 'client',
+        marketOnly: fromMarket,
+        ...(fromMarket ? {} : {
+          partner,
+          eventDate: weddingDate,
+          guestCount: Number(guestCount) || 0,
+          budget: Number(budget) || 0,
+        }),
         address: { street, city, postalCode, country }
       });
       sendEmail({
@@ -180,11 +185,18 @@ export default function SignupPage() {
         </div>
 
         <div className="max-w-md w-full mx-auto">
+          {fromMarket && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
+              LeOui Market
+            </span>
+          )}
           <h1 className="font-display text-[2rem] leading-tight text-charcoal-900 mb-2">
             Créez votre compte
           </h1>
           <p className="text-charcoal-500 text-sm mb-7">
-            Rejoignez des milliers de couples qui planifient leur mariage de rêve.
+            {fromMarket
+              ? 'Quelques informations suffisent pour acheter ou vendre sur LeOui Market. Aucun projet de mariage requis.'
+              : 'Rejoignez des milliers de couples qui planifient leur mariage de rêve.'}
           </p>
 
           {error && (
@@ -195,9 +207,9 @@ export default function SignupPage() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Names row */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className={fromMarket ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-2 gap-3'}>
               <div>
-                <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Votre prénom</label>
+                <label className="block text-xs font-medium text-charcoal-700 mb-1.5">{fromMarket ? 'Prénom et nom' : 'Votre prénom'}</label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
                   <input
@@ -210,7 +222,7 @@ export default function SignupPage() {
                   />
                 </div>
               </div>
-              <div>
+              {!fromMarket && <div>
                 <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Prénom partenaire</label>
                 <div className="relative">
                   <Heart className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
@@ -222,7 +234,7 @@ export default function SignupPage() {
                     className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
                   />
                 </div>
-              </div>
+              </div>}
             </div>
 
             <div>
@@ -240,7 +252,7 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div>
+            {!fromMarket && <div>
               <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Date de mariage prévue</label>
               <div className="relative">
                 <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
@@ -251,9 +263,9 @@ export default function SignupPage() {
                   className="w-full pl-10 pr-3 py-3 border border-charcoal-200 text-sm bg-charcoal-50 focus:bg-white focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all text-charcoal-700"
                 />
               </div>
-            </div>
+            </div>}
 
-            <div className="grid grid-cols-2 gap-3">
+            {!fromMarket && <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-charcoal-700 mb-1.5">Nombre d'invités provisoire</label>
                 <div className="relative">
@@ -282,7 +294,7 @@ export default function SignupPage() {
                   />
                 </div>
               </div>
-            </div>
+            </div>}
 
             {/* Address section */}
             <div className="space-y-3 pt-1">

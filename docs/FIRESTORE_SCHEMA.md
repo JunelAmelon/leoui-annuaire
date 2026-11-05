@@ -202,10 +202,35 @@ actor_id, actor_role, action, entity_type, entity_id,
 before_hash / details, at
 ```
 
-### Phase 2 (définis maintenant, pas codés au sprint)
-`market_conversations/{id}` : listing_id, order_id, buyer_id, seller_id, last_message_at
-`market_messages/{id}` : conversation_id, sender_id, body, attachments, read_at
-`market_reports/{id}` : listing_id, reporter_id, reason, status
+### Messagerie (implémentée)
+Écritures : uniquement via `/api/market/*` (Admin SDK). Lecture temps réel côté client
+réservée aux participants par règles Firestore.
+
+`market_conversations/{id}` — id déterministe : `{buyer}_{seller}_{listing}` ou
+`{uidA}_{uidB}_profile` (paire triée, sans annonce)
+```
+buyer_id, seller_id, participant_ids[2], participants { uid: { display_name, photo_url } },
+listing_id | null, listing_snapshot { title, image, price, slug } | null,
+last_message { message_id, sender_id, preview, at } | null, last_message_at,
+unread { uid: n }, last_read_at { uid: iso }   // accusés « vu »
+notified_at { uid: iso }                       // anti-spam email (15 min)
+blocked_by: uid | null, created_at, updated_at
+```
+`market_conversations/{id}/messages/{messageId}` — messageId = `client_id` (idempotence)
+```
+conversation_id, sender_id, body (≤ 2000), attachments [{ url }] (≤ 3, Cloudinary du compte),
+created_at, edited_at | null, deleted_at | null   // supprimé = body '' + attachments []
+```
+Modification / suppression : auteur uniquement, 10 min après `created_at` (vérifié serveur).
+
+`market_presence/{uid}` : `{ user_id, last_seen_at }` — « en ligne » si < 90 s
+`market_blocks/{blocker}_{blocked}` : `{ blocker_id, blocked_id, created_at }`
+`market_rate_limits/{uid}_{bucket}` : `{ window_start, count }` (30 msg/min, 10 nouvelles conv./h)
+
+### Signalements
+`market_reports/{id}` : `type: 'listing' | 'conversation'`, reporter_id, reason, status,
+comment ; pour `conversation` : conversation_id, reported_user_id, `evidence[]` (copie des
+30 derniers messages, conservée même si l'auteur supprime ensuite).
 
 ### Index composites (Marketplace) — `firestore.indexes.json`
 - `market_listings` : `status` + `published_at` (desc)

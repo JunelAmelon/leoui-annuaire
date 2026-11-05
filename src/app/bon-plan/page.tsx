@@ -8,6 +8,7 @@ import { VENDOR_CATEGORIES, VENDOR_CATEGORY_GROUPS } from '@/lib/vendor-categori
 import CityAutocompleteInput, { LocationSuggestion } from '@/components/CityAutocompleteInput';
 import { toast } from 'sonner';
 import { Copy, Check, MapPin, ArrowRight, Clock, Tag, ChevronDown } from 'lucide-react';
+import TitleDecoration from '@/components/market/TitleDecoration';
 
 const HERO_VIDEO = 'https://videos.pexels.com/video-files/6761618/6761618-hd_1920_1080_25fps.mp4';
 const HERO_POSTER = 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=1920';
@@ -127,7 +128,7 @@ export default function BonPlanPage() {
       <Header />
 
       {/* HERO */}
-      <section className="relative overflow-hidden" style={{ minHeight: '520px' }}>
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '520px' }}>
         <div className="absolute inset-0">
           <video
             className="w-full h-full object-cover"
@@ -139,7 +140,8 @@ export default function BonPlanPage() {
             playsInline
             preload="auto"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/85 via-charcoal-900/50 to-charcoal-900/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-14">
@@ -149,52 +151,55 @@ export default function BonPlanPage() {
               <span>/</span>
               <span className="text-white/90">Bon plans</span>
             </div>
-            <h1 className="font-display text-display-md text-white mb-3">
-              Bons plans mariage
+            <h1 className="font-serif text-white mb-3" style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)', fontWeight: 400, lineHeight: 1.15 }}>
+              Bons plans de{' '}
+              <span className="relative inline-block">
+                mariage
+                <TitleDecoration />
+              </span>
             </h1>
-            <p className="text-body-md text-white/80 mb-7 max-w-lg">
+            <p className="text-white/85 mb-7 max-w-lg text-sm sm:text-base leading-relaxed font-light">
               Codes promo et offres exclusives des meilleurs prestataires pour votre mariage.
             </p>
 
-            {/* Search bar */}
-            <div className="flex flex-col sm:flex-row gap-2 bg-black/20 rounded-2xl p-2 max-w-2xl border border-white/15">
-              <div className="relative flex-1">
+            {/* Search bar matching LeOui Market style (pilule blanche slim) */}
+            <div className="flex flex-col sm:flex-row items-stretch bg-white rounded-2xl sm:rounded-full p-1.5 shadow-soft-xl max-w-2xl">
+              <div className="relative flex-[1.4] border-b sm:border-b-0 sm:border-r border-charcoal-100 flex items-center px-4">
+                <Tag className="w-4 h-4 text-charcoal-400 flex-shrink-0 mr-2" />
                 <select
                   value={activeCategory}
                   onChange={e => setActiveCategory(e.target.value)}
-                  className="w-full h-12 px-4 text-sm bg-white/10 text-white rounded-xl outline-none focus:bg-white/15 border border-transparent focus:border-white/20 appearance-none"
+                  className="w-full py-2.5 text-sm bg-transparent text-charcoal-900 outline-none border-none focus:ring-0 appearance-none cursor-pointer pr-8"
                   style={{ backgroundImage: 'none' }}
                 >
-                  <option value="Toutes les catégories" className="text-charcoal-900">Toutes les catégories</option>
+                  <option value="Toutes les catégories">Toutes les catégories</option>
                   {VENDOR_CATEGORY_GROUPS.map(group => (
-                    <optgroup key={group.label} label={group.label} className="text-charcoal-900">
-                      {group.items.map(item => <option key={item} value={item} className="text-charcoal-900">{item}</option>)}
+                    <optgroup key={group.label} label={group.label}>
+                      {group.items.map(item => <option key={item} value={item}>{item}</option>)}
                     </optgroup>
                   ))}
-                  <option value="Autres" className="text-charcoal-900">Autres</option>
+                  <option value="Autres">Autres</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70 pointer-events-none" />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none" />
               </div>
-              <div className="flex-1">
-                <CityAutocompleteInput
-                  value={cityFilter}
-                  onChange={setCityFilter}
-                  onSelectLocation={(loc: LocationSuggestion) => setCityFilter(loc.name)}
-                  types="all"
-                  dropdownPosition="top"
-                  maxHeight="max-h-48"
-                  placeholder="Ville, région, département..."
-                  dark
-                  showPostalCode={false}
-                  inputClassName="py-3"
-                  className="w-full"
-                />
-              </div>
+              <CityAutocompleteInput
+                value={cityFilter}
+                onChange={setCityFilter}
+                onSelectLocation={(loc: LocationSuggestion) => setCityFilter(loc.name)}
+                types="all"
+                dropdownPosition="top"
+                maxHeight="max-h-56"
+                placeholder="Où ? Ville, région..."
+                icon
+                showPostalCode={false}
+                className="flex-1"
+                inputClassName="!border-transparent !bg-transparent focus:!ring-0 focus:!border-transparent py-2.5"
+              />
               <button
-                onClick={() => { setActiveCategory('Toutes les catégories'); setCityFilter(''); }}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-5 py-3 rounded-xl text-sm transition-colors"
+                type="button"
+                className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-2.5 rounded-xl sm:rounded-full text-sm transition-colors flex-shrink-0"
               >
-                Effacer
+                Rechercher
               </button>
             </div>
           </div>

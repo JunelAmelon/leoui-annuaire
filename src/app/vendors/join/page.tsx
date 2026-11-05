@@ -16,6 +16,7 @@ import {
   Phone, MapPin, HelpCircle, ChevronDown, ChevronUp, X,
   CheckCircle2, Zap, Rocket
 } from 'lucide-react';
+import TitleDecoration from '@/components/market/TitleDecoration';
 
 // --- DATA CONSTANTS ---
 
@@ -141,14 +142,15 @@ export default function VendorJoinPage() {
       <Header />
 
       {/* HERO — Harmonized Style */}
-      <section className="relative overflow-hidden bg-rose-600" style={{ minHeight: '580px' }}>
+      <section className="relative overflow-hidden bg-charcoal-900" style={{ minHeight: '580px' }}>
         <div className="absolute inset-0">
           <img
             src="https://images.pexels.com/photos/31953104/pexels-photo-31953104.jpeg?auto=compress&cs=tinysrgb&w=1920"
             alt="Espace prestataire"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900/90 via-charcoal-900/70 to-charcoal-900/45" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
@@ -161,13 +163,17 @@ export default function VendorJoinPage() {
             </div>
 
             {/* Title */}
-            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl text-white mb-3 leading-tight">
-              Développez votre activité
+            <h1 className="font-serif text-white mb-3" style={{ fontSize: 'clamp(2.1rem, 4vw, 3.5rem)', fontWeight: 400, lineHeight: 1.15 }}>
+              Développez votre activité de{' '}
+              <span className="relative inline-block">
+                mariage
+                <TitleDecoration />
+              </span>
               <span className="block italic text-champagne-300 mt-1">avec LeOui.net</span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg text-white/80 mb-6 max-w-xl leading-relaxed">
+            <p className="text-white/85 text-base sm:text-lg mb-6 max-w-xl leading-relaxed font-light">
               Rejoignez la communauté de professionnels du mariage. Recevez des demandes qualifiées et gérez votre activité depuis un seul espace.
             </p>
 

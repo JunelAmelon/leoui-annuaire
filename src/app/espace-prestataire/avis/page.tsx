@@ -197,16 +197,13 @@ export default function AvisPage() {
           review_id: null,
         });
         const link = `${window.location.origin}/avis/${user.uid}?token=${encodeURIComponent(token)}`;
-        await fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: email,
-            subject: `${vendorName} vous invite à laisser votre avis`,
-            html: renderReviewInvitationEmail({ vendorName, link }),
-            text: `Bonjour, ${vendorName} vous invite à laisser un avis sur LeOui : ${link}`,
-          }),
+        const ok = await sendEmail({
+          to: email,
+          subject: `${vendorName} vous invite à laisser votre avis`,
+          html: renderReviewInvitationEmail({ vendorName, link }),
+          text: `Bonjour, ${vendorName} vous invite à laisser un avis sur LeOui : ${link}`,
         });
+        if (!ok) throw new Error('send failed');
         sent++;
       } catch {
         failed++;
