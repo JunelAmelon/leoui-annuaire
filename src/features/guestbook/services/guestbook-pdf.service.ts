@@ -113,8 +113,17 @@ export class GuestbookPdfService {
       const entry = visibleEntries[i];
       const isAudio = entry.type === 'audio';
 
-      // Estimation de la hauteur du bloc
-      const estimatedHeight = isAudio ? 42 : 38;
+      // Calcul dynamique de la hauteur du bloc selon le type et la longueur du texte
+      let estimatedHeight = isAudio ? 44 : 32;
+      let textLines: string[] = [];
+      if (!isAudio) {
+        doc.setFont('times', 'italic');
+        doc.setFontSize(10.5);
+        const bodyText = `« ${entry.body || ''} »`;
+        const splitText = doc.splitTextToSize(bodyText, contentWidth - 10);
+        textLines = splitText.slice(0, 8);
+        estimatedHeight = Math.max(30, 14 + textLines.length * 5.2 + 4);
+      }
 
       if (currentY + estimatedHeight > pageHeight - margin - 15) {
         addNewPage();
@@ -198,10 +207,7 @@ export class GuestbookPdfService {
         doc.setFont('times', 'italic');
         doc.setFontSize(10.5);
         doc.setTextColor(50, 50, 50);
-
-        const bodyText = `« ${entry.body || ''} »`;
-        const splitText = doc.splitTextToSize(bodyText, contentWidth - 10);
-        doc.text(splitText.slice(0, 3), margin + 5, currentY + 15);
+        doc.text(textLines, margin + 5, currentY + 14);
       }
 
       currentY += estimatedHeight;

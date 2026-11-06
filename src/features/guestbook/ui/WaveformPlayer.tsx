@@ -97,9 +97,18 @@ export function WaveformPlayer({
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!src) return;
+    const ext = src.includes('.mp3')
+      ? 'mp3'
+      : src.includes('.m4a')
+      ? 'm4a'
+      : src.includes('.wav')
+      ? 'wav'
+      : src.includes('.aac')
+      ? 'aac'
+      : 'webm';
     const a = document.createElement('a');
     a.href = src;
-    a.download = `Vocal-${(guestName || 'invite').replace(/\s+/g, '-').toLowerCase()}.webm`;
+    a.download = `Vocal-${(guestName || 'invite').replace(/\s+/g, '-').toLowerCase()}.${ext}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -109,9 +118,23 @@ export function WaveformPlayer({
 
   if (unavailable) {
     return (
-      <div className="bg-stone-50/90 border border-stone-200/70 rounded-xl p-3 flex items-center gap-2 text-xs text-charcoal-500">
-        <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0" />
-        <span>Audio indisponible : ce message vocal ne peut pas être lu.</span>
+      <div className="bg-stone-50/90 border border-stone-200/70 rounded-xl p-3 flex items-center justify-between gap-2 text-xs text-charcoal-500">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0" />
+          <span>Audio indisponible : ce message vocal ne peut pas être lu.</span>
+        </div>
+        {hasError && (
+          <button
+            type="button"
+            onClick={() => {
+              setHasError(false);
+              if (audioRef.current) audioRef.current.load();
+            }}
+            className="text-rose-600 hover:text-rose-700 font-medium underline flex-shrink-0 text-[11px]"
+          >
+            Réessayer
+          </button>
+        )}
       </div>
     );
   }
@@ -128,7 +151,12 @@ export function WaveformPlayer({
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           onEnded={handleEnded}
-          onError={() => { setIsPlaying(false); setHasError(true); }}
+          onError={(e) => {
+            const err = (e.currentTarget as HTMLAudioElement)?.error;
+            if (err && err.code === 1) return; // MEDIA_ERR_ABORTED
+            setIsPlaying(false);
+            setHasError(true);
+          }}
           preload="metadata"
         />
       )}

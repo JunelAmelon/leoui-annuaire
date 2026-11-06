@@ -138,6 +138,11 @@ export default function PublicGuestbookPage({
 
   // Recommencer l'enregistrement
   const handleResetAudio = () => {
+    if (audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      audioPreviewRef.current.currentTime = 0;
+    }
+    setIsPlayingPreview(false);
     if (recorderRef.current) {
       recorderRef.current.cancel();
     }
@@ -557,8 +562,11 @@ export default function PublicGuestbookPage({
                           audioPreviewRef.current.pause();
                           setIsPlayingPreview(false);
                         } else {
-                          audioPreviewRef.current.play();
-                          setIsPlayingPreview(true);
+                          audioPreviewRef.current.play().then(() => {
+                            setIsPlayingPreview(true);
+                          }).catch(() => {
+                            setIsPlayingPreview(false);
+                          });
                         }
                       }}
                       className="inline-flex items-center gap-2 text-xs font-medium text-rose-300 hover:text-rose-200"
