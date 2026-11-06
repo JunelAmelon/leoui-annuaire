@@ -215,15 +215,16 @@ export class GuestbookService {
       .slice(0, 100)
       .map((v) => Math.max(0, Math.min(1, Number(v) || 0)));
 
-    // Résolution de la source audio : data URI directement lisible si compacte (< 750 Ko), sinon chemin Storage
+    // Source audio : data URI compacte (< 750 Ko) ou URL sécurisée de NOTRE compte Cloudinary.
+    // Jamais de chemin fictif : un audio non lisible est refusé plutôt qu'enregistré.
     const isDataAudio = /^data:audio\/[a-zA-Z0-9.+-]+;?(?:codecs=[^;]+)?;base64,/.test(
       input.audio_base64
     );
-    const isHttpsUrl = /^https:\/\//.test(input.audio_base64);
-    const audioPath =
-      (isDataAudio && input.audio_base64.length <= 750_000) || isHttpsUrl
-        ? input.audio_base64
-        : `guestbooks/${guestbook.event_id}/audios/${crypto.randomUUID()}.${input.mime_type?.includes('mp4') ? 'm4a' : 'webm'}`;
+    const isCloudinaryUrl = /^https:\/\/res\.cloudinary\.com\//.test(input.audio_base64);
+    if (!(isDataAudio && input.audio_base64.length <= 750_000) && !isCloudinaryUrl) {
+      throw new Error('Le fichier audio n’a pas pu être traité. Veuillez réessayer.');
+    }
+    const audioPath = input.audio_base64;
 
     const entryId = await this.repository.addEntry({
       guestbook_id: guestbook.event_id,

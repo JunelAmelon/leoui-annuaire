@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AudioRecorder, type RecordingResult } from '@/features/guestbook/utils/audio-recorder';
 import { WaveformPlayer } from '@/features/guestbook/ui/WaveformPlayer';
+import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 
 interface GuestbookInfo {
@@ -168,6 +169,26 @@ export default function PublicGuestbookPage({
 
     setSubmitting(true);
     try {
+      // Vocal : envoi du fichier sur Cloudinary, seule l'URL sécurisée est transmise au serveur
+      let audioUrl = '';
+      if (mode === 'audio') {
+        try {
+          const ext = audioResult!.mimeType?.includes('mp4') ? 'm4a' : 'webm';
+          const file = new File([audioResult!.blob], `vocal-${Date.now()}.${ext}`, {
+            type: audioResult!.mimeType || 'audio/webm',
+          });
+          audioUrl = await uploadFile(file, 'guestbook-audios');
+        } catch (uploadErr) {
+          console.error('Téléversement audio impossible :', uploadErr);
+          // Repli : uniquement si l'enregistrement est assez léger pour être stocké directement
+          if (audioResult!.base64.length <= 750_000) {
+            audioUrl = audioResult!.base64;
+          } else {
+            throw new Error('Impossible d’envoyer votre vocal pour le moment. Vérifiez votre connexion et réessayez.');
+          }
+        }
+      }
+
       const payload =
         mode === 'text'
           ? {
@@ -180,7 +201,7 @@ export default function PublicGuestbookPage({
               guest_name: guestName.trim(),
               duration_sec: audioResult!.durationSec,
               waveform: audioResult!.waveform,
-              audio_base64: audioResult!.base64,
+              audio_base64: audioUrl,
               mime_type: audioResult!.mimeType,
               size_bytes: audioResult!.sizeBytes,
             };

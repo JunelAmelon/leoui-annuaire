@@ -200,6 +200,35 @@ test('GuestbookService - Unit Tests', async (t) => {
         }),
       /audio manquant/
     );
+
+    // URL Cloudinary de notre compte : acceptée telle quelle (vocaux volumineux)
+    const cloudUrl = 'https://res.cloudinary.com/demo/video/upload/v1/guestbook-audios/vocal.webm';
+    const cloudResult = await service.submitAudioEntry(gb.public_token, {
+      guest_name: 'Tonton Daniel',
+      duration_sec: 90,
+      waveform: [0.5],
+      audio_base64: cloudUrl,
+      mime_type: 'audio/webm',
+      size_bytes: 900_000,
+    });
+    const cloudEntry = await repository.getById(cloudResult.id);
+    assert.equal(cloudEntry?.audio_path, cloudUrl);
+
+    // Rejet : URL d'un autre domaine, ou data URI trop lourde (jamais de chemin fictif non lisible)
+    for (const bad of ['https://evil.example.com/a.webm', `data:audio/webm;base64,${'A'.repeat(800_000)}`]) {
+      await assert.rejects(
+        () =>
+          service.submitAudioEntry(gb.public_token, {
+            guest_name: 'Tonton Daniel',
+            duration_sec: 10,
+            waveform: [0.5],
+            audio_base64: bad,
+            mime_type: 'audio/webm',
+            size_bytes: 1000,
+          }),
+        /n’a pas pu être traité/
+      );
+    }
   });
 
   await t.test('6. getEntryForPublicToken - Scan de mini QR code du livre imprimé', async () => {

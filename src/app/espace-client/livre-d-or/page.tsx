@@ -217,7 +217,18 @@ export default function CoupleGuestbookPage() {
   const totalFavorites = entries.filter((e) => e.favorite && !e.hidden).length;
   const totalHidden = entries.filter((e) => e.hidden).length;
 
-  // Gestion du lecteur Podcast
+  // Gestion du lecteur Podcast : une seule lecture à la fois
+  useEffect(() => {
+    const handleStopOther = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string }>).detail;
+      if (detail?.id !== 'podcast' && podcastAudioRef.current && !podcastAudioRef.current.paused) {
+        podcastAudioRef.current.pause();
+        setIsPodcastPlaying(false);
+      }
+    };
+    window.addEventListener('guestbook-stop-other-audios', handleStopOther);
+    return () => window.removeEventListener('guestbook-stop-other-audios', handleStopOther);
+  }, []);
   const currentPodcastTrack = podcastIndex !== null ? audioEntries[podcastIndex] : null;
 
   const startPodcast = (index = 0) => {
@@ -225,6 +236,7 @@ export default function CoupleGuestbookPage() {
       toast.info('Aucun message vocal disponible pour la lecture continue.');
       return;
     }
+    window.dispatchEvent(new CustomEvent('guestbook-stop-other-audios', { detail: { id: 'podcast' } }));
     setPodcastIndex(index);
     setIsPodcastPlaying(true);
   };
