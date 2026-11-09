@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, CalendarDays, Users, CheckSquare,
   MessageSquare, FileText, Image, Bell,
-  Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator, Sparkles, BookHeart,
+  Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator, Sparkles, BookHeart, Newspaper,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
@@ -26,6 +26,7 @@ const NAV = [
   { href: '/espace-client/documents',    label: 'Documents',       icon: FileText },
   { href: '/espace-client/galerie',      label: 'Galerie',         icon: Image },
   { href: '/espace-client/livre-d-or',   label: 'Livre d’or',      icon: BookHeart },
+  { href: '/espace-client/gazette',      label: 'Gazette',         icon: Newspaper },
   { href: '/espace-client/calculatrice', label: 'Budget',          icon: Calculator },
   { href: '/espace-client/a-venir',      label: 'À venir',         icon: Sparkles },
 ];

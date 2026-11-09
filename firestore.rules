@@ -49,6 +49,21 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // --- Gazette des mariés (Sprint Novembre 2026 - Adnane) ---
+    match /gazettes/{eventId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.owner_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.event_id == eventId
+        || isAdmin();
+      allow update: if isSignedIn()
+        && resource.data.owner_id == request.auth.uid
+        && request.resource.data.owner_id == resource.data.owner_id
+        && request.resource.data.event_id == resource.data.event_id
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
     match /guestbook_entries/{entryId} {
       allow read: if isSignedIn() && (
         resource.data.owner_id == request.auth.uid ||
