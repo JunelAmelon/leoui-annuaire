@@ -71,3 +71,4 @@ export class FirestoreGazetteRepository implements IGazetteRepository {
     await deleteDoc(docRef);
   }
 }
+

@@ -132,3 +132,4 @@ export const GAZETTE_THEMES: Record<GazetteTheme, { label: string; description: 
     fontClass: 'font-serif',
   },
 };
+

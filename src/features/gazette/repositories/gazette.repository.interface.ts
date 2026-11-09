@@ -26,3 +26,4 @@ export interface IGazetteRepository {
    */
   delete(eventId: string): Promise<void>;
 }
+

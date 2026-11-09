@@ -245,3 +245,4 @@ export function GazetteMetadataModal({
     </div>
   );
 }
+

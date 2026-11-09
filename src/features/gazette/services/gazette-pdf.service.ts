@@ -483,3 +483,4 @@ export class GazettePdfService {
     doc.save(`${cleanTitle}_A4_Printable.pdf`);
   }
 }
+

@@ -61,3 +61,4 @@ export class AdminGazetteRepository implements IGazetteRepository {
     await adminDb.collection(GAZETTES_COLLECTION).doc(eventId).delete();
   }
 }
+
