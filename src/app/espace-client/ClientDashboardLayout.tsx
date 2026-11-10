@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, CalendarDays, Users, CheckSquare,
   MessageSquare, FileText, Image, Bell,
-  Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator, Sparkles, BookHeart,
+  Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator, Sparkles, BookHeart, Armchair,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
@@ -22,6 +22,7 @@ const NAV = [
   { href: '/espace-client/prestataires', label: 'Prestataires',    icon: Users, tourId: 'vendors' },
   { href: '/espace-client/checklist',    label: 'Checklist',       icon: CheckSquare },
   { href: '/espace-client/invites',      label: 'Invités',         icon: UserCheck },
+  { href: '/espace-client/plan-de-table', label: 'Plan de table',  icon: Armchair },
   { href: '/espace-client/messages',     label: 'Messages',        icon: MessageSquare, tourId: 'messaging' },
   { href: '/espace-client/documents',    label: 'Documents',       icon: FileText },
   { href: '/espace-client/galerie',      label: 'Galerie',         icon: Image },

@@ -250,7 +250,8 @@ Un doc par mariage (1 canevas, ≤50 tables / ~300 chaises → tient dans 1 Mo).
 event_id, owner_id,
 tables: [{
   id, label, shape: 'round' | 'oval' | 'rect' | 'head',
-  x, y, rotation, seats, color
+  x, y, rotation, seats, color,
+  seat_types?: { [seatIndex]: 'enfant' | 'pmr' | 'vip' }  // absent = 'standard'
 }],
 room_items: [{ id, type: 'dancefloor'|'bar'|'buffet'|'stage'|'dj'|'entrance'|'photobooth',
                x, y, w, h, rotation, label }],
