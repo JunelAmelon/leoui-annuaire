@@ -64,6 +64,11 @@ export class GazetteService {
     if (input.cover_caption !== undefined) updatePayload.cover_caption = input.cover_caption.trim();
     if (input.editorial !== undefined) updatePayload.editorial = input.editorial.trim();
     if (input.weather_forecast !== undefined) updatePayload.weather_forecast = input.weather_forecast.trim();
+    if (input.price_tag !== undefined) updatePayload.price_tag = input.price_tag.trim();
+    if (input.edition_tag !== undefined) updatePayload.edition_tag = input.edition_tag.trim();
+    if (input.story_photo_path !== undefined) updatePayload.story_photo_path = input.story_photo_path;
+    if (input.witnesses_photo_path !== undefined) updatePayload.witnesses_photo_path = input.witnesses_photo_path;
+    if (input.qr_code_target !== undefined) updatePayload.qr_code_target = input.qr_code_target;
 
     if (input.layout) {
       updatePayload.layout = {

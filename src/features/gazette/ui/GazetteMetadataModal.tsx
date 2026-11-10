@@ -1,8 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Gazette, GazetteTheme, GAZETTE_THEMES } from '../domain/types';
-import { X, Palette, Image as ImageIcon, Calendar, MapPin, Type, Sparkles } from 'lucide-react';
+import { Gazette, GazetteTheme, GAZETTE_THEMES, WEDDING_COLOR_PALETTES } from '../domain/types';
+import {
+  X,
+  Palette,
+  Image as ImageIcon,
+  Calendar,
+  MapPin,
+  Type,
+  Sparkles,
+  Trash2,
+  Tag,
+  BookOpen,
+  QrCode,
+} from 'lucide-react';
 
 interface GazetteMetadataModalProps {
   gazette: Gazette;
@@ -16,6 +28,11 @@ interface GazetteMetadataModalProps {
     editorial: string;
     weather_forecast: string;
     theme: GazetteTheme;
+    price_tag?: string;
+    edition_tag?: string;
+    font_family?: 'bodoni' | 'playfair' | 'cinzel' | 'sans';
+    accent_color?: string;
+    qr_code_target?: 'guestbook' | 'photos' | 'honeymoon';
   }) => void;
   onClose: () => void;
 }
@@ -34,6 +51,15 @@ export function GazetteMetadataModal({
   const [editorial, setEditorial] = useState(gazette.editorial || '');
   const [weatherForecast, setWeatherForecast] = useState(gazette.weather_forecast || '');
   const [theme, setTheme] = useState<GazetteTheme>(gazette.layout?.theme || 'vintage_gazette');
+  const [priceTag, setPriceTag] = useState(gazette.price_tag || 'PRIX : TOUT VOTRE AMOUR');
+  const [editionTag, setEditionTag] = useState(gazette.edition_tag || 'VOL. I — N° 001');
+  const [accentColor, setAccentColor] = useState(gazette.layout?.accent_color || '#be123c');
+  const [fontFamily, setFontFamily] = useState<'bodoni' | 'playfair' | 'cinzel' | 'sans'>(
+    gazette.layout?.font_family || 'bodoni'
+  );
+  const [qrCodeTarget, setQrCodeTarget] = useState<'guestbook' | 'photos' | 'honeymoon'>(
+    gazette.qr_code_target || 'guestbook'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +73,11 @@ export function GazetteMetadataModal({
       editorial: editorial.trim(),
       weather_forecast: weatherForecast.trim(),
       theme,
+      price_tag: priceTag.trim(),
+      edition_tag: editionTag.trim(),
+      accent_color: accentColor,
+      font_family: fontFamily,
+      qr_code_target: qrCodeTarget,
     });
   };
 
@@ -63,7 +94,7 @@ export function GazetteMetadataModal({
                 Paramètres de la Gazette
               </h3>
               <p className="text-xs text-stone-500">
-                Personnalisez le titre, le thème visuel et la une
+                Personnalisez les couleurs, la typographie, la Une et les micro-détails
               </p>
             </div>
           </div>
@@ -77,10 +108,85 @@ export function GazetteMetadataModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1">
+          {/* 1. Charte Graphique & Couleurs du Mariage */}
+          <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
+                <Palette className="w-4 h-4 text-stone-600" />
+                Couleur d'accentuation du mariage
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={accentColor}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="w-7 h-7 rounded-lg cursor-pointer border border-stone-300 p-0.5 bg-white"
+                  title="Couleur personnalisée"
+                />
+                <span className="font-mono text-xs text-stone-600 uppercase">{accentColor}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {WEDDING_COLOR_PALETTES.map((pal) => (
+                <button
+                  key={pal.id}
+                  type="button"
+                  onClick={() => setAccentColor(pal.hex)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition ${
+                    accentColor.toLowerCase() === pal.hex.toLowerCase()
+                      ? 'border-stone-900 bg-white shadow-xs font-bold'
+                      : 'border-stone-200 bg-white/70 hover:bg-white text-stone-700'
+                  }`}
+                >
+                  <span
+                    className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                    style={{ backgroundColor: pal.hex }}
+                  />
+                  <span>{pal.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2. Typographie & Thème du journal */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1.5">
+                <Type className="w-3.5 h-3.5 text-stone-500" /> Police des Grands Titres
+              </label>
+              <select
+                value={fontFamily}
+                onChange={(e) => setFontFamily(e.target.value as any)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500 bg-white"
+              >
+                <option value="bodoni">Bodoni Didot (Haute Couture, Vogue)</option>
+                <option value="playfair">Playfair Display (Classique & Poétique)</option>
+                <option value="cinzel">Cinzel Antique (Noble & Romain)</option>
+                <option value="sans">Sans Épuré (Moderne & Contemporain)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1.5">
+                <QrCode className="w-3.5 h-3.5 text-stone-500" /> Cible du QR Code (Page 4)
+              </label>
+              <select
+                value={qrCodeTarget}
+                onChange={(e) => setQrCodeTarget(e.target.value as any)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500 bg-white"
+              >
+                <option value="guestbook">Livre d'or interactif</option>
+                <option value="photos">Galerie photos des invités</option>
+                <option value="honeymoon">Cagnotte Voyage de Noces</option>
+              </select>
+            </div>
+          </div>
+
           {/* Choix du Thème */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-2">
-              Style & Thème du journal
+            <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-2 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-stone-500" /> Style de Presse
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {(Object.keys(GAZETTE_THEMES) as GazetteTheme[]).map((tKey) => {
@@ -93,7 +199,7 @@ export function GazetteMetadataModal({
                     onClick={() => setTheme(tKey)}
                     className={`p-3 text-left rounded-xl border-2 transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'border-rose-600 bg-rose-50/20 shadow-xs'
+                        ? 'border-stone-900 bg-stone-50 shadow-xs'
                         : 'border-stone-200 hover:border-stone-300'
                     }`}
                   >
@@ -108,7 +214,7 @@ export function GazetteMetadataModal({
                     <span
                       className={`text-[10px] mt-2 font-medium px-2 py-0.5 rounded-full inline-block w-fit ${
                         isSelected
-                          ? 'bg-rose-600 text-white'
+                          ? 'bg-stone-900 text-white'
                           : 'bg-stone-100 text-stone-600'
                       }`}
                     >
@@ -117,6 +223,34 @@ export function GazetteMetadataModal({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Micro-détails de presse */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                <Tag className="w-3 h-3 text-stone-500" /> Numéro d'Édition
+              </label>
+              <input
+                type="text"
+                value={editionTag}
+                onChange={(e) => setEditionTag(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                placeholder="Ex: VOL. I — N° 001"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                <Tag className="w-3 h-3 text-stone-500" /> Mention de Prix
+              </label>
+              <input
+                type="text"
+                value={priceTag}
+                onChange={(e) => setPriceTag(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                placeholder="Ex: PRIX : TOUT VOTRE AMOUR"
+              />
             </div>
           </div>
 
@@ -149,8 +283,8 @@ export function GazetteMetadataModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
-                Date du mariage
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-stone-500" /> Date du mariage
               </label>
               <input
                 type="date"
@@ -160,8 +294,8 @@ export function GazetteMetadataModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
-                Lieu de réception
+              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-stone-500" /> Lieu de réception
               </label>
               <input
                 type="text"
@@ -174,16 +308,54 @@ export function GazetteMetadataModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
-              URL de la photo de couverture
-            </label>
-            <input
-              type="url"
-              value={coverPath}
-              onChange={(e) => setCoverPath(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-              placeholder="https://... (Lien de la photo des mariés)"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1">
+                <ImageIcon className="w-3.5 h-3.5 text-stone-500" /> Photo de couverture (Une du journal)
+              </label>
+              {coverPath && (
+                <button
+                  type="button"
+                  onClick={() => setCoverPath('')}
+                  className="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Supprimer la photo</span>
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={coverPath}
+                onChange={(e) => setCoverPath(e.target.value)}
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                placeholder="https://... (Lien de la photo des mariés)"
+              />
+              {coverPath && (
+                <button
+                  type="button"
+                  onClick={() => setCoverPath('')}
+                  className="px-3.5 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+                  title="Supprimer la photo"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Supprimer</span>
+                </button>
+              )}
+            </div>
+            {coverPath && (
+              <div className="mt-2 relative w-24 h-16 rounded-lg overflow-hidden border border-stone-200 group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverPath} alt="Aperçu couverture" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setCoverPath('')}
+                  className="absolute inset-0 bg-stone-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Supprimer
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -229,13 +401,13 @@ export function GazetteMetadataModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 rounded-xl hover:bg-stone-100 transition"
+              className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 rounded-xl hover:bg-stone-100 transition cursor-pointer"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition"
+              className="px-5 py-2 text-sm font-semibold text-white bg-stone-900 hover:bg-stone-800 rounded-xl shadow-xs transition cursor-pointer"
             >
               Enregistrer les paramètres
             </button>
@@ -245,4 +417,3 @@ export function GazetteMetadataModal({
     </div>
   );
 }
-
