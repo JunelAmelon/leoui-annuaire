@@ -152,11 +152,12 @@ export function createSeatingService(repo: SeatingRepository) {
         });
       }
 
-      const room_items: RoomItem[] = opts.roomItems.map((type, i) => {
+      const room_items: RoomItem[] = [];
+      for (const type of opts.roomItems) {
         const def = ROOM_ITEM_DEFS[type];
         const pos = roomItemDefaultPos(type, room_items);
-        return { id: uid(), type, x: pos.x, y: pos.y, w: def.w, h: def.h, rotation: 0, label: def.label };
-      });
+        room_items.push({ id: uid(), type, x: pos.x, y: pos.y, w: def.w, h: def.h, rotation: 0, label: def.label });
+      }
 
       const next: SeatingPlan = { ...plan, tables, room_items, assignments: {}, updated_at: new Date().toISOString() };
       await repo.save(next);
