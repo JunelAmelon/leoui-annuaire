@@ -34,6 +34,10 @@ const TABLE_W = 150;
 const TABLE_H = 60;
 const ROUND_R = 42;
 
+/** Dimensions d'une chaise (style plan d'architecte) */
+const CHAIR_W = 15;
+const CHAIR_H = 10;
+
 /** Palette nappes — tons LeOui. */
 const TABLE_COLORS = ['#FFFFFF', '#FAF6F2', '#F3E4DC', '#FBE8ED', '#E9EFE6', '#E4E9F1'];
 
@@ -120,21 +124,49 @@ export default function PlanDeTablePage() {
     const { w, h } = tableSize(t);
     return { x: t.x + w / 2, y: t.y + h / 2 };
   };
-  const seatPositions = (t: SeatingTable) => {
+  /**
+   * Positions + angle de rotation des chaises autour de la table.
+   * angle=0 : chaise face vers le bas (vers l'intérieur).
+   * Pour les rondes/ovales : chaque chaise pivote pour pointer vers le centre.
+   */
+  const seatPositions = (t: SeatingTable): { x: number; y: number; angle: number }[] => {
     const c = tableCenter(t);
-    const pts: { x: number; y: number }[] = [];
+    const pts: { x: number; y: number; angle: number }[] = [];
+
     if (t.shape === 'round') {
-      const r = ROUND_R + 14;
+      /* Tables rondes — chaises en couronne, orientées vers le centre */
+      const r = ROUND_R + CHAIR_H + 2;
       for (let i = 0; i < t.seats; i++) {
         const a = (i / t.seats) * Math.PI * 2 - Math.PI / 2;
-        pts.push({ x: c.x + Math.cos(a) * r, y: c.y + Math.sin(a) * r });
+        pts.push({
+          x: c.x + Math.cos(a) * r,
+          y: c.y + Math.sin(a) * r,
+          angle: (a * 180) / Math.PI + 90, // dos de la chaise face au centre
+        });
+      }
+    } else if (t.shape === 'oval') {
+      /* Tables ovales — chaises sur une ellipse légèrement plus grande */
+      const { w, h } = tableSize(t);
+      const rx = w / 2 + CHAIR_H + 3;
+      const ry = h / 2 + CHAIR_H + 3;
+      for (let i = 0; i < t.seats; i++) {
+        const a = (i / t.seats) * Math.PI * 2 - Math.PI / 2;
+        pts.push({
+          x: c.x + Math.cos(a) * rx,
+          y: c.y + Math.sin(a) * ry,
+          angle: (a * 180) / Math.PI + 90,
+        });
       }
     } else {
+      /* Tables rectangulaires / table d'honneur — chaises sur côtés haut + bas */
       const { w, h } = tableSize(t);
       const top = Math.ceil(t.seats / 2);
       const bottom = t.seats - top;
-      for (let i = 0; i < top; i++) pts.push({ x: t.x + (w * (i + 0.5)) / top, y: t.y - 13 });
-      for (let i = 0; i < bottom; i++) pts.push({ x: t.x + (w * (i + 0.5)) / bottom, y: t.y + h + 13 });
+      const gap = CHAIR_H + 4; // écart bord table ↔ centre chaise
+      for (let i = 0; i < top; i++)
+        pts.push({ x: t.x + (w * (i + 0.5)) / top, y: t.y - gap, angle: 180 }); // chaise face vers bas
+      for (let i = 0; i < bottom; i++)
+        pts.push({ x: t.x + (w * (i + 0.5)) / bottom, y: t.y + h + gap, angle: 0 }); // chaise face vers haut
     }
     return pts;
   };
@@ -396,7 +428,7 @@ export default function PlanDeTablePage() {
                 <Users className="w-3.5 h-3.5" /> À placer ({unassigned.length})
               </p>
               <button type="button" onClick={autoAssign} title="Répartir automatiquement par côté"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700">
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-[11px] font-semibold text-rose-600 hover:bg-rose-100 transition-colors">
                 <Wand2 className="w-3.5 h-3.5" /> Auto
               </button>
             </div>
@@ -631,54 +663,95 @@ export default function PlanDeTablePage() {
                   const c = tableCenter(t);
                   const seats = seatPositions(t);
                   const sel = selectedId === t.id;
+                  const tColor = t.color || '#EDE8E3'; // beige doux par défaut
+                  const occupied = Object.keys(plan!.assignments).filter((k) => k.startsWith(`${t.id}_`)).length;
                   return (
                     <g key={t.id} transform={`rotate(${t.rotation} ${c.x} ${c.y})`}>
+
+                      {/* Chaises — rectangles arrondis orientés (style plan architecte) */}
                       {seats.map((p, i) => {
                         const key = seatKey(t.id, i);
                         const occ = plan!.assignments[key];
                         const g = guestById(occ);
                         const st = seatStyle(t.seat_types?.[i]);
-                        const awaiting = !occ && !!selectedGuest; // chaise libre en attente d'un invité
+                        const awaiting = !occ && !!selectedGuest;
+                        const cFill = occ ? '#C4849A' : st ? st.fill : '#D6CFC9';
+                        const cStroke = (seatTool || awaiting) && !occ ? '#E11D48' : occ ? '#BE123C' : st ? st.stroke : '#B5AEA8';
+                        const cW = st?.value === 'enfant' ? CHAIR_W - 3 : CHAIR_W;
+                        const cH = st?.value === 'enfant' ? CHAIR_H - 2 : CHAIR_H;
                         return (
                           <g key={key}
+                            transform={`rotate(${p.angle} ${p.x} ${p.y})`}
                             onClick={(e) => { e.stopPropagation(); onSeatClick(t.id, i); }}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => onSeatDrop(t.id, i, e)}
                             className="cursor-pointer">
                             {g && <title>{g.name}</title>}
-                            <circle cx={p.x} cy={p.y} r={st?.value === 'enfant' ? 8 : 10}
-                              fill={occ ? '#BE123C' : st ? st.fill : 'white'}
-                              stroke={(seatTool || awaiting) && !occ ? '#E11D48' : occ ? '#BE123C' : st ? st.stroke : '#A8A29E'}
-                              strokeWidth={(seatTool || awaiting) && !occ ? 2 : 1.5} />
+                            {/* Corps de la chaise */}
+                            <rect x={p.x - cW / 2} y={p.y - cH / 2} width={cW} height={cH} rx={3}
+                              fill={cFill} stroke={cStroke} strokeWidth={(seatTool || awaiting) && !occ ? 2 : 0.8} />
+                            {/* Dossier (petite bande supérieure) */}
+                            <rect x={p.x - cW / 2} y={p.y - cH / 2 - 3} width={cW} height={3} rx={1.5}
+                              fill={cFill} stroke={cStroke} strokeWidth={(seatTool || awaiting) && !occ ? 2 : 0.8} />
+                            {/* Initiale si occupé */}
                             {occ && g && (
-                              <text x={p.x} y={p.y + 3.5} textAnchor="middle" fontSize="8.5" fill="white" fontWeight="600" pointerEvents="none">
+                              <text x={p.x} y={p.y + 3} textAnchor="middle" fontSize="6.5" fill="white"
+                                fontWeight="700" pointerEvents="none">
                                 {g.name.slice(0, 1).toUpperCase()}
                               </text>
                             )}
                           </g>
                         );
                       })}
+
+                      {/* Surface de la table */}
                       <g onPointerDown={(e) => startDrag('table', t.id, t.x, t.y, e)}
                         onClick={(e) => e.stopPropagation()}
                         className="cursor-grab active:cursor-grabbing">
                         {t.shape === 'round' ? (
-                          <circle cx={c.x} cy={c.y} r={ROUND_R}
-                            fill={t.color || 'white'} stroke={sel ? '#E11D48' : '#B4A79C'} strokeWidth={sel ? 2.5 : 1.5} />
+                          <>
+                            {/* Ombre légère */}
+                            <circle cx={c.x + 1.5} cy={c.y + 2} r={ROUND_R} fill="rgba(0,0,0,0.06)" />
+                            {/* Table */}
+                            <circle cx={c.x} cy={c.y} r={ROUND_R} fill={tColor}
+                              stroke={sel ? '#E11D48' : '#B4A79C'} strokeWidth={sel ? 2.5 : 1.5} />
+                            {/* Anneau intérieur (bordure de nappe) */}
+                            <circle cx={c.x} cy={c.y} r={ROUND_R - 5} fill="none"
+                              stroke={sel ? '#E11D48' : '#C8BCAF'} strokeWidth={0.75} strokeDasharray="4 3" />
+                          </>
+                        ) : t.shape === 'oval' ? (
+                          <>
+                            <ellipse cx={c.x + 1.5} cy={c.y + 2} rx={w / 2} ry={h / 2} fill="rgba(0,0,0,0.06)" />
+                            <ellipse cx={c.x} cy={c.y} rx={w / 2} ry={h / 2} fill={tColor}
+                              stroke={sel ? '#E11D48' : '#B4A79C'} strokeWidth={sel ? 2.5 : 1.5} />
+                            <ellipse cx={c.x} cy={c.y} rx={w / 2 - 5} ry={h / 2 - 5} fill="none"
+                              stroke={sel ? '#E11D48' : '#C8BCAF'} strokeWidth={0.75} strokeDasharray="4 3" />
+                          </>
                         ) : (
-                          <rect x={t.x} y={t.y} width={w} height={h} rx={t.shape === 'rect' ? 8 : 30}
-                            fill={t.color || 'white'} stroke={sel ? '#E11D48' : '#B4A79C'} strokeWidth={sel ? 2.5 : 1.5} />
+                          <>
+                            <rect x={t.x + 1.5} y={t.y + 2} width={w} height={h} rx={t.shape === 'rect' ? 8 : 6}
+                              fill="rgba(0,0,0,0.06)" />
+                            <rect x={t.x} y={t.y} width={w} height={h} rx={t.shape === 'rect' ? 8 : 6}
+                              fill={tColor} stroke={sel ? '#E11D48' : '#B4A79C'} strokeWidth={sel ? 2.5 : 1.5} />
+                            <rect x={t.x + 5} y={t.y + 4} width={w - 10} height={h - 8}
+                              rx={t.shape === 'rect' ? 5 : 4} fill="none"
+                              stroke={sel ? '#E11D48' : '#C8BCAF'} strokeWidth={0.75} strokeDasharray="4 3" />
+                          </>
                         )}
-                        <text x={c.x} y={c.y - (t.shape === 'round' ? 2 : 1)} textAnchor="middle" fontSize="11" fill="#57534E"
+                        {/* Label + occupation */}
+                        <text x={c.x} y={c.y + (t.shape === 'round' || t.shape === 'oval' ? -3 : -2)}
+                          textAnchor="middle" fontSize="10.5" fill="#57534E"
                           fontWeight="600" fontFamily="serif" pointerEvents="none">
                           {t.label}
                         </text>
-                        {/* Occupation de la table : 3/8 */}
-                        <text x={c.x} y={c.y + 12} textAnchor="middle" fontSize="8.5" fill="#A8A29E" pointerEvents="none">
-                          {Object.keys(plan!.assignments).filter((k) => k.startsWith(`${t.id}_`)).length}/{t.seats}
+                        <text x={c.x} y={c.y + (t.shape === 'round' || t.shape === 'oval' ? 10 : 11)}
+                          textAnchor="middle" fontSize="8" fill="#9C948D" pointerEvents="none">
+                          {occupied}/{t.seats}
                         </text>
                       </g>
+
                       {/* Poignée de rotation — visible quand la table est sélectionnée */}
-                      {sel && t.shape !== 'round' && <RotateHandle cx={c.x} topY={t.y - 14} id={t.id} />}
+                      {sel && t.shape !== 'round' && <RotateHandle cx={c.x} topY={t.y - 18} id={t.id} />}
                     </g>
                   );
                 })}
