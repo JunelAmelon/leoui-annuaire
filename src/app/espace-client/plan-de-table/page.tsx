@@ -421,16 +421,16 @@ export default function PlanDeTablePage() {
   const selectedTable = plan?.tables.find((t) => t.id === selectedId) || null;
   const selectedItem = plan?.room_items.find((i) => i.id === selectedId) || null;
 
-  /** Carte univers mariage — rendue sous le header sur mobile, dans l'aside sur desktop. */
+  /** Carte univers mariage — rendue sous le header sur mobile. */
   const WeddingCard = ({ className = '' }: { className?: string }) => (
-    <div className={`relative rounded-lg overflow-hidden h-40 ${className}`}>
+    <div className={`relative rounded-xl overflow-hidden h-36 ${className}`}>
       <img src="/seating-inspiration.jpg" alt="Table de mariage décorée" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#2A1A1E]/85 via-[#2A1A1E]/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#1A1013]/92 via-[#1A1013]/45 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4">
-        <p className="flex items-center gap-1.5 text-rose-200 text-[10px] font-semibold tracking-[0.12em] uppercase mb-1">
-          <Heart className="w-3 h-3" /> Le jour J
+        <p className="flex items-center gap-1.5 text-rose-200 text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">
+          <Heart className="w-3 h-3 fill-rose-200 text-rose-200" /> Le jour J
         </p>
-        <p className="font-serif text-white text-sm leading-snug" style={{ fontStyle: 'italic' }}>
+        <p className="font-serif text-white text-sm leading-snug drop-shadow-sm" style={{ fontStyle: 'italic' }}>
           « Chaque invité à sa place, pour un dîner inoubliable. »
         </p>
       </div>
@@ -448,21 +448,26 @@ export default function PlanDeTablePage() {
     <div className="space-y-4 w-full pb-10">
       {/* ── En-tête éditorial LeOui ── */}
       <div className="relative rounded-2xl overflow-hidden bg-white border border-stone-200/80 shadow-sm">
-        {/* Visuel mariage fondu côté droit sur grand écran */}
-        <div className="hidden lg:block absolute inset-y-0 right-0 w-[38%] pointer-events-none">
+        {/* Visuel mariage côté droit sur grand écran : fondu blanc uniquement à la jonction gauche + bandeau sombre franc sous la citation */}
+        <div className="hidden lg:block absolute inset-y-0 right-0 w-[40%] pointer-events-none">
           <img src="/seating-inspiration.jpg" alt="" className="w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/75 to-[#2A1A1E]/55" />
-          <div className="absolute bottom-3 right-5 text-right max-w-[260px]">
-            <p className="inline-flex items-center gap-1 text-[9px] font-semibold tracking-[0.14em] uppercase text-rose-100 drop-shadow">
-              <Heart className="w-2.5 h-2.5 fill-rose-200 text-rose-200" /> Le jour J
+          {/* Voile léger global + assombrissement net en bas pour garantir le contraste du texte blanc */}
+          <div className="absolute inset-0 bg-[#1A1013]/20" />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#1A1013]/92 via-[#1A1013]/65 to-transparent" />
+          {/* Fondu doux uniquement sur la tranche gauche (jonction avec le fond blanc) */}
+          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white via-white/85 to-transparent" />
+
+          <div className="absolute bottom-3.5 right-5 left-20 text-right">
+            <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.16em] uppercase text-rose-200 mb-0.5">
+              <Heart className="w-3 h-3 fill-rose-300 text-rose-300" /> Le jour J
             </p>
-            <p className="font-serif text-white text-xs leading-snug drop-shadow" style={{ fontStyle: 'italic' }}>
+            <p className="font-serif text-white text-[13.5px] leading-snug" style={{ fontStyle: 'italic', textShadow: '0 1px 8px rgba(0,0,0,0.55)' }}>
               « Chaque invité à sa place, pour un dîner inoubliable. »
             </p>
           </div>
         </div>
 
-        <div className="relative z-10 px-5 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 lg:pr-[39%]">
+        <div className="relative z-10 px-5 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 lg:pr-[42%]">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
               <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-rose-600">Organisation</span>
@@ -480,17 +485,6 @@ export default function PlanDeTablePage() {
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center gap-0.5 bg-stone-50 border border-stone-200 rounded-lg p-0.5">
-              <button type="button" onClick={undo} disabled={!past.current.length} title="Annuler (Ctrl+Z)"
-                className="w-8 h-8 rounded-md flex items-center justify-center text-charcoal-600 hover:bg-white disabled:opacity-30 transition-colors">
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <div className="w-px h-4 bg-stone-200" />
-              <button type="button" onClick={redo} disabled={!future.current.length} title="Rétablir (Ctrl+Y)"
-                className="w-8 h-8 rounded-md flex items-center justify-center text-charcoal-600 hover:bg-white disabled:opacity-30 transition-colors">
-                <Redo2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
             <button type="button" onClick={() => setWizardOpen(true)}
               className="inline-flex items-center gap-1.5 px-4 h-9 rounded-lg bg-rose-600 text-xs font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm">
               <RefreshCw className="w-3.5 h-3.5" /> Assistant salle
@@ -633,6 +627,18 @@ export default function PlanDeTablePage() {
               </div>
             )}
             <div className="flex items-center gap-1.5 ml-auto">
+              {/* Annuler / Rétablir collés à la barre du plan sur tablette/desktop */}
+              <div className="hidden sm:flex items-center gap-0.5 bg-white border border-stone-200 rounded-lg p-0.5">
+                <button type="button" onClick={undo} disabled={!past.current.length} title="Annuler (Ctrl+Z)"
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-charcoal-600 hover:bg-stone-100 disabled:opacity-30 transition-colors">
+                  <Undo2 className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-4 bg-stone-200" />
+                <button type="button" onClick={redo} disabled={!future.current.length} title="Rétablir (Ctrl+Y)"
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-charcoal-600 hover:bg-stone-100 disabled:opacity-30 transition-colors">
+                  <Redo2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <button type="button" onClick={() => setRoomPanelOpen((o) => !o)} aria-expanded={roomPanelOpen}
                 title="Forme et dimensions de la salle"
                 className={`inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border text-xs font-semibold transition-colors ${
@@ -768,6 +774,19 @@ export default function PlanDeTablePage() {
 
           {/* Canvas — l'extérieur est légèrement plus sombre que le sol : la forme de la salle se lit d'un coup d'œil */}
           <div ref={wrapRef} className="relative overflow-hidden rounded-2xl border border-stone-200 bg-[#ECE7E1]">
+            {/* Mobile : Annuler / Rétablir flottants directement dans le coin du plan — zéro scroll pour corriger un geste */}
+            <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
+              className="sm:hidden absolute top-2.5 right-2.5 z-10 flex items-center gap-0.5 bg-white/95 backdrop-blur border border-stone-200/90 rounded-lg p-0.5 shadow-md">
+              <button type="button" onClick={undo} disabled={!past.current.length} aria-label="Annuler"
+                className="w-8 h-8 rounded-md flex items-center justify-center text-charcoal-700 active:bg-stone-100 disabled:opacity-30">
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <div className="w-px h-4 bg-stone-200" />
+              <button type="button" onClick={redo} disabled={!future.current.length} aria-label="Rétablir"
+                className="w-8 h-8 rounded-md flex items-center justify-center text-charcoal-700 active:bg-stone-100 disabled:opacity-30">
+                <Redo2 className="w-4 h-4" />
+              </button>
+            </div>
             <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
               className="w-full select-none touch-none block"
               onPointerMove={onPointerMove}
