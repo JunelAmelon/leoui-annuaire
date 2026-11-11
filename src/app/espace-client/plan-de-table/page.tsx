@@ -15,6 +15,7 @@ import {
   Loader2, Trash2, Users, Undo2, Redo2, ZoomIn, ZoomOut,
   Wand2, RefreshCw, Search, GripVertical, Baby, Accessibility, Crown, X,
   Heart, RotateCw, RotateCcw,
+  Box,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FirestoreSeatingRepository, fetchConfirmedGuests, type SeatingGuest } from '@/features/seating/repositories/seating.repository';
@@ -23,6 +24,9 @@ import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, TableShape, Sea
 import { TABLE_SHAPES, seatKey } from '@/features/seating/domain/types';
 import { SetupWizard } from '@/features/seating/ui/SetupWizard';
 import { ITEM_ICONS, ITEM_ICON_SMALL } from '@/features/seating/ui/item-icons';
+import dynamic from 'next/dynamic';
+
+const Scene3D = dynamic(() => import('@/features/seating/ui/Scene3D'), { ssr: false });
 
 const repo = new FirestoreSeatingRepository();
 const service = createSeatingService(repo);
@@ -66,6 +70,7 @@ export default function PlanDeTablePage() {
   const [zoom, setZoom] = useState(1);
   const [seatTool, setSeatTool] = useState<SeatType | null>(null);
   const [toolTab, setToolTab] = useState<'tables' | 'animations'>('tables');
+  const [preview3D, setPreview3D] = useState(false);
 
   const past = useRef<Snapshot[]>([]);
   const future = useRef<Snapshot[]>([]);
@@ -607,7 +612,12 @@ export default function PlanDeTablePage() {
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-1.5 ml-auto">
+              <button type="button" onClick={() => setPreview3D(true)} title="Vue 3D"
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white border border-stone-200 text-xs font-semibold text-charcoal-600 hover:border-rose-400 hover:text-rose-600 transition-colors">
+                <Box className="w-3.5 h-3.5" /> 3D
+              </button>
+              <div className="w-px h-5 bg-stone-200" />
               <button type="button" onClick={() => setZoom((z) => Math.max(0.5, z - 0.15))} title="Zoom -"
                 className="w-8 h-8 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-charcoal-500 hover:border-rose-400">
                 <ZoomOut className="w-3.5 h-3.5" />
@@ -793,6 +803,10 @@ export default function PlanDeTablePage() {
           onClose={() => setWizardOpen(false)}
           onGenerate={generateHall}
         />
+      )}
+
+      {preview3D && plan && (
+        <Scene3D plan={plan} onClose={() => setPreview3D(false)} />
       )}
     </div>
   );
