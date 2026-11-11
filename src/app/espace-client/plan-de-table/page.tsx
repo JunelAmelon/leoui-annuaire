@@ -22,7 +22,7 @@ import { createSeatingService, ROOM_ITEM_DEFS } from '@/features/seating/service
 import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, TableShape, SeatAssignments, SeatType } from '@/features/seating/domain/types';
 import { TABLE_SHAPES, seatKey } from '@/features/seating/domain/types';
 import { SetupWizard } from '@/features/seating/ui/SetupWizard';
-import { ITEM_ICONS } from '@/features/seating/ui/item-icons';
+import { ITEM_ICONS, ITEM_ICON_SMALL } from '@/features/seating/ui/item-icons';
 
 const repo = new FirestoreSeatingRepository();
 const service = createSeatingService(repo);
@@ -390,27 +390,30 @@ export default function PlanDeTablePage() {
   return (
     <div className="space-y-5 max-w-6xl mx-auto pb-10">
       {/* En-tête DA */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="label-xs text-rose-600 mb-2 tracking-[0.1em]">Organisation</p>
-          <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.5rem,2.5vw,2rem)', fontWeight: 400 }}>
+          <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-rose-500 mb-1.5">Organisation · Espace couple</p>
+          <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem,2.5vw,1.9rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>
             Plan de table
           </h1>
-          <p className="text-sm text-charcoal-500 mt-1.5">
-            Glissez les tables, sélectionnez un invité puis cliquez sur une chaise — ou glissez son nom dessus.
+          <p className="text-xs text-charcoal-400 mt-1">
+            Glissez les tables · sélectionnez un invité puis cliquez une chaise
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={undo} disabled={!past.current.length} title="Annuler"
-            className="w-9 h-9 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-charcoal-600 hover:border-rose-400 disabled:opacity-30">
-            <Undo2 className="w-4 h-4" />
-          </button>
-          <button type="button" onClick={redo} disabled={!future.current.length} title="Rétablir"
-            className="w-9 h-9 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-charcoal-600 hover:border-rose-400 disabled:opacity-30">
-            <Redo2 className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg px-1 py-1">
+            <button type="button" onClick={undo} disabled={!past.current.length} title="Annuler"
+              className="w-8 h-8 rounded-md flex items-center justify-center text-charcoal-500 hover:bg-stone-100 disabled:opacity-30 transition-colors">
+              <Undo2 className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-5 bg-stone-200" />
+            <button type="button" onClick={redo} disabled={!future.current.length} title="Rétablir"
+              className="w-8 h-8 rounded-md flex items-center justify-center text-charcoal-500 hover:bg-stone-100 disabled:opacity-30 transition-colors">
+              <Redo2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <button type="button" onClick={() => setWizardOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 h-9 rounded-lg bg-rose-600 text-xs font-semibold text-white hover:bg-rose-700 transition-colors">
+            className="inline-flex items-center gap-1.5 px-4 h-9 rounded-lg bg-rose-600 text-xs font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm">
             <RefreshCw className="w-3.5 h-3.5" /> Assistant salle
           </button>
         </div>
@@ -420,145 +423,148 @@ export default function PlanDeTablePage() {
       <WeddingCard className="lg:hidden" />
 
       <div className="flex flex-col lg:flex-row gap-5">
-        {/* ── Invités ── */}
-        <aside className="lg:w-64 flex-shrink-0 space-y-5">
-          <div className="bg-stone-50 rounded-xl border border-stone-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="label-xs text-charcoal-400 tracking-[0.1em] flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" /> À placer ({unassigned.length})
-              </p>
-              <button type="button" onClick={autoAssign} title="Répartir automatiquement par côté"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-[11px] font-semibold text-rose-600 hover:bg-rose-100 transition-colors">
-                <Wand2 className="w-3.5 h-3.5" /> Auto
-              </button>
+        {/* ── Aside gauche ── */}
+        <aside className="lg:w-60 flex-shrink-0 space-y-4">
+
+          {/* Panneau invités */}
+          <div className="bg-white rounded-xl border border-stone-200/80 shadow-sm overflow-hidden">
+            <div className="px-4 pt-4 pb-3 border-b border-stone-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.1em] uppercase text-charcoal-400">
+                  <Users className="w-3 h-3" /> À placer
+                  <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[9px] font-bold leading-none">{unassigned.length}</span>
+                </span>
+                <button type="button" onClick={autoAssign} title="Répartir automatiquement"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-600 text-[10px] font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm">
+                  <Wand2 className="w-3 h-3" /> Auto
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-stone-300 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher…"
+                  className="w-full h-8 pl-8 pr-3 bg-stone-50 border border-stone-200 rounded-md text-xs focus:outline-none focus:border-rose-400 placeholder:text-stone-300" />
+              </div>
             </div>
-            <div className="relative mb-2">
-              <Search className="w-3.5 h-3.5 text-charcoal-300 absolute left-0 top-1/2 -translate-y-1/2" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un invité…"
-                className="w-full h-8 pl-6 pr-2 bg-transparent border-b border-stone-200 text-xs focus:outline-none focus:border-rose-400 placeholder:text-charcoal-300" />
-            </div>
-            <div className="max-h-[360px] overflow-y-auto divide-y divide-stone-100">
-              {unassigned.length === 0 && (
-                <p className="text-xs text-charcoal-400 py-3">
-                  {guests.length === 0 ? 'Aucun invité confirmé pour l’instant.' : 'Tous les invités sont placés ✓'}
+            <div className="max-h-[300px] overflow-y-auto">
+              {unassigned.length === 0 ? (
+                <p className="text-xs text-charcoal-400 py-5 px-4 text-center">
+                  {guests.length === 0 ? 'Aucun invité confirmé.' : '✓ Tous les invités sont placés'}
                 </p>
-              )}
-              {unassigned.map((g) => (
+              ) : unassigned.map((g) => (
                 <div key={g.id} draggable
                   onDragStart={(e) => { e.dataTransfer.setData('text/guest-id', g.id); setSelectedGuest(g.id); }}
                   onClick={() => setSelectedGuest(selectedGuest === g.id ? null : g.id)}
-                  className={`flex items-center gap-2 w-full text-left py-2.5 text-sm cursor-grab transition-colors ${
-                    selectedGuest === g.id ? 'text-rose-700 font-semibold' : 'text-charcoal-700 hover:text-rose-600'
+                  className={`flex items-center gap-2 px-4 py-2.5 cursor-grab transition-all border-l-2 ${
+                    selectedGuest === g.id ? 'bg-rose-50 border-rose-500' : 'border-transparent hover:bg-stone-50'
                   }`}>
-                  <GripVertical className="w-3.5 h-3.5 opacity-30 shrink-0" />
-                  <span className="truncate flex-1">
-                    {g.name}
-                    {g.table && <span className="block text-[10px] text-charcoal-400 font-normal">→ {g.table}</span>}
+                  <GripVertical className="w-3 h-3 opacity-20 shrink-0" />
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-xs truncate ${selectedGuest === g.id ? 'text-rose-700 font-semibold' : 'text-charcoal-700'}`}>
+                      {g.name}
+                    </span>
+                    {g.table && <span className="block text-[9px] text-charcoal-400 truncate">→ {g.table}</span>}
                   </span>
-                  {selectedGuest === g.id && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0" />}
                   {g.has_children && (g.children_count || 0) > 0 && (
-                    <span className="text-[9px] text-charcoal-400 font-medium">{g.children_count} enf.</span>
+                    <span className="text-[9px] text-rose-400 font-semibold shrink-0">{g.children_count} enf.</span>
                   )}
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-charcoal-300 mt-3 pt-3 border-t border-stone-100">
-              {assignedIds.size} / {guests.length} invités placés
-            </p>
+            <div className="px-4 py-2.5 border-t border-stone-100 bg-stone-50/60 flex items-center justify-between">
+              <span className="text-[9px] text-charcoal-300 uppercase tracking-wide font-semibold">Placés</span>
+              <span className="text-xs font-bold text-charcoal-600">{assignedIds.size}<span className="text-charcoal-300 font-normal">/{guests.length}</span></span>
+            </div>
           </div>
 
-          {/* ── Édition de la sélection — panneau clair ── */}
+          {/* Panneau édition sélection */}
           {(selectedTable || selectedItem) && (
-            <div className="bg-stone-50 rounded-xl border border-stone-200 p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="label-xs text-charcoal-400 tracking-[0.1em]">
+            <div className="bg-white rounded-xl border border-stone-200/80 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100">
+                <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-charcoal-400">
                   {selectedTable ? 'Table' : 'Élément'}
-                </p>
-                <button type="button" onClick={() => setSelectedId(null)} className="text-charcoal-300 hover:text-charcoal-600">
-                  <X className="w-4 h-4" />
+                </span>
+                <button type="button" onClick={() => setSelectedId(null)}
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-charcoal-300 hover:text-charcoal-600 hover:bg-stone-100 transition-colors">
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-
-              {selectedTable && (
-                <>
-                  <input
-                    defaultValue={selectedTable.label}
-                    key={selectedTable.id}
-                    onBlur={(e) => patchTable({ label: e.target.value || selectedTable.label })}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                    className="w-full h-9 px-0 bg-transparent border-b border-stone-200 font-serif text-base font-semibold text-charcoal-900 focus:outline-none focus:border-rose-400"
-                  />
-
+              <div className="p-4 space-y-4">
+                {selectedTable && (
+                  <>
+                    <input defaultValue={selectedTable.label} key={selectedTable.id}
+                      onBlur={(e) => patchTable({ label: e.target.value || selectedTable.label })}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                      className="w-full h-9 px-0 bg-transparent border-b border-stone-200 font-serif text-sm font-semibold text-charcoal-900 focus:outline-none focus:border-rose-400"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-charcoal-400">Places</span>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => patchTable({ seats: Math.max(2, selectedTable.seats - 1) })}
+                          className="w-7 h-7 rounded-md bg-stone-100 text-charcoal-600 font-bold text-sm hover:bg-rose-50 hover:text-rose-600 transition-colors">−</button>
+                        <span className="text-sm font-bold text-charcoal-900 w-6 text-center">{selectedTable.seats}</span>
+                        <button type="button" onClick={() => patchTable({ seats: Math.min(14, selectedTable.seats + 1) })}
+                          className="w-7 h-7 rounded-md bg-stone-100 text-charcoal-600 font-bold text-sm hover:bg-rose-50 hover:text-rose-600 transition-colors">+</button>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-charcoal-400 mb-2">Couleur de nappe</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {TABLE_COLORS.map((c) => (
+                          <button key={c} type="button" onClick={() => patchTable({ color: c === '#FFFFFF' ? undefined : c })}
+                            className={`w-7 h-7 rounded-lg border-2 transition-all ${
+                              (selectedTable.color || '#FFFFFF') === c ? 'border-rose-500 scale-110 shadow-sm' : 'border-transparent hover:border-stone-300'
+                            }`}
+                            style={{ background: c }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-charcoal-400 mb-2">
+                        Chaises spéciales{seatTool && <span className="text-rose-500 ml-1">· cliquez une chaise</span>}
+                      </p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {SEAT_TYPES.map((s) => (
+                          <button key={s.value} type="button"
+                            onClick={() => setSeatTool(seatTool === s.value ? null : s.value)}
+                            className={`flex flex-col items-center gap-1 py-2 rounded-lg border text-[9px] font-semibold transition-all ${
+                              seatTool === s.value
+                                ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm'
+                                : 'border-stone-200 text-charcoal-400 hover:border-stone-300 hover:bg-stone-50'
+                            }`}>
+                            {s.icon} {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {!(selectedTable?.shape === 'round') && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-charcoal-500">Places</span>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => patchTable({ seats: Math.max(2, selectedTable.seats - 1) })}
-                        className="w-6 h-6 rounded-md border border-stone-200 text-charcoal-600 font-bold text-xs hover:border-rose-400">−</button>
-                      <span className="text-sm font-bold text-charcoal-900 w-5 text-center">{selectedTable.seats}</span>
-                      <button type="button" onClick={() => patchTable({ seats: Math.min(14, selectedTable.seats + 1) })}
-                        className="w-6 h-6 rounded-md border border-stone-200 text-charcoal-600 font-bold text-xs hover:border-rose-400">+</button>
+                    <span className="text-xs text-charcoal-400">Rotation</span>
+                    <div className="flex items-center gap-1.5">
+                      <button type="button" onClick={() => rotateSelected(-45)} title="-45°"
+                        className="w-7 h-7 rounded-md bg-stone-100 flex items-center justify-center text-charcoal-500 hover:bg-rose-50 hover:text-rose-600 transition-colors">
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-xs font-bold text-charcoal-900 w-10 text-center">
+                        {(selectedTable || selectedItem)?.rotation || 0}°
+                      </span>
+                      <button type="button" onClick={() => rotateSelected(45)} title="+45°"
+                        className="w-7 h-7 rounded-md bg-stone-100 flex items-center justify-center text-charcoal-500 hover:bg-rose-50 hover:text-rose-600 transition-colors">
+                        <RotateCw className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-
-                  <div>
-                    <p className="text-xs text-charcoal-500 mb-2">Nappe</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {TABLE_COLORS.map((c) => (
-                        <button key={c} type="button" onClick={() => patchTable({ color: c === '#FFFFFF' ? undefined : c })}
-                          className={`w-6 h-6 rounded-md border transition-all ${
-                            (selectedTable.color || '#FFFFFF') === c ? 'border-rose-600 ring-1 ring-rose-300' : 'border-stone-200 hover:border-stone-300'
-                          }`}
-                          style={{ background: c }} />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-charcoal-500 mb-2">
-                      Chaises spéciales {seatTool && <span className="text-rose-600">— cliquez sur les chaises</span>}
-                    </p>
-                    <div className="flex gap-1.5">
-                      {SEAT_TYPES.map((s) => (
-                        <button key={s.value} type="button"
-                          onClick={() => setSeatTool(seatTool === s.value ? null : s.value)}
-                          className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-md border text-[10px] font-semibold transition-colors ${
-                            seatTool === s.value ? 'border-rose-600 text-rose-700' : 'border-stone-200 text-charcoal-500 hover:border-stone-300'
-                          }`}>
-                          {s.icon} {s.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {!(selectedTable?.shape === 'round') && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-charcoal-500">Rotation</span>
-                  <div className="flex items-center gap-1.5">
-                    <button type="button" onClick={() => rotateSelected(-45)} title="-45°"
-                      className="w-7 h-7 rounded-md border border-stone-200 flex items-center justify-center text-charcoal-600 hover:border-rose-400">
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-xs font-semibold text-charcoal-900 w-10 text-center">
-                      {(selectedTable || selectedItem)?.rotation || 0}°
-                    </span>
-                    <button type="button" onClick={() => rotateSelected(45)} title="+45°"
-                      className="w-7 h-7 rounded-md border border-stone-200 flex items-center justify-center text-charcoal-600 hover:border-rose-400">
-                      <RotateCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <button type="button" onClick={removeSelected}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors pt-1 border-t border-stone-100 w-full">
-                <Trash2 className="w-3.5 h-3.5 mt-2.5" /> <span className="mt-2.5">Supprimer {selectedTable ? 'la table' : 'l’élément'}</span>
-              </button>
+                )}
+                <button type="button" onClick={removeSelected}
+                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg border border-rose-100 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" /> Supprimer {selectedTable ? 'la table' : "l’élément"}
+                </button>
+              </div>
             </div>
           )}
 
-          {/* ── Carte univers mariage (desktop) ── */}
+          {/* Carte univers mariage (desktop) */}
           <WeddingCard className="hidden lg:block" />
         </aside>
 
@@ -631,24 +637,34 @@ export default function PlanDeTablePage() {
                   </text>
                 )}
 
-                {/* Éléments de salle — tuile blanche, icône + label */}
+                {/* Éléments de salle — fond blanc doux, icône Flaticon-flat + label */}
                 {plan!.room_items.map((it) => {
                   const sel = selectedId === it.id;
                   const cx = it.x + it.w / 2;
                   const cy = it.y + it.h / 2;
+                  const isLarge = it.h >= 70;
                   return (
                     <g key={it.id} transform={`rotate(${it.rotation} ${cx} ${cy})`}>
                       <g onPointerDown={(e) => startDrag('item', it.id, it.x, it.y, e)}
                         onClick={(e) => e.stopPropagation()}
                         className="cursor-grab active:cursor-grabbing">
+                        {/* Ombre légère */}
+                        <rect x={it.x + 1.5} y={it.y + 2} width={it.w} height={it.h}
+                          rx={10} fill="rgba(0,0,0,0.05)" />
+                        {/* Corps */}
                         <rect x={it.x} y={it.y} width={it.w} height={it.h}
-                          rx={10} fill="white"
-                          stroke={sel ? '#E11D48' : '#D6D3D1'} strokeWidth={sel ? 2.5 : 1.2}
-                          strokeDasharray={it.type === 'entrance' ? '5 4' : '0'} />
+                          rx={10} fill="#FAFAF9"
+                          stroke={sel ? '#E11D48' : '#E2DCDA'} strokeWidth={sel ? 2 : 1}
+                          strokeDasharray={it.type === 'entrance' ? '6 4' : '0'} />
+                        {/* Icône + label via foreignObject */}
                         <foreignObject x={it.x} y={it.y} width={it.w} height={it.h} pointerEvents="none">
-                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: it.h >= 70 ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: 5, color: '#57534E' }}>
-                            <span style={{ display: 'flex', transform: it.h < 45 ? 'scale(0.75)' : 'none' }}>{ITEM_ICONS[it.type]}</span>
-                            {it.w > 70 && <span style={{ fontSize: 10.5, fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{it.label}</span>}
+                          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: isLarge ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isLarge ? 4 : 6, padding: '4px 6px', boxSizing: 'border-box' }}>
+                            <span style={{ display: 'flex', flexShrink: 0 }}>{ITEM_ICON_SMALL(it.type)}</span>
+                            {it.w > 65 && (
+                              <span style={{ fontSize: 9.5, fontWeight: 700, color: '#57534E', textAlign: 'center', lineHeight: 1.3, letterSpacing: '0.01em' }}>
+                                {it.label}
+                              </span>
+                            )}
                           </div>
                         </foreignObject>
                       </g>
