@@ -46,10 +46,17 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { client, event } = useClientData();
+  const isFullCanvasRoute = pathname.startsWith('/espace-client/plan-de-table');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => isFullCanvasRoute);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+
+  // Replie automatiquement le menu latéral sur les pages plein canevas (ex. Plan de table),
+  // tout en laissant l'utilisateur le déplier librement via le bouton.
+  useEffect(() => {
+    setCollapsed(isFullCanvasRoute);
+  }, [isFullCanvasRoute]);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -109,8 +116,8 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
       >
         <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm overflow-hidden">
 
-          {/* Logo */}
-          <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
+          {/* Logo + bouton rapide déplier/replier */}
+          <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'flex-col gap-2 px-2' : 'px-4 gap-3'}`}>
             <Link
               href="/"
               className="w-10 h-10 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group"
@@ -118,14 +125,23 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
               <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors" />
             </Link>
             {!collapsed && (
-              <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui.net</span>
+              <span className="font-serif text-charcoal-900 text-base leading-none truncate flex-1">LeOui.net</span>
             )}
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              title={collapsed ? 'Déplier le menu' : 'Réduire le menu'}
+              aria-label={collapsed ? 'Déplier le menu' : 'Réduire le menu'}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-charcoal-400 hover:text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
           </div>
 
           <div className="mx-3 h-px bg-stone-100 flex-shrink-0" />
 
           {/* Nav */}
-          <nav className="flex-1 flex flex-col gap-0.5 py-3 px-2 overflow-y-auto overflow-x-hidden">
+          <nav className="flex-1 flex flex-col gap-0.5 py-3 px-2 overflow-y-auto overflow-x-hidden subtle-scroll">
             {NAV.map(item => {
               const active = isActive(item);
               const badgeCount = item.href === '/espace-client/messages' ? unreadMsgCount : 0;
@@ -367,7 +383,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="p-5 sm:p-6 lg:p-8 relative">
+        <main className={isFullCanvasRoute ? 'p-4 sm:p-5 lg:px-6 lg:py-5 relative' : 'p-5 sm:p-6 lg:p-8 relative'}>
           {children}
 
         </main>

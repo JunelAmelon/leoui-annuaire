@@ -130,7 +130,7 @@ export function SetupWizard({
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto subtle-scroll px-6 py-5">
             {step === 0 && (
               <div className="space-y-5">
                 <p className="text-sm text-charcoal-500 leading-relaxed">
