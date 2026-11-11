@@ -3,9 +3,13 @@
  * DIP : dépend de l'interface SeatingRepository, jamais de Firestore directement.
  */
 
-import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, SeatAssignments, SeatType } from '../domain/types';
+import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, SeatAssignments, SeatType, RoomConfig, DecorConfig } from '../domain/types';
 import type { SeatingRepository, SeatingGuest } from '../repositories/seating.repository';
-import { seatKey } from '../domain/types';
+import { seatKey, DEFAULT_DECOR } from '../domain/types';
+import {
+  normalizeRoom, roomPolygon, roomSizeUnits, nudgeInside, innerAnchor, gridSlots, tableSizeUnits,
+  type Point,
+} from '../domain/room-geometry';
 
 /** Dimensions par défaut des éléments de salle (unités canvas 1000×700). */
 export const ROOM_ITEM_DEFS: Record<RoomItemType, { label: string; w: number; h: number }> = {
@@ -18,9 +22,8 @@ export const ROOM_ITEM_DEFS: Record<RoomItemType, { label: string; w: number; h:
   photobooth: { label: 'Photobooth',      w: 80,  h: 80 },
 };
 
-/** Position par défaut d'un élément selon son rôle dans la salle. */
-function roomItemDefaultPos(type: RoomItemType, existing: RoomItem[]): { x: number; y: number } {
-  const n = existing.filter((i) => i.type === type).length;
+/** Position de référence (salle 1000×700) d'un élément selon son rôle. */
+function roomItemRefPos(type: RoomItemType, n: number): { x: number; y: number } {
   switch (type) {
     case 'stage':      return { x: 370, y: 30 };
     case 'dj':         return { x: 60 + n * 150, y: 30 };
@@ -31,6 +34,24 @@ function roomItemDefaultPos(type: RoomItemType, existing: RoomItem[]): { x: numb
     case 'photobooth': return { x: 880, y: 120 };
   }
 }
+
+/** Construit un élément de salle positionné proportionnellement à la salle, ramené dans son contour. */
+function buildRoomItem(type: RoomItemType, existing: RoomItem[], room: RoomConfig, id: string): RoomItem {
+  const def = ROOM_ITEM_DEFS[type];
+  const size = roomSizeUnits(room);
+  const ref = roomItemRefPos(type, existing.filter((i) => i.type === type).length);
+  const c = nudgeInside(
+    { x: ref.x * (size.w / 1000) + def.w / 2, y: ref.y * (size.h / 700) + def.h / 2 },
+    roomPolygon(room),
+    6
+  );
+  return { id, type, x: c.x - def.w / 2, y: c.y - def.h / 2, w: def.w, h: def.h, rotation: 0, label: def.label };
+}
+
+const centerOfTable = (t: SeatingTable): Point => {
+  const s = tableSizeUnits(t.shape);
+  return { x: t.x + s.w / 2, y: t.y + s.h / 2 };
+};
 
 export function createSeatingService(repo: SeatingRepository) {
   const uid = () =>
@@ -58,12 +79,21 @@ export function createSeatingService(repo: SeatingRepository) {
 
     async addTable(plan: SeatingPlan, shape: SeatingTable['shape'], seats: number): Promise<SeatingTable[]> {
       const n = plan.tables.length + 1;
+      // Emplacement libre le plus proche du centre de la salle (évite l'empilement)
+      const room = normalizeRoom(plan.room);
+      const sz = tableSizeUnits(shape);
+      const taken = plan.tables.map(centerOfTable);
+      const items = plan.room_items.map((i) => ({ x: i.x, y: i.y, w: i.w, h: i.h }));
+      const anchor = innerAnchor(roomPolygon(room));
+      const candidates = gridSlots(roomPolygon(room), { x: 70, y: 70 }, Math.max(sz.w, sz.h) / 2 + 20, items)
+        .sort((a, b) => Math.hypot(a.x - anchor.x, a.y - anchor.y) - Math.hypot(b.x - anchor.x, b.y - anchor.y));
+      const free = candidates.find((p) => taken.every((t) => Math.hypot(t.x - p.x, t.y - p.y) > 175)) || anchor;
       const table: SeatingTable = {
         id: uid(),
         label: `Table ${n}`,
         shape,
-        x: 15 + (plan.tables.length % 5) * 15,
-        y: 15 + Math.floor(plan.tables.length / 5) * 20,
+        x: free.x - sz.w / 2,
+        y: free.y - sz.h / 2,
         rotation: 0,
         seats,
       };
@@ -123,51 +153,45 @@ export function createSeatingService(repo: SeatingRepository) {
      */
     async generateHall(
       plan: SeatingPlan,
-      opts: { tableCount: number; shape: SeatingTable['shape']; seats: number; roomItems: RoomItemType[] }
+      opts: { tableCount: number; shape: SeatingTable['shape']; seats: number; roomItems: RoomItemType[]; room?: Partial<RoomConfig> }
     ): Promise<SeatingPlan> {
       const { tableCount, shape, seats } = opts;
-      const cols = Math.max(1, Math.ceil(Math.sqrt(tableCount * 1.6)));
-      const rows = Math.ceil(tableCount / cols);
-      const spacingX = shape === 'round' ? 150 : 190;
-      const spacingY = shape === 'round' ? 150 : 130;
-      const gridW = cols * spacingX;
-      const gridH = rows * spacingY;
-      const x0 = 500 - gridW / 2;
-      const y0 = Math.max(200, 350 - gridH / 2);
+      const room = normalizeRoom({ ...normalizeRoom(plan.room), ...(opts.room || {}) });
+      const poly = roomPolygon(room);
+      const anchor = innerAnchor(poly);
 
-      const tables: SeatingTable[] = [];
-      for (let i = 0; i < tableCount; i++) {
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        const rowCount = Math.min(cols, tableCount - row * cols);
-        const offset = ((cols - rowCount) * spacingX) / 2;
-        tables.push({
-          id: uid(),
-          label: `Table ${i + 1}`,
-          shape,
-          x: Math.round(x0 + offset + col * spacingX + spacingX / 2 - 40),
-          y: Math.round(y0 + row * spacingY),
-          rotation: 0,
-          seats,
-        });
-      }
-
+      // 1. Éléments de salle, proportionnels à la forme choisie
       const room_items: RoomItem[] = [];
-      for (const type of opts.roomItems) {
-        const def = ROOM_ITEM_DEFS[type];
-        const pos = roomItemDefaultPos(type, room_items);
-        room_items.push({ id: uid(), type, x: pos.x, y: pos.y, w: def.w, h: def.h, rotation: 0, label: def.label });
-      }
+      for (const type of opts.roomItems) room_items.push(buildRoomItem(type, room_items, room, uid()));
 
-      const next: SeatingPlan = { ...plan, tables, room_items, assignments: {}, updated_at: new Date().toISOString() };
+      // 2. Tables : grille filtrée par le contour, hors zones des éléments, regroupée autour du centre
+      const sz = tableSizeUnits(shape);
+      const margin = Math.max(sz.w, sz.h) / 2 + 25;
+      const avoid = room_items.map((i) => ({ x: i.x, y: i.y, w: i.w, h: i.h }));
+      let spacing = { x: shape === 'round' ? 150 : 190, y: shape === 'round' ? 150 : 130 };
+      let slots = gridSlots(poly, spacing, margin, avoid);
+      for (let k = 0; slots.length < tableCount && k < 8; k++) {
+        spacing = { x: spacing.x * 0.93, y: spacing.y * 0.93 };
+        slots = gridSlots(poly, spacing, margin, avoid);
+      }
+      if (slots.length < tableCount) slots = gridSlots(poly, spacing, margin, []);
+      const chosen = [...slots]
+        .sort((a, b) => Math.hypot(a.x - anchor.x, a.y - anchor.y) - Math.hypot(b.x - anchor.x, b.y - anchor.y))
+        .slice(0, tableCount)
+        .sort((a, b) => Math.round(a.y / 10) - Math.round(b.y / 10) || a.x - b.x);
+
+      const tables: SeatingTable[] = Array.from({ length: tableCount }, (_, i) => {
+        const p = chosen[i] || nudgeInside({ x: anchor.x + i * 12, y: anchor.y + i * 12 }, poly);
+        return { id: uid(), label: `Table ${i + 1}`, shape, x: Math.round(p.x - sz.w / 2), y: Math.round(p.y - sz.h / 2), rotation: 0, seats };
+      });
+
+      const next: SeatingPlan = { ...plan, room, tables, room_items, assignments: {}, updated_at: new Date().toISOString() };
       await repo.save(next);
       return next;
     },
 
     async addRoomItem(plan: SeatingPlan, type: RoomItemType): Promise<RoomItem[]> {
-      const def = ROOM_ITEM_DEFS[type];
-      const pos = roomItemDefaultPos(type, plan.room_items);
-      const item: RoomItem = { id: uid(), type, x: pos.x, y: pos.y, w: def.w, h: def.h, rotation: 0, label: def.label };
+      const item = buildRoomItem(type, plan.room_items, normalizeRoom(plan.room), uid());
       const room_items = [...plan.room_items, item];
       await repo.save({ ...plan, room_items, updated_at: new Date().toISOString() });
       return room_items;
@@ -229,6 +253,59 @@ export function createSeatingService(repo: SeatingRepository) {
       };
       await repo.save(next);
       return next;
+    },
+
+    /**
+     * Change la forme / les dimensions de la salle. Les éléments qui se retrouvent
+     * hors du nouveau contour sont ramenés à l'intérieur (rien ne disparaît).
+     */
+    async setRoom(plan: SeatingPlan, room: Partial<RoomConfig>): Promise<SeatingPlan> {
+      const next = normalizeRoom({ ...normalizeRoom(plan.room), ...room });
+      const poly = roomPolygon(next);
+      const tables = plan.tables.map((t) => {
+        const s = tableSizeUnits(t.shape);
+        const c = nudgeInside(centerOfTable(t), poly, Math.max(s.w, s.h) / 2 + 10);
+        return { ...t, x: c.x - s.w / 2, y: c.y - s.h / 2 };
+      });
+      const room_items = plan.room_items.map((i) => {
+        const c = nudgeInside({ x: i.x + i.w / 2, y: i.y + i.h / 2 }, poly, 6);
+        return { ...i, x: c.x - i.w / 2, y: c.y - i.h / 2 };
+      });
+      const result: SeatingPlan = { ...plan, room: next, tables, room_items, updated_at: new Date().toISOString() };
+      await repo.save(result);
+      return result;
+    },
+
+    /** Met à jour le décor 3D (sol, murs, chaises, tables, centre de table, ambiance). */
+    async setDecor(plan: SeatingPlan, patch: Partial<DecorConfig>): Promise<SeatingPlan> {
+      const decor: DecorConfig = { ...DEFAULT_DECOR, ...(plan.decor || {}), ...patch };
+      const result: SeatingPlan = { ...plan, decor, updated_at: new Date().toISOString() };
+      await repo.save(result);
+      return result;
+    },
+
+    /**
+     * Duplique une table (sans ses invités) ou un élément de salle.
+     * Retourne le plan mis à jour + l'id du nouvel élément (pour le sélectionner).
+     */
+    async duplicateElement(plan: SeatingPlan, id: string): Promise<{ plan: SeatingPlan; newId: string | null }> {
+      const poly = roomPolygon(normalizeRoom(plan.room));
+      const table = plan.tables.find((t) => t.id === id);
+      if (table) {
+        const s = tableSizeUnits(table.shape);
+        const c = nudgeInside({ x: table.x + s.w / 2 + 40, y: table.y + s.h / 2 + 40 }, poly, Math.max(s.w, s.h) / 2 + 10);
+        const copy: SeatingTable = { ...table, id: uid(), label: `Table ${plan.tables.length + 1}`, x: c.x - s.w / 2, y: c.y - s.h / 2 };
+        const result = { ...plan, tables: [...plan.tables, copy], updated_at: new Date().toISOString() };
+        await repo.save(result);
+        return { plan: result, newId: copy.id };
+      }
+      const item = plan.room_items.find((i) => i.id === id);
+      if (!item) return { plan, newId: null };
+      const c = nudgeInside({ x: item.x + item.w / 2 + 30, y: item.y + item.h / 2 + 30 }, poly, 6);
+      const copy: RoomItem = { ...item, id: uid(), x: c.x - item.w / 2, y: c.y - item.h / 2 };
+      const result = { ...plan, room_items: [...plan.room_items, copy], updated_at: new Date().toISOString() };
+      await repo.save(result);
+      return { plan: result, newId: copy.id };
     },
 
     /** Définit / supprime l'image de fond de la salle (chemin Storage). */

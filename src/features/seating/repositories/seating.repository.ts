@@ -27,6 +27,9 @@ export class FirestoreSeatingRepository implements SeatingRepository {
       tables: d.tables || [],
       room_items: d.room_items || [],
       assignments: d.assignments || {},
+      // Champs optionnels : jamais `undefined` (refusé par Firestore à l'écriture)
+      ...(d.room ? { room: d.room } : {}),
+      ...(d.decor ? { decor: d.decor } : {}),
       background_path: d.background_path || null,
       updated_at: d.updated_at || '',
     };

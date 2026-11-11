@@ -15,14 +15,17 @@ import {
   Loader2, Trash2, Users, Undo2, Redo2, ZoomIn, ZoomOut,
   Wand2, RefreshCw, Search, GripVertical, Baby, Accessibility, Crown, X,
   Heart, RotateCw, RotateCcw,
-  Box,
+  Box, Copy, Ruler,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FirestoreSeatingRepository, fetchConfirmedGuests, type SeatingGuest } from '@/features/seating/repositories/seating.repository';
 import { createSeatingService, ROOM_ITEM_DEFS } from '@/features/seating/services/seating.service';
 import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, TableShape, SeatAssignments, SeatType } from '@/features/seating/domain/types';
 import { TABLE_SHAPES, seatKey } from '@/features/seating/domain/types';
+import { roomPolygon, roomSizeUnits, normalizeRoom, isInsideWithMargin, tableSizeUnits, ROUND_R, UNITS_PER_M } from '@/features/seating/domain/room-geometry';
 import { SetupWizard } from '@/features/seating/ui/SetupWizard';
+import { RoomShapePicker } from '@/features/seating/ui/RoomShapePicker';
+import { ContextMenu } from '@/features/seating/ui/ContextMenu';
 import { ITEM_ICONS, ITEM_ICON_SMALL } from '@/features/seating/ui/item-icons';
 import dynamic from 'next/dynamic';
 
@@ -30,13 +33,6 @@ const Scene3D = dynamic(() => import('@/features/seating/ui/Scene3D'), { ssr: fa
 
 const repo = new FirestoreSeatingRepository();
 const service = createSeatingService(repo);
-
-/** Canvas virtuel 1000×700 — positions en unités du plan, responsive via viewBox. */
-const W = 1000;
-const H = 700;
-const TABLE_W = 150;
-const TABLE_H = 60;
-const ROUND_R = 42;
 
 /** Dimensions d'une chaise (style plan d'architecte) */
 const CHAIR_W = 15;
@@ -52,8 +48,14 @@ const SEAT_TYPES: { value: SeatType; label: string; icon: React.ReactNode; fill:
 ];
 const seatStyle = (t?: SeatType) => SEAT_TYPES.find((s) => s.value === t);
 
-interface Snapshot { tables: SeatingTable[]; room_items: RoomItem[]; assignments: SeatAssignments }
-const snap = (p: SeatingPlan): Snapshot => ({ tables: p.tables, room_items: p.room_items, assignments: p.assignments });
+interface Snapshot { tables: SeatingTable[]; room_items: RoomItem[]; assignments: SeatAssignments; room?: SeatingPlan['room'] }
+// `room` n'est inclus que s'il existe (Firestore refuse les champs `undefined`)
+const snap = (p: SeatingPlan): Snapshot => ({
+  tables: p.tables, room_items: p.room_items, assignments: p.assignments, ...(p.room ? { room: p.room } : {}),
+});
+
+/** Appui long tactile (ms) avant ouverture du menu contextuel. */
+const LONG_PRESS_MS = 550;
 
 export default function PlanDeTablePage() {
   const { user } = useAuth();
@@ -71,13 +73,19 @@ export default function PlanDeTablePage() {
   const [seatTool, setSeatTool] = useState<SeatType | null>(null);
   const [toolTab, setToolTab] = useState<'tables' | 'animations'>('tables');
   const [preview3D, setPreview3D] = useState(false);
+  const [roomPanelOpen, setRoomPanelOpen] = useState(false);
+  const [roomDraft, setRoomDraft] = useState<SeatingPlan['room'] | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(null);
+  const [, forceRender] = useState(0);
+  const longPress = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const past = useRef<Snapshot[]>([]);
   const future = useRef<Snapshot[]>([]);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const gRef = useRef<SVGGElement | null>(null);
-  const dragRef = useRef<{ kind: 'table' | 'item' | 'rotate'; id: string; dx: number; dy: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ kind: 'table' | 'item' | 'rotate'; id: string; dx: number; dy: number; moved: boolean; sx: number; sy: number } | null>(null);
 
   useEffect(() => {
     if (clientLoading || !eventId) return;
@@ -123,8 +131,21 @@ export default function PlanDeTablePage() {
   const redo = () => { const s = future.current.pop(); if (s && plan) { past.current.push(snap(plan)); restore(s); } };
 
   /* ── Géométrie ── */
-  const tableSize = (t: SeatingTable) =>
-    t.shape === 'round' ? { w: ROUND_R * 2, h: ROUND_R * 2 } : { w: TABLE_W, h: TABLE_H };
+  // La salle (forme + dimensions) pilote la taille du plan : 1 m = UNITS_PER_M unités
+  // `roomDraft` = valeur en cours de réglage (aperçu immédiat) ; la sauvegarde est différée (voir plus bas)
+  const room = normalizeRoom(roomDraft ?? plan?.room);
+  const { w: W, h: H } = roomSizeUnits(room);
+  const poly = roomPolygon(room);
+  const tableSize = (t: SeatingTable) => tableSizeUnits(t.shape);
+
+  /** Déplace un élément en le faisant « glisser » le long des murs plutôt que de le bloquer net. */
+  const slideInside = (cur: { x: number; y: number }, nx: number, ny: number, w: number, h: number, margin: number) => {
+    const ok = (x: number, y: number) => isInsideWithMargin({ x: x + w / 2, y: y + h / 2 }, poly, margin);
+    if (ok(nx, ny)) return { x: nx, y: ny };
+    if (ok(nx, cur.y)) return { x: nx, y: cur.y };
+    if (ok(cur.x, ny)) return { x: cur.x, y: ny };
+    return cur;
+  };
   const tableCenter = (t: SeatingTable) => {
     const { w, h } = tableSize(t);
     return { x: t.x + w / 2, y: t.y + h / 2 };
@@ -185,10 +206,30 @@ export default function PlanDeTablePage() {
   /* ── Drag ── */
   const startDrag = (kind: 'table' | 'item', id: string, ox: number, oy: number, e: React.PointerEvent) => {
     e.stopPropagation();
+    if (e.button === 2) return; // clic droit → menu contextuel, pas de déplacement
     setSelectedId(id);
+    setMenu(null);
     const p = toSvgPoint(e);
-    dragRef.current = { kind, id, dx: p.x - ox, dy: p.y - oy, moved: false };
+    dragRef.current = { kind, id, dx: p.x - ox, dy: p.y - oy, moved: false, sx: e.clientX, sy: e.clientY };
     (e.target as Element).setPointerCapture(e.pointerId);
+    // Tactile : appui long immobile → menu contextuel (équivalent du clic droit)
+    if (e.pointerType !== 'mouse') {
+      const { clientX, clientY } = e;
+      if (longPress.current) clearTimeout(longPress.current);
+      longPress.current = setTimeout(() => {
+        longPress.current = null;
+        if (dragRef.current && !dragRef.current.moved) {
+          dragRef.current = null;
+          setMenu({ x: clientX, y: clientY, id });
+        }
+      }, LONG_PRESS_MS);
+    }
+  };
+  const openMenu = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedId(id);
+    setMenu({ x: e.clientX, y: e.clientY, id });
   };
   /** Centre d'un élément quelconque (table ou item) en unités du plan. */
   const elementCenter = (id: string): { x: number; y: number } | null => {
@@ -201,13 +242,16 @@ export default function PlanDeTablePage() {
   const startRotate = (id: string, e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    dragRef.current = { kind: 'rotate', id, dx: 0, dy: 0, moved: false };
+    dragRef.current = { kind: 'rotate', id, dx: 0, dy: 0, moved: false, sx: 0, sy: 0 };
     (e.target as Element).setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current || !plan) return;
+    // Seuil de 5 px : un simple appui (même tremblant) n'est pas un déplacement → appui long / clic préservés
+    if (!dragRef.current.moved && dragRef.current.kind !== 'rotate' && Math.hypot(e.clientX - dragRef.current.sx, e.clientY - dragRef.current.sy) < 5) return;
     dragRef.current.moved = true;
+    if (longPress.current) { clearTimeout(longPress.current); longPress.current = null; }
     const p = toSvgPoint(e);
     const { kind, id, dx, dy } = dragRef.current;
     if (kind === 'rotate') {
@@ -227,18 +271,18 @@ export default function PlanDeTablePage() {
       const t = plan.tables.find((x) => x.id === id);
       if (!t) return;
       const { w, h } = tableSize(t);
-      const nx = Math.min(Math.max(p.x - dx, -w / 2), W - w / 2);
-      const ny = Math.min(Math.max(p.y - dy, -h / 2), H - h / 2);
-      setPlan({ ...plan, tables: plan.tables.map((x) => (x.id === id ? { ...x, x: nx, y: ny } : x)) });
+      // Les chaises débordent de la table : marge plus large pour ne pas les coller dans le mur
+      const pos = slideInside(t, p.x - dx, p.y - dy, w, h, t.shape === 'round' ? ROUND_R + 22 : 42);
+      setPlan({ ...plan, tables: plan.tables.map((x) => (x.id === id ? { ...x, ...pos } : x)) });
     } else {
       const it = plan.room_items.find((x) => x.id === id);
       if (!it) return;
-      const nx = Math.min(Math.max(p.x - dx, -it.w / 2), W - it.w / 2);
-      const ny = Math.min(Math.max(p.y - dy, -it.h / 2), H - it.h / 2);
-      setPlan({ ...plan, room_items: plan.room_items.map((x) => (x.id === id ? { ...x, x: nx, y: ny } : x)) });
+      const pos = slideInside(it, p.x - dx, p.y - dy, it.w, it.h, Math.min(it.w, it.h) / 2);
+      setPlan({ ...plan, room_items: plan.room_items.map((x) => (x.id === id ? { ...x, ...pos } : x)) });
     }
   };
   const onPointerUp = async () => {
+    if (longPress.current) { clearTimeout(longPress.current); longPress.current = null; }
     const d = dragRef.current;
     if (d && plan && d.moved) {
       if (d.kind === 'table') {
@@ -263,11 +307,26 @@ export default function PlanDeTablePage() {
     setPlan({ ...plan, tables });
   };
 
-  const rotateSelected = async (delta: number) => {
-    if (!plan || !selectedId) return;
+  const rotateById = async (id: string, delta: number) => {
+    if (!plan) return;
     checkpoint();
-    const next = await service.rotateElement(plan, selectedId, delta, true);
+    const next = await service.rotateElement(plan, id, delta, true);
     setPlan(next);
+  };
+  const rotateSelected = (delta: number) => selectedId && rotateById(selectedId, delta);
+
+  const duplicateById = async (id: string) => {
+    if (!plan) return;
+    checkpoint();
+    const { plan: next, newId } = await service.duplicateElement(plan, id);
+    setPlan(next);
+    if (newId) setSelectedId(newId);
+  };
+
+  const changeRoom = async (patch: Partial<NonNullable<SeatingPlan['room']>>) => {
+    if (!plan) return;
+    checkpoint();
+    setPlan(await service.setRoom(plan, patch));
   };
 
   const addTable = async (shape: TableShape) => {
@@ -285,20 +344,60 @@ export default function PlanDeTablePage() {
     setPlan({ ...plan, room_items });
   };
 
-  const removeSelected = async () => {
-    if (!plan || !selectedId) return;
+  const removeById = async (id: string) => {
+    if (!plan) return;
     checkpoint();
-    if (plan.tables.some((t) => t.id === selectedId)) {
-      const { tables, assignments } = await service.removeTable(plan, selectedId);
+    if (plan.tables.some((t) => t.id === id)) {
+      const { tables, assignments } = await service.removeTable(plan, id);
       setPlan({ ...plan, tables, assignments });
-      toast.success('Table supprimée.');
+      toast.success('Table supprimée — Ctrl+Z pour annuler.');
     } else {
-      const room_items = await service.removeRoomItem(plan, selectedId);
+      const room_items = await service.removeRoomItem(plan, id);
       setPlan({ ...plan, room_items });
-      toast.success('Élément supprimé.');
+      toast.success('Élément supprimé — Ctrl+Z pour annuler.');
     }
-    setSelectedId(null);
+    setSelectedId((cur) => (cur === id ? null : cur));
   };
+  const removeSelected = () => selectedId && removeById(selectedId);
+
+  /* ── Raccourcis clavier : Suppr, Ctrl+D, Ctrl+Z / Ctrl+Y, Échap ── */
+  const shortcuts = useRef<{ del: () => void; dup: () => void; undo: () => void; redo: () => void; esc: () => void }>();
+  shortcuts.current = {
+    del: () => removeSelected(),
+    dup: () => selectedId && duplicateById(selectedId),
+    undo, redo,
+    esc: () => { setSelectedId(null); setSeatTool(null); setMenu(null); },
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      const mod = e.ctrlKey || e.metaKey;
+      const s = shortcuts.current!;
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); s.del(); }
+      else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); s.dup(); }
+      else if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? s.redo() : s.undo(); }
+      else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); s.redo(); }
+      else if (e.key === 'Escape') s.esc();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Enregistre la salle 450 ms après le dernier réglage : un seul historique / une seule écriture par geste
+  useEffect(() => {
+    if (!roomDraft) return;
+    const t = setTimeout(async () => { await changeRoom(roomDraft); setRoomDraft(null); }, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomDraft]);
+
+  /** Recalcule la position de la barre d'actions quand la fenêtre change de taille. */
+  useEffect(() => {
+    const on = () => forceRender((n) => n + 1);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
 
   const onSeatClick = async (tableId: string, seatIndex: number) => {
     if (!plan) return;
@@ -347,7 +446,7 @@ export default function PlanDeTablePage() {
     toast.success(`${Object.keys(assignments).length} invité(s) placé(s).`);
   };
 
-  const generateHall = async (opts: { tableCount: number; shape: TableShape; seats: number; roomItems: RoomItemType[] }) => {
+  const generateHall = async (opts: Parameters<typeof service.generateHall>[1]) => {
     if (!plan) return;
     checkpoint();
     const next = await service.generateHall(plan, opts);
@@ -358,7 +457,9 @@ export default function PlanDeTablePage() {
   };
 
   /** Poignée de rotation — petite bulle ⟳ au-dessus de l'élément sélectionné. */
-  const RotateHandle = ({ cx, topY, id }: { cx: number; topY: number; id: string }) => (
+  // Fonction de rendu (et non composant) : un composant redéfini à chaque render serait remonté
+  // pendant le glissement et casserait la capture du pointeur.
+  const rotateHandle = ({ cx, topY, id }: { cx: number; topY: number; id: string }) => (
     <g className="cursor-grab" onPointerDown={(e) => startRotate(id, e)}>
       <line x1={cx} y1={topY} x2={cx} y2={topY - 26} stroke="#E11D48" strokeWidth={1.2} strokeDasharray="3 3" />
       <circle cx={cx} cy={topY - 34} r={10} fill="white" stroke="#E11D48" strokeWidth={1.5} />
@@ -613,9 +714,16 @@ export default function PlanDeTablePage() {
               </div>
             )}
             <div className="flex items-center gap-1.5 ml-auto">
+              <button type="button" onClick={() => setRoomPanelOpen((o) => !o)} aria-expanded={roomPanelOpen}
+                title="Forme et dimensions de la salle"
+                className={`inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border text-xs font-semibold transition-colors ${
+                  roomPanelOpen ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-white border-stone-200 text-charcoal-600 hover:border-rose-400 hover:text-rose-600'
+                }`}>
+                <Ruler className="w-3.5 h-3.5" /> Salle
+              </button>
               <button type="button" onClick={() => setPreview3D(true)} title="Vue 3D"
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white border border-stone-200 text-xs font-semibold text-charcoal-600 hover:border-rose-400 hover:text-rose-600 transition-colors">
-                <Box className="w-3.5 h-3.5" /> 3D
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-charcoal-900 text-white hover:bg-charcoal-800 text-xs font-semibold transition-colors">
+                <Box className="w-3.5 h-3.5" /> Vue 3D
               </button>
               <div className="w-px h-5 bg-stone-200" />
               <button type="button" onClick={() => setZoom((z) => Math.max(0.5, z - 0.15))} title="Zoom -"
@@ -629,17 +737,37 @@ export default function PlanDeTablePage() {
             </div>
           </div>
 
-          {/* Canvas — sol légèrement teinté pour que les tables blanches ressortent */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-[#F9F8F7]">
+          {/* Panneau Salle — forme + dimensions (aperçu en direct, enregistrement différé) */}
+          {roomPanelOpen && (
+            <div className="mb-3 bg-white rounded-xl border border-stone-200/80 shadow-sm p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-semibold tracking-[0.1em] uppercase text-charcoal-400">Forme et dimensions de la salle</p>
+                <button type="button" onClick={() => setRoomPanelOpen(false)} aria-label="Fermer"
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-charcoal-300 hover:text-charcoal-600 hover:bg-stone-100">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="max-w-md">
+                <RoomShapePicker value={room} onChange={setRoomDraft} />
+              </div>
+            </div>
+          )}
+
+          {/* Canvas — l'extérieur est légèrement plus sombre que le sol : la forme de la salle se lit d'un coup d'œil */}
+          <div ref={wrapRef} className="relative overflow-hidden rounded-2xl border border-stone-200 bg-[#ECE7E1]">
             <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
               className="w-full select-none touch-none block"
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerLeave={onPointerUp}
-              onClick={() => { setSelectedId(null); setSeatTool(null); }}>
+              onContextMenu={(e) => e.preventDefault()}
+              onClick={() => { setSelectedId(null); setSeatTool(null); setMenu(null); }}>
               <g ref={gRef} transform={`translate(${(1 - zoom) * W / 2} ${(1 - zoom) * H / 2}) scale(${zoom})`}>
-                {/* Limite de salle — filet discret */}
-                <rect x={6} y={6} width={W - 12} height={H - 12} rx={14} fill="none" stroke="#E7E5E4" strokeWidth={1.5} />
+                {/* Sol de la salle (contour réel) + murs */}
+                <polygon points={poly.map((p) => `${p.x},${p.y}`).join(' ')} fill="#FBFAF8" stroke="#C9C0B6" strokeWidth={4} strokeLinejoin="round" />
+                {/* Cotes */}
+                <text x={W / 2} y={22} textAnchor="middle" fontSize="13" fill="#A39A90" fontWeight="600">{room.width_m} m</text>
+                <text x={18} y={H / 2} textAnchor="middle" fontSize="13" fill="#A39A90" fontWeight="600" transform={`rotate(-90 18 ${H / 2})`}>{room.length_m} m</text>
 
                 {plan!.tables.length === 0 && plan!.room_items.length === 0 && (
                   <text x={W / 2} y={H / 2} textAnchor="middle" fill="#A0978F" fontSize="20" fontFamily="serif" fontStyle="italic">
@@ -657,6 +785,7 @@ export default function PlanDeTablePage() {
                     <g key={it.id} transform={`rotate(${it.rotation} ${cx} ${cy})`}>
                       <g onPointerDown={(e) => startDrag('item', it.id, it.x, it.y, e)}
                         onClick={(e) => e.stopPropagation()}
+                        onContextMenu={(e) => openMenu(it.id, e)}
                         className="cursor-grab active:cursor-grabbing">
                         {/* Ombre légère */}
                         <rect x={it.x + 1.5} y={it.y + 2} width={it.w} height={it.h}
@@ -678,7 +807,7 @@ export default function PlanDeTablePage() {
                           </div>
                         </foreignObject>
                       </g>
-                      {sel && <RotateHandle cx={cx} topY={it.y - 6} id={it.id} />}
+                      {sel && rotateHandle({ cx, topY: it.y - 6, id: it.id })}
                     </g>
                   );
                 })}
@@ -709,6 +838,7 @@ export default function PlanDeTablePage() {
                           <g key={key}
                             transform={`rotate(${p.angle} ${p.x} ${p.y})`}
                             onClick={(e) => { e.stopPropagation(); onSeatClick(t.id, i); }}
+                            onContextMenu={(e) => openMenu(t.id, e)}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => onSeatDrop(t.id, i, e)}
                             className="cursor-pointer">
@@ -733,6 +863,7 @@ export default function PlanDeTablePage() {
                       {/* Surface de la table */}
                       <g onPointerDown={(e) => startDrag('table', t.id, t.x, t.y, e)}
                         onClick={(e) => e.stopPropagation()}
+                        onContextMenu={(e) => openMenu(t.id, e)}
                         className="cursor-grab active:cursor-grabbing">
                         {t.shape === 'round' ? (
                           <>
@@ -777,13 +908,46 @@ export default function PlanDeTablePage() {
                       </g>
 
                       {/* Poignée de rotation — visible quand la table est sélectionnée */}
-                      {sel && t.shape !== 'round' && <RotateHandle cx={c.x} topY={t.y - 18} id={t.id} />}
+                      {sel && t.shape !== 'round' && rotateHandle({ cx: c.x, topY: t.y - 18, id: t.id })}
                     </g>
                   );
                 })}
               </g>
             </svg>
+
+            {/* Barre d'actions flottante — sous l'élément sélectionné : tourner, dupliquer, supprimer sans quitter le plan */}
+            {(() => {
+              const el = selectedTable || selectedItem;
+              const svg = svgRef.current;
+              const wrap = wrapRef.current;
+              if (!el || !svg || !wrap || menu || dragRef.current?.moved) return null;
+              const c = elementCenter(el.id);
+              if (!c) return null;
+              const sz = selectedTable ? tableSize(selectedTable) : { w: selectedItem!.w, h: selectedItem!.h };
+              const th = ((el.rotation || 0) * Math.PI) / 180;
+              const halfH = (Math.abs(Math.sin(th)) * sz.w) / 2 + (Math.abs(Math.cos(th)) * sz.h) / 2 + (selectedTable ? 30 : 12);
+              const r = svg.getBoundingClientRect();
+              const wr = wrap.getBoundingClientRect();
+              const s = r.width / W;
+              const left = Math.min(Math.max(r.left - wr.left + ((1 - zoom) * (W / 2) + zoom * c.x) * s, 84), wr.width - 84);
+              const top = Math.min(r.top - wr.top + ((1 - zoom) * (H / 2) + zoom * (c.y + halfH)) * s + 8, wr.height - 46);
+              const btn = 'w-9 h-9 flex items-center justify-center rounded-md text-charcoal-600 hover:bg-stone-100 transition-colors';
+              return (
+                <div style={{ left, top }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
+                  className="absolute -translate-x-1/2 z-10 flex items-center gap-0.5 p-1 bg-white rounded-lg shadow-lg border border-stone-200">
+                  <button type="button" className={btn} title="Pivoter à gauche (−45°)" onClick={() => rotateById(el.id, -45)}><RotateCcw className="w-4 h-4" /></button>
+                  <button type="button" className={btn} title="Pivoter à droite (+45°)" onClick={() => rotateById(el.id, 45)}><RotateCw className="w-4 h-4" /></button>
+                  <button type="button" className={btn} title="Dupliquer (Ctrl+D)" onClick={() => duplicateById(el.id)}><Copy className="w-4 h-4" /></button>
+                  <span className="w-px h-5 bg-stone-200 mx-0.5" />
+                  <button type="button" className={`${btn} text-rose-600 hover:bg-rose-50`} title="Supprimer (Suppr)" onClick={() => removeById(el.id)}><Trash2 className="w-4 h-4" /></button>
+                </div>
+              );
+            })()}
           </div>
+
+          <p className="mt-2 text-[11px] text-charcoal-300">
+            Astuce : clic droit (ou appui long sur mobile) sur une table ou un élément pour le tourner, le dupliquer ou le supprimer — Suppr, Ctrl+D, Ctrl+Z fonctionnent aussi.
+          </p>
 
           {/* Légende */}
           <div className="flex items-center gap-4 mt-3 text-[11px] text-charcoal-400 flex-wrap">
@@ -799,6 +963,7 @@ export default function PlanDeTablePage() {
       {wizardOpen && (
         <SetupWizard
           guestCount={guests.length}
+          initialRoom={room}
           isEdit={plan!.tables.length > 0}
           onClose={() => setWizardOpen(false)}
           onGenerate={generateHall}
@@ -808,6 +973,21 @@ export default function PlanDeTablePage() {
       {preview3D && plan && (
         <Scene3D plan={plan} onClose={() => setPreview3D(false)} />
       )}
+
+      {menu && (() => {
+        const t = plan!.tables.find((x) => x.id === menu.id);
+        const it = plan!.room_items.find((x) => x.id === menu.id);
+        if (!t && !it) return null;
+        return (
+          <ContextMenu x={menu.x} y={menu.y} title={t ? t.label : it?.label} onClose={() => setMenu(null)}
+            items={[
+              { key: 'l', label: 'Pivoter à gauche', icon: <RotateCcw className="w-4 h-4" />, onClick: () => rotateById(menu.id, -45) },
+              { key: 'r', label: 'Pivoter à droite', icon: <RotateCw className="w-4 h-4" />, onClick: () => rotateById(menu.id, 45) },
+              { key: 'd', label: 'Dupliquer', icon: <Copy className="w-4 h-4" />, onClick: () => duplicateById(menu.id) },
+              { key: 'x', label: t ? 'Supprimer la table' : 'Supprimer l’élément', icon: <Trash2 className="w-4 h-4" />, danger: true, onClick: () => removeById(menu.id) },
+            ]} />
+        );
+      })()}
     </div>
   );
 }

@@ -8,12 +8,13 @@
 
 import { useState } from 'react';
 import { X, Users, ChevronRight, ChevronLeft, Check, Sparkles } from 'lucide-react';
-import type { RoomItemType, TableShape } from '../domain/types';
-import { TABLE_SHAPES } from '../domain/types';
+import type { RoomItemType, TableShape, RoomConfig } from '../domain/types';
+import { TABLE_SHAPES, ROOM_SHAPES, DEFAULT_ROOM } from '../domain/types';
+import { RoomShapePicker } from './RoomShapePicker';
 import { ROOM_ITEM_DEFS } from '../services/seating.service';
 import { ITEM_ICONS } from './item-icons';
 
-const STEPS = ['Vos invités', 'Votre salle', 'Vos tables', 'Récapitulatif'] as const;
+const STEPS = ['Vos invités', 'Forme de la salle', 'Éléments de salle', 'Vos tables', 'Récapitulatif'] as const;
 
 const ITEM_CHOICES: { type: RoomItemType; hint: string }[] = [
   { type: 'stage', hint: "Table des mariés sur scène" },
@@ -64,13 +65,16 @@ export function SetupWizard({
   onGenerate,
   onClose,
   isEdit = false,
+  initialRoom = DEFAULT_ROOM,
 }: {
   guestCount: number;
-  onGenerate: (opts: { tableCount: number; shape: TableShape; seats: number; roomItems: RoomItemType[] }) => void;
+  onGenerate: (opts: { tableCount: number; shape: TableShape; seats: number; roomItems: RoomItemType[]; room: RoomConfig }) => void;
   onClose: () => void;
   isEdit?: boolean;
+  initialRoom?: RoomConfig;
 }) {
   const [step, setStep] = useState(0);
+  const [room, setRoom] = useState<RoomConfig>(initialRoom);
   const [guests, setGuests] = useState<number>(Math.max(10, guestCount));
   const [items, setItems] = useState<RoomItemType[]>(['dancefloor', 'bar']);
   const [shape, setShape] = useState<TableShape>('round');
@@ -158,6 +162,15 @@ export function SetupWizard({
             {step === 1 && (
               <div className="space-y-4">
                 <p className="text-sm text-charcoal-500">
+                  Quelle est la forme de votre salle ? Les dimensions se règlent à la mètre près, et vous pourrez les changer plus tard.
+                </p>
+                <RoomShapePicker value={room} onChange={setRoom} />
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-4">
+                <p className="text-sm text-charcoal-500">
                   Quels éléments votre salle comportera-t-elle ? Ils seront placés automatiquement, puis réglables.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -182,7 +195,7 @@ export function SetupWizard({
               </div>
             )}
 
-            {step === 2 && (
+            {step === 3 && (
               <div className="space-y-5">
                 <p className="text-sm text-charcoal-500">Choisissez la forme de vos tables.</p>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -224,12 +237,13 @@ export function SetupWizard({
               </div>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <div className="space-y-4">
                 <p className="text-sm text-charcoal-500">Voici ce que nous allons générer :</p>
                 <div className="rounded-2xl bg-[#FAF6F2] border border-stone-200 divide-y divide-stone-200">
                   {[
                     ['Invités', `${guests} personnes`],
+                    ['Salle', `${ROOM_SHAPES.find((s) => s.value === room.shape)?.label}, ${room.width_m} × ${room.shape === 'square' ? room.width_m : room.length_m} m`],
                     ['Tables', `${tableCount} tables ${TABLE_SHAPES.find((s) => s.value === shape)?.label.toLowerCase()}s de ${seats} places`],
                     ['Éléments', items.length ? items.map((t) => ROOM_ITEM_DEFS[t].label).join(', ') : 'Aucun'],
                   ].map(([l, v]) => (
@@ -259,7 +273,7 @@ export function SetupWizard({
                 Continuer <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button type="button" onClick={() => onGenerate({ tableCount, shape, seats, roomItems: items })}
+              <button type="button" onClick={() => onGenerate({ tableCount, shape, seats, roomItems: items, room })}
                 className="flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-rose-600 text-white text-xs font-semibold shadow hover:bg-rose-700">
                 <Sparkles className="w-4 h-4" /> {isEdit ? 'Régénérer ma salle' : 'Générer ma salle'}
               </button>

@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { InMemorySeatingRepository } from '../repositories/in-memory-seating.repository';
 import { createSeatingService } from './seating.service';
 import type { SeatingGuest } from '../repositories/seating.repository';
+import { roomPolygon, pointInPolygon } from '../domain/room-geometry';
 
 function makeGuests(n: number, side = 'mariée'): SeatingGuest[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -220,6 +221,62 @@ test('SeatingService - Plan de table', async (t) => {
     const planWith = { ...plan, tables, assignments };
     assert.equal(service.guestSeat(planWith, 'g7'), `${t1}_5`);
     assert.equal(service.guestSeat(planWith, 'inconnu'), null);
+  });
+
+  await t.test('14. setRoom - change la forme et ramène les éléments dans le contour', async () => {
+    const plan = await service.getOrCreate(eventId, ownerId);
+    const hall = await service.generateHall(plan, { tableCount: 8, shape: 'round', seats: 8, roomItems: ['dancefloor', 'bar'] });
+    const next = await service.setRoom(hall, { shape: 'l', width_m: 30, length_m: 20 });
+    assert.equal(next.room?.shape, 'l');
+    assert.equal(next.room?.width_m, 30);
+    const poly = roomPolygon(next.room!);
+    for (const tb of next.tables) {
+      const c = { x: tb.x + 42, y: tb.y + 42 };
+      assert.ok(pointInPolygon(c, poly), `${tb.label} dans le L`);
+    }
+    assert.equal(next.tables.length, 8, 'aucune table perdue');
+    assert.equal(next.room_items.length, 2, 'aucun élément perdu');
+    const stored = await repo.getByEventId(eventId);
+    assert.equal(stored?.room?.shape, 'l', 'persisté');
+  });
+
+  await t.test('15. generateHall - respecte une salle en U (aucune table dans le creux)', async () => {
+    const plan = await service.getOrCreate(eventId, ownerId);
+    const withRoom = await service.setRoom(plan, { shape: 'u', width_m: 36, length_m: 24 });
+    const hall = await service.generateHall(withRoom, { tableCount: 14, shape: 'round', seats: 8, roomItems: ['stage', 'dancefloor', 'buffet'] });
+    const poly = roomPolygon(hall.room!);
+    assert.equal(hall.tables.length, 14);
+    for (const tb of hall.tables) assert.ok(pointInPolygon({ x: tb.x + 42, y: tb.y + 42 }, poly), `${tb.label} dans le U`);
+    // aucune table ne se superpose à une autre
+    for (let i = 0; i < hall.tables.length; i++)
+      for (let j = i + 1; j < hall.tables.length; j++)
+        assert.ok(Math.hypot(hall.tables[i].x - hall.tables[j].x, hall.tables[i].y - hall.tables[j].y) > 84, 'pas de chevauchement');
+  });
+
+  await t.test('16. setDecor - fusionne avec les valeurs par défaut et persiste', async () => {
+    const plan = await service.getOrCreate(eventId, ownerId);
+    const next = await service.setDecor(plan, { floor: 'marbre', chair_style: 'ghost' });
+    assert.equal(next.decor?.floor, 'marbre');
+    assert.equal(next.decor?.chair_style, 'ghost');
+    assert.equal(next.decor?.mood, 'jour', 'valeur par défaut conservée');
+    const again = await service.setDecor(next, { mood: 'soiree' });
+    assert.equal(again.decor?.floor, 'marbre', 'patch cumulatif');
+    assert.equal(again.decor?.mood, 'soiree');
+  });
+
+  await t.test('17. duplicateElement - copie une table (sans invités) et un élément', async () => {
+    const plan = await service.getOrCreate(eventId, ownerId);
+    const hall = await service.generateHall(plan, { tableCount: 2, shape: 'round', seats: 6, roomItems: ['bar'] });
+    const src = hall.tables[0];
+    const withGuest = { ...hall, assignments: await service.assign(hall, src.id, 0, 'g0') };
+    const t1 = await service.duplicateElement(withGuest, src.id);
+    assert.equal(t1.plan.tables.length, 3);
+    assert.ok(t1.newId && t1.newId !== src.id);
+    assert.equal(Object.keys(t1.plan.assignments).filter((k) => k.startsWith(`${t1.newId}_`)).length, 0, 'invités non copiés');
+    const t2 = await service.duplicateElement(t1.plan, hall.room_items[0].id);
+    assert.equal(t2.plan.room_items.length, 2);
+    const t3 = await service.duplicateElement(t2.plan, 'inconnu');
+    assert.equal(t3.newId, null);
   });
 
   await t.test('13. save - persiste un état complet (undo/redo)', async () => {

@@ -256,9 +256,24 @@ tables: [{
 room_items: [{ id, type: 'dancefloor'|'bar'|'buffet'|'stage'|'dj'|'entrance'|'photobooth',
                x, y, w, h, rotation, label }],
 assignments: { [seatKey: `${tableId}_${seatIndex}`]: guest_id }, // 1 chaise = 1 invité
+room?: { shape: 'rect'|'square'|'l'|'u'|'t'|'oval', width_m, length_m },  // absent = rect 20×14 m
+decor?: {                                  // décor de la vue 3D — absent = DEFAULT_DECOR
+  floor: 'dalles'|'parquet_chevron'|'parquet_clair'|'marbre'|'beton_cire'|'tapis_sable',
+  wall_color,                              // hex
+  table_style: 'nappe'|'bois_verni'|'bois_chene'|'marbre_or',
+  cloth_color,                             // hex (nappe par défaut ; une table peut surcharger via `color`)
+  chair_style: 'napoleon'|'chiavari_bois'|'chiavari_or'|'chiavari_noire'|'medaillon'|'ghost',
+  centerpiece: 'candelabre'|'boule_blanche'|'couronne_basse'|'eucalyptus'|'bougeoirs'|'aucun',
+  flower_color,                            // hex
+  mood: 'jour'|'soiree'
+},
 background_path,   // chemin Storage
 updated_at
 ```
+- **Repère commun 2D / 3D** : `x`, `y`, `w`, `h` sont en *unités plan* ; **1 m = 50 unités**
+  (`UNITS_PER_M`). Une salle 20 × 14 m = 1000 × 700 unités (valeur historique → anciens plans valides).
+- `room.width_m` / `length_m` : bornés à 8–60 m (pas 0,5 m) ; `square` ⇒ longueur = largeur.
+- Changer `room` ramène dans le contour tout élément resté dehors (rien n'est supprimé).
 - **Invariant « 1 invité = 1 place »** : la clé de `assignments` empêche 2 invités sur
   la même chaise, **pas** un invité sur 2 chaises. Vérifier côté serveur/transaction
   qu'un `guest_id` n'apparaît qu'une fois avant d'écrire.
