@@ -21,8 +21,9 @@ import { toast } from 'sonner';
 import { FirestoreSeatingRepository, fetchConfirmedGuests, type SeatingGuest } from '@/features/seating/repositories/seating.repository';
 import { createSeatingService, ROOM_ITEM_DEFS } from '@/features/seating/services/seating.service';
 import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, TableShape, SeatAssignments, SeatType } from '@/features/seating/domain/types';
-import { TABLE_SHAPES, seatKey } from '@/features/seating/domain/types';
+import { TABLE_SHAPES, DEFAULT_DECOR, seatKey } from '@/features/seating/domain/types';
 import { roomPolygon, roomSizeUnits, normalizeRoom, isInsideWithMargin, tableSizeUnits, ROUND_R, UNITS_PER_M } from '@/features/seating/domain/room-geometry';
+import { seatLayout, tableCenterUnits, CHAIR_W, CHAIR_H } from '@/features/seating/domain/table-geometry';
 import { SetupWizard } from '@/features/seating/ui/SetupWizard';
 import { RoomShapePicker } from '@/features/seating/ui/RoomShapePicker';
 import { ContextMenu } from '@/features/seating/ui/ContextMenu';
@@ -33,10 +34,6 @@ const Scene3D = dynamic(() => import('@/features/seating/ui/Scene3D'), { ssr: fa
 
 const repo = new FirestoreSeatingRepository();
 const service = createSeatingService(repo);
-
-/** Dimensions d'une chaise (style plan d'architecte) */
-const CHAIR_W = 15;
-const CHAIR_H = 10;
 
 /** Palette nappes — tons LeOui. */
 const TABLE_COLORS = ['#FFFFFF', '#FAF6F2', '#F3E4DC', '#FBE8ED', '#E9EFE6', '#E4E9F1'];
@@ -146,56 +143,9 @@ export default function PlanDeTablePage() {
     if (ok(cur.x, ny)) return { x: cur.x, y: ny };
     return cur;
   };
-  const tableCenter = (t: SeatingTable) => {
-    const { w, h } = tableSize(t);
-    return { x: t.x + w / 2, y: t.y + h / 2 };
-  };
-  /**
-   * Positions + angle de rotation des chaises autour de la table.
-   * angle=0 : chaise face vers le bas (vers l'intérieur).
-   * Pour les rondes/ovales : chaque chaise pivote pour pointer vers le centre.
-   */
-  const seatPositions = (t: SeatingTable): { x: number; y: number; angle: number }[] => {
-    const c = tableCenter(t);
-    const pts: { x: number; y: number; angle: number }[] = [];
-
-    if (t.shape === 'round') {
-      /* Tables rondes — chaises en couronne, orientées vers le centre */
-      const r = ROUND_R + CHAIR_H + 2;
-      for (let i = 0; i < t.seats; i++) {
-        const a = (i / t.seats) * Math.PI * 2 - Math.PI / 2;
-        pts.push({
-          x: c.x + Math.cos(a) * r,
-          y: c.y + Math.sin(a) * r,
-          angle: (a * 180) / Math.PI + 90, // dos de la chaise face au centre
-        });
-      }
-    } else if (t.shape === 'oval') {
-      /* Tables ovales — chaises sur une ellipse légèrement plus grande */
-      const { w, h } = tableSize(t);
-      const rx = w / 2 + CHAIR_H + 3;
-      const ry = h / 2 + CHAIR_H + 3;
-      for (let i = 0; i < t.seats; i++) {
-        const a = (i / t.seats) * Math.PI * 2 - Math.PI / 2;
-        pts.push({
-          x: c.x + Math.cos(a) * rx,
-          y: c.y + Math.sin(a) * ry,
-          angle: (a * 180) / Math.PI + 90,
-        });
-      }
-    } else {
-      /* Tables rectangulaires / table d'honneur — chaises sur côtés haut + bas */
-      const { w, h } = tableSize(t);
-      const top = Math.ceil(t.seats / 2);
-      const bottom = t.seats - top;
-      const gap = CHAIR_H + 4; // écart bord table ↔ centre chaise
-      for (let i = 0; i < top; i++)
-        pts.push({ x: t.x + (w * (i + 0.5)) / top, y: t.y - gap, angle: 180 }); // chaise face vers bas
-      for (let i = 0; i < bottom; i++)
-        pts.push({ x: t.x + (w * (i + 0.5)) / bottom, y: t.y + h + gap, angle: 0 }); // chaise face vers haut
-    }
-    return pts;
-  };
+  // Géométrie partagée avec la vue 3D (domaine) : mêmes positions et orientations dans les deux vues
+  const tableCenter = (t: SeatingTable) => tableCenterUnits(t);
+  const seatPositions = (t: SeatingTable) => seatLayout(t);
 
   const toSvgPoint = (e: React.PointerEvent | React.DragEvent | PointerEvent) => {
     const pt = (svgRef.current as SVGSVGElement).createSVGPoint();
@@ -971,7 +921,31 @@ export default function PlanDeTablePage() {
       )}
 
       {preview3D && plan && (
-        <Scene3D plan={plan} onClose={() => setPreview3D(false)} />
+        <Scene3D
+          plan={{ ...plan, room }}
+          guests={guests}
+          onClose={() => setPreview3D(false)}
+          onMoveTable={async (id, x, y, commit) => {
+            if (!commit) { setPlan((p) => p && { ...p, tables: p.tables.map((t) => (t.id === id ? { ...t, x, y } : t)) }); return; }
+            checkpoint();
+            const tables = await service.moveTable(plan, id, x, y);
+            setPlan((p) => p && { ...p, tables });
+          }}
+          onMoveItem={async (id, x, y, commit) => {
+            if (!commit) { setPlan((p) => p && { ...p, room_items: p.room_items.map((i) => (i.id === id ? { ...i, x, y } : i)) }); return; }
+            checkpoint();
+            const room_items = await service.moveRoomItem(plan, id, x, y);
+            setPlan((p) => p && { ...p, room_items });
+          }}
+          onRotate={rotateById}
+          onDuplicate={duplicateById}
+          onDelete={removeById}
+          onDecorChange={async (patch) => {
+            const next = await service.setDecor({ ...plan, decor: { ...DEFAULT_DECOR, ...(plan.decor || {}) } }, patch);
+            setPlan((p) => p && { ...p, decor: next.decor });
+          }}
+          onRoomChange={setRoomDraft}
+        />
       )}
 
       {menu && (() => {
