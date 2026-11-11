@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FirestoreSeatingRepository, fetchConfirmedGuests, type SeatingGuest } from '@/features/seating/repositories/seating.repository';
-import { createSeatingService, ROOM_ITEM_DEFS } from '@/features/seating/services/seating.service';
+import { createSeatingService, ROOM_ITEM_DEFS, ANIMATION_TYPES } from '@/features/seating/services/seating.service';
 import type { SeatingPlan, SeatingTable, RoomItem, RoomItemType, TableShape, SeatAssignments, SeatType } from '@/features/seating/domain/types';
 import { TABLE_SHAPES, DEFAULT_DECOR, seatKey } from '@/features/seating/domain/types';
 import { roomPolygon, roomSizeUnits, normalizeRoom, isInsideWithMargin, tableSizeUnits, ROUND_R, UNITS_PER_M } from '@/features/seating/domain/room-geometry';
@@ -618,7 +618,7 @@ export default function PlanDeTablePage() {
               </div>
             ) : (
               <div className="flex items-center gap-1.5 flex-wrap">
-                {(Object.keys(ROOM_ITEM_DEFS) as RoomItemType[]).map((type) => (
+                {ANIMATION_TYPES.map((type) => (
                   <button key={type} type="button" onClick={() => addItem(type)}
                     className="px-3 py-1.5 rounded-lg bg-white border border-dashed border-stone-300 text-xs font-medium text-charcoal-600 hover:border-rose-400 hover:text-rose-600 transition-colors">
                     {ROOM_ITEM_DEFS[type].label}

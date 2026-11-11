@@ -17,7 +17,6 @@ import { ITEM_ICONS } from './item-icons';
 const STEPS = ['Vos invités', 'Forme de la salle', 'Éléments de salle', 'Vos tables', 'Récapitulatif'] as const;
 
 const ITEM_CHOICES: { type: RoomItemType; hint: string }[] = [
-  { type: 'stage', hint: "Table des mariés sur scène" },
   { type: 'dancefloor', hint: 'Parquet dédié aux danses' },
   { type: 'dj', hint: 'DJ / orchestre' },
   { type: 'buffet', hint: 'Table de service traiteur' },

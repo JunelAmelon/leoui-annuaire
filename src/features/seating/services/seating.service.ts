@@ -13,14 +13,19 @@ import {
 
 /** Dimensions par défaut des éléments de salle (unités canvas 1000×700). */
 export const ROOM_ITEM_DEFS: Record<RoomItemType, { label: string; w: number; h: number }> = {
-  stage:      { label: "Table d'honneur", w: 260, h: 40 },
+  stage:      { label: 'Estrade',         w: 260, h: 40 },
   dj:         { label: 'DJ / Orchestre',  w: 120, h: 40 },
   dancefloor: { label: 'Piste de danse',  w: 220, h: 140 },
   bar:        { label: 'Bar',             w: 140, h: 45 },
   buffet:     { label: 'Buffet',          w: 200, h: 45 },
   entrance:   { label: 'Entrée',          w: 90,  h: 20 },
-  photobooth: { label: 'Photobooth',      w: 80,  h: 80 },
+  photobooth: { label: 'Photobooth',      w: 85,  h: 85 },
 };
+
+/** Animations proposées dans l'UI (la Table d'honneur est dans l'onglet Tables, pas dans Animations). */
+export const ANIMATION_TYPES: RoomItemType[] = [
+  'dancefloor', 'dj', 'buffet', 'bar', 'photobooth', 'entrance',
+];
 
 /** Position de référence (salle 1000×700) d'un élément selon son rôle. */
 function roomItemRefPos(type: RoomItemType, n: number): { x: number; y: number } {

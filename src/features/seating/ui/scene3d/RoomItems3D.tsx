@@ -7,9 +7,96 @@
  * Dimensions au sol = `item.w / UNITS_PER_M` × `item.h / UNITS_PER_M` → coïncide avec le plan 2D.
  */
 
-import { useMemo } from 'react';
+import { Component, Suspense, useMemo, type ReactNode } from 'react';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 import type { RoomItemType } from '../../domain/types';
 import { danceTexture } from './materials';
+
+const PHOTOBOOTH_GLB = '/models/photobooth.glb';
+
+/** Garde-fou : si le GLB ne peut pas être chargé, on retombe sur la borne bois/trépied sans planter la scène. */
+class GltfSafeBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
+
+/** Fallback réaliste (borne vintage caisson bois + objectif + écran + trépied) pendant le chargement du GLB. */
+function PhotoboothVintageFallback() {
+  return (
+    <group position={[0, 0.02, 0]}>
+      <mesh position={[0, 1.55, 0]} castShadow>
+        <boxGeometry args={[0.55, 0.62, 0.28]} />
+        <meshStandardMaterial color="#c9a06a" roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 1.55, 0.15]} castShadow>
+        <boxGeometry args={[0.5, 0.56, 0.03]} />
+        <meshStandardMaterial color="#d9b380" roughness={0.55} />
+      </mesh>
+      <mesh position={[0, 1.72, 0.18]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.09, 0.09, 0.05, 24]} />
+        <meshStandardMaterial color="#1f1c26" roughness={0.3} />
+      </mesh>
+      <mesh position={[0, 1.72, 0.205]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 0.01, 24]} />
+        <meshStandardMaterial color="#3a5a8a" roughness={0.15} metalness={0.4} />
+      </mesh>
+      <mesh position={[0, 1.48, 0.17]}>
+        <planeGeometry args={[0.32, 0.2]} />
+        <meshStandardMaterial color="#22242e" emissive="#4a5568" emissiveIntensity={0.6} roughness={0.4} />
+      </mesh>
+      {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((a, i) => (
+        <mesh key={i} position={[Math.sin(a) * 0.3, 0.5, Math.cos(a) * 0.3]} rotation={[Math.cos(a) * 0.28, 0, -Math.sin(a) * 0.28]} castShadow>
+          <cylinderGeometry args={[0.025, 0.02, 1.35, 8]} />
+          <meshStandardMaterial color="#b08d5e" roughness={0.6} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.1, 0]} castShadow>
+        <cylinderGeometry args={[0.03, 0.03, 0.5, 8]} />
+        <meshStandardMaterial color="#8a6f4d" roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 0.72, 0.32]} castShadow>
+        <cylinderGeometry args={[0.22, 0.22, 0.02, 20]} />
+        <meshStandardMaterial color="#c9a06a" roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Vrai modèle 3D GLB du photobooth (repris du projet témoin : LED, flash, écran vitré, inox), posé sur le tapis rouge. */
+function PhotoboothGlbModel({ fit }: { fit: number }) {
+  const { scene } = useGLTF(PHOTOBOOTH_GLB);
+  const model = useMemo(() => {
+    const inst = scene.clone(true);
+    inst.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
+      if (mat?.name && /led|flash|tela|vidro/i.test(mat.name)) {
+        const cloned = mat.clone();
+        cloned.emissive = new THREE.Color('#ffffff');
+        cloned.emissiveIntensity = 0.65;
+        mesh.material = cloned;
+      }
+    });
+    const box = new THREE.Box3().setFromObject(inst);
+    const size = box.getSize(new THREE.Vector3());
+    const s = fit / (Math.max(size.x, size.z) || 1);
+    inst.scale.setScalar(s);
+    const b2 = new THREE.Box3().setFromObject(inst);
+    // Centré en X/Z et posé juste au-dessus du tapis rouge (y = 0.022)
+    inst.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y + 0.022, -(b2.min.z + b2.max.z) / 2);
+    return inst;
+  }, [scene, fit]);
+  return <primitive object={model} />;
+}
+
+if (typeof window !== 'undefined') {
+  useGLTF.preload(PHOTOBOOTH_GLB);
+}
 
 export function RoomItemVisual({ type, w, d, clothColor, flowerColor }: {
   type: RoomItemType;
@@ -128,23 +215,16 @@ export function RoomItemVisual({ type, w, d, clothColor, flowerColor }: {
     case 'photobooth':
       return (
         <group>
-          {/* Tapis rouge + borne sur pied avec anneau lumineux */}
-          <mesh position={[0, 0.012, 0.15]} receiveShadow>
-            <boxGeometry args={[w * 0.7, 0.02, d * 0.85]} />
+          {/* Tapis rouge conservé sous le photobooth */}
+          <mesh position={[0, 0.011, 0]} receiveShadow>
+            <boxGeometry args={[w * 0.95, 0.02, d * 1.05]} />
             <meshStandardMaterial color="#9e2a47" roughness={0.9} />
           </mesh>
-          <mesh position={[0, 0.75, -d * 0.25]} castShadow>
-            <cylinderGeometry args={[0.04, 0.16, 1.5, 14]} />
-            <meshStandardMaterial color="#2a2730" metalness={0.4} roughness={0.4} />
-          </mesh>
-          <mesh position={[0, 1.55, -d * 0.25]} castShadow>
-            <boxGeometry args={[0.38, 0.46, 0.14]} />
-            <meshStandardMaterial color="#f5f2ed" roughness={0.35} />
-          </mesh>
-          <mesh position={[0, 1.58, -d * 0.25 + 0.09]}>
-            <torusGeometry args={[0.13, 0.02, 10, 24]} />
-            <meshStandardMaterial color="#ffffff" emissive="#fff6e5" emissiveIntensity={1.6} />
-          </mesh>
+          <GltfSafeBoundary fallback={<PhotoboothVintageFallback />}>
+            <Suspense fallback={<PhotoboothVintageFallback />}>
+              <PhotoboothGlbModel fit={Math.max(w, d) * 0.92} />
+            </Suspense>
+          </GltfSafeBoundary>
         </group>
       );
 
