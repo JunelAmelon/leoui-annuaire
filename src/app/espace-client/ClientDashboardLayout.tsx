@@ -104,7 +104,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
     ? Math.max(0, Math.ceil((new Date(event.event_date).getTime() - Date.now()) / 86400000))
     : null;
 
-  const SW = collapsed ? 84 : 224; // sidebar pixel width
+  const SW = collapsed ? 84 : 244; // sidebar pixel width
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: '#FAF6F8' }}>
@@ -116,16 +116,16 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
       >
         <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm overflow-hidden">
 
-          {/* Logo + bouton rapide déplier/replier */}
-          <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'flex-col gap-2 px-2' : 'px-4 gap-3'}`}>
-            <Link
-              href="/"
-              className="w-10 h-10 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group"
-            >
+          {/* Logo + nom complet (jamais tronqué) + bouton déplier/replier */}
+          <div className={`flex items-center flex-shrink-0 ${collapsed ? 'flex-col gap-2 pt-4 pb-3 px-2' : 'pt-4 pb-3 pl-4 pr-2.5 gap-2.5'}`}>
+            <Link href="/" aria-label="LeOui.net — accueil"
+              className="w-9 h-9 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group">
               <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors" />
             </Link>
             {!collapsed && (
-              <span className="font-serif text-charcoal-900 text-base leading-none truncate flex-1">LeOui.net</span>
+              <Link href="/" className="font-serif text-charcoal-900 text-[1.2rem] leading-none whitespace-nowrap flex-1 min-w-0">
+                LeOui<span className="text-rose-600">.</span>net
+              </Link>
             )}
             <button
               type="button"

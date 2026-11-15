@@ -7,7 +7,7 @@
  */
 
 /** Image de fond par défaut de la page invité — remplacée seulement si le couple en choisit une. */
-export const DEFAULT_GUESTBOOK_COVER = '/mariage%20(2).jpg';
+export const DEFAULT_GUESTBOOK_COVER = '/livre-or-cover.jpg';
 
 export interface GuestbookPageContent {
   /** URL https (Cloudinary) ou chemin local ; null = image par défaut. */
