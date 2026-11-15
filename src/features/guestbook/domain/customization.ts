@@ -1,7 +1,7 @@
 /**
  * Personnalisation du livre d'or par le couple — domaine pur (aucun import Firebase / React).
  *  - `page`  : image + tous les textes de la page publique ouverte par les invités via le QR code.
- *  - `card`  : carte de table imprimable (tri-fold paysage) avec QR code.
+ *  - `card`  : carte de table imprimable (tri-fold paysage) avec photo et QR code.
  * Les champs sont stockés partiellement dans `guestbooks/{event_id}` ; les valeurs absentes
  * retombent sur les défauts ci-dessous (résolution à la lecture, jamais copiée en base).
  */
@@ -60,10 +60,12 @@ export const CARD_PAPERS: Record<CardPaper, { label: string; hex: string }> = {
 };
 
 export interface GuestbookCardDesign {
-  /** Mot manuscrit du panneau gauche, au-dessus du numéro. */
-  table_word: string;
-  /** Nombre de cartes à imprimer : une page par numéro de 1 à N. */
-  table_count: number;
+  /** Photo du panneau gauche (https Cloudinary ou chemin local) ; null = photo par défaut. */
+  image_url: string | null;
+  /** Photo en noir & blanc (rendu élégant, identique à l'aperçu). */
+  image_grayscale: boolean;
+  /** Mot manuscrit sous la photo. */
+  caption: string;
   welcome_label: string;
   names: string;
   place_line: string;
@@ -78,8 +80,9 @@ export interface GuestbookCardDesign {
 }
 
 export const GUESTBOOK_CARD_DEFAULTS: GuestbookCardDesign = {
-  table_word: 'table',
-  table_count: 1,
+  image_url: null,
+  image_grayscale: true,
+  caption: 'partagez l’amour',
   welcome_label: 'Bienvenue au mariage de',
   names: '',
   place_line: '',
@@ -115,6 +118,10 @@ export function resolvePageContent(stored: Partial<GuestbookPageContent> | undef
   return { ...GUESTBOOK_PAGE_DEFAULTS, ...(stored || {}) };
 }
 
+/** Photo par défaut de la carte de table. */
+export const DEFAULT_CARD_IMAGE = '/card-default.jpg';
+export const effectiveCardImage = (d: { image_url?: string | null }): string => d.image_url || DEFAULT_CARD_IMAGE;
+
 export const effectiveCover = (page: GuestbookPageContent): string => page.cover_url || DEFAULT_GUESTBOOK_COVER;
 
 /* ───────────── Validation / nettoyage (appliqués côté service, avant écriture) ───────────── */
@@ -122,12 +129,11 @@ export const effectiveCover = (page: GuestbookPageContent): string => page.cover
 const LIMITS: Record<string, number> = {
   eyebrow: 60, subtitle: 220, tab_text_label: 30, tab_audio_label: 30, name_label: 60, name_placeholder: 100,
   text_label: 60, text_placeholder: 200, submit_label: 40, thanks_title: 80, thanks_text: 320, another_label: 50,
-  table_word: 24, welcome_label: 50, names: 60, place_line: 70, date_line: 40, section_title: 40,
+  caption: 40, welcome_label: 50, names: 60, place_line: 70, date_line: 40, section_title: 40,
   cta_title: 40, cta_text: 200, closing_word: 30,
 };
 const SECTION_LINES_MAX = 4;
 const SECTION_LINE_CHARS = 140;
-export const CARD_TABLE_COUNT_MAX = 60;
 
 const clean = (v: unknown, max: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 
@@ -157,11 +163,8 @@ export function sanitizeCardPatch(patch: Partial<GuestbookCardDesign>): Partial<
   for (const [k, v] of Object.entries(patch)) {
     if (k === 'ink') { if (typeof v === 'string' && v in CARD_INKS) out.ink = v as CardInk; continue; }
     if (k === 'paper') { if (typeof v === 'string' && v in CARD_PAPERS) out.paper = v as CardPaper; continue; }
-    if (k === 'table_count') {
-      const n = Math.round(Number(v));
-      out.table_count = Number.isFinite(n) ? Math.min(CARD_TABLE_COUNT_MAX, Math.max(1, n)) : 1;
-      continue;
-    }
+    if (k === 'image_url') { out.image_url = sanitizeCoverUrl(v); continue; }
+    if (k === 'image_grayscale') { out.image_grayscale = Boolean(v); continue; }
     if (k === 'section_lines') {
       out.section_lines = (Array.isArray(v) ? v : []).slice(0, SECTION_LINES_MAX).map((l) => clean(l, SECTION_LINE_CHARS));
       continue;

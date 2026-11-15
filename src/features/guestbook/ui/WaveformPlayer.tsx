@@ -73,77 +73,50 @@ export function WaveformPlayer({
   const progressPercent = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
   return (
-    <div className="bg-stone-50/90 border border-stone-200/70 rounded-xl p-3 flex items-center gap-3">
+    <div className="flex items-center gap-3.5">
       {src && (
-        <audio
-          ref={audioRef}
-          src={src}
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={handleEnded}
-          preload="metadata"
-        />
+        <audio ref={audioRef} src={src} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} preload="metadata" />
       )}
 
-      {/* Bouton lecture/pause */}
       <button
         type="button"
         onClick={togglePlay}
         disabled={!src}
-        className="w-9 h-9 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 shadow-xs disabled:opacity-50"
+        className="w-10 h-10 rounded-full bg-charcoal-900 hover:bg-rose-600 text-white flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
         title={isPlaying ? 'Mettre en pause' : 'Écouter le message'}
+        aria-label={isPlaying ? 'Mettre en pause' : 'Écouter le message'}
       >
-        {isPlaying ? (
-          <Pause className="w-4 h-4 fill-white" />
-        ) : (
-          <Play className="w-4 h-4 fill-white ml-0.5" />
-        )}
+        {isPlaying ? <Pause className="w-3.5 h-3.5 fill-white" /> : <Play className="w-3.5 h-3.5 fill-white ml-0.5" />}
       </button>
 
-      {/* Barres de forme d'onde interactive */}
       <div className="flex-1 min-w-0">
         <div
-          className="flex items-center gap-[3px] h-8 relative cursor-pointer"
+          className="flex items-center gap-[3px] h-9 cursor-pointer"
           onClick={(e) => {
             if (!audioRef.current || !totalDuration) return;
             const rect = e.currentTarget.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const pct = Math.max(0, Math.min(1, clickX / rect.width));
+            const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
             audioRef.current.currentTime = pct * totalDuration;
             setCurrentTime(audioRef.current.currentTime);
           }}
         >
           {bars.map((amplitude, i) => {
-            const barPct = (i / bars.length) * 100;
-            const isPlayed = barPct <= progressPercent;
-            const barHeight = Math.max(15, Math.min(100, Math.round(amplitude * 100)));
-
+            const played = (i / bars.length) * 100 <= progressPercent;
+            const h = Math.max(14, Math.min(100, Math.round(amplitude * 100)));
             return (
-              <span
-                key={i}
-                className={`w-[3px] rounded-full transition-colors ${
-                  isPlayed ? 'bg-rose-600' : 'bg-stone-300'
-                }`}
-                style={{ height: `${barHeight}%` }}
-              />
+              <span key={i} className={`flex-1 max-w-[3px] min-w-[2px] rounded-full transition-colors ${played ? 'bg-charcoal-900' : 'bg-charcoal-200'}`} style={{ height: `${h}%` }} />
             );
           })}
         </div>
-
-        {/* Temps écoulé / total */}
-        <div className="flex items-center justify-between text-[11px] text-charcoal-400 mt-1 font-mono">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(totalDuration)}</span>
-        </div>
       </div>
 
-      {/* Téléchargement individuel de l'audio */}
+      <span className="text-[11px] text-charcoal-400 tabular-nums flex-shrink-0 w-[4.5rem] text-right">
+        {formatTime(currentTime)} <span className="text-charcoal-300">/ {formatTime(totalDuration)}</span>
+      </span>
+
       {allowDownload && src && (
-        <button
-          type="button"
-          onClick={handleDownload}
-          className="p-2 rounded-lg text-charcoal-400 hover:text-charcoal-700 hover:bg-stone-200/60 transition-colors flex-shrink-0"
-          title="Télécharger ce message vocal"
-        >
+        <button type="button" onClick={handleDownload}
+          className="p-1.5 rounded-md text-charcoal-300 hover:text-charcoal-700 transition-colors flex-shrink-0" title="Télécharger ce message vocal" aria-label="Télécharger">
           <Download className="w-4 h-4" />
         </button>
       )}

@@ -304,7 +304,9 @@ export default function CoupleGuestbookPage() {
         <QRCodeCard
           publicToken={guestbook.public_token}
           weddingTitle={guestbook.title}
+          cardDesign={resolveCardDesign(guestbook.card, cardFallback)}
           onDownloadFlyer={handleDownloadFlyerPdf}
+          onCustomize={() => setShowSettingsModal(true)}
         />
       )}
 
@@ -387,114 +389,70 @@ export default function CoupleGuestbookPage() {
         </div>
       )}
 
-      {/* ── Liste des messages ── */}
+      {/* ── Liste des messages — journal éditorial : date à gauche, parole à droite ── */}
       {filteredEntries.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-            <MessageSquare className="w-6 h-6" />
-          </div>
-          <h3 className="font-serif text-charcoal-900 text-lg font-normal">
-            Aucun message dans cette section
-          </h3>
-          <p className="text-xs text-charcoal-500 max-w-sm mx-auto leading-relaxed">
-            Partagez le QR Code avec vos invités pour commencer à recueillir leurs précieux témoignages.
+        <div className="border border-dashed border-stone-300 rounded-2xl py-14 px-6 text-center">
+          <p className="font-serif text-charcoal-900 text-xl" style={{ fontWeight: 400 }}>Aucun message pour l’instant</p>
+          <p className="text-sm text-charcoal-500 max-w-sm mx-auto leading-relaxed mt-2">
+            Posez les cartes sur les tables : les premiers mots de vos proches apparaîtront ici.
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div>
           {filteredEntries.map((entry) => {
-            const formattedDate = new Date(entry.created_at).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-
+            const d = new Date(entry.created_at);
+            const day = d.getDate();
+            const month = d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
+            const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             return (
-              <div
+              <article
                 key={entry.id}
-                className={`flex gap-3.5 pb-6 border-b border-charcoal-100 last:border-b-0 ${
-                  entry.hidden ? 'opacity-50' : ''
-                }`}
+                className={`group grid grid-cols-[3.2rem_1fr] sm:grid-cols-[5rem_1fr] gap-x-4 sm:gap-x-7 py-7 border-t border-charcoal-100 first:border-t-0 first:pt-2 ${entry.hidden ? 'opacity-45' : ''}`}
               >
-                {/* Avatar neutre — icône profil */}
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-stone-100 text-charcoal-500">
-                  <User className="w-6 h-6" />
+                <div className="pt-1 text-center sm:text-left">
+                  <p className="font-serif text-charcoal-900 leading-none" style={{ fontSize: 'clamp(1.7rem, 3vw, 2.3rem)', fontWeight: 400 }}>{day}</p>
+                  <p className="text-[10px] tracking-[0.16em] uppercase text-charcoal-400 mt-1.5">{month}</p>
+                  <p className="text-[10px] text-charcoal-300 mt-0.5 tabular-nums">{time}</p>
                 </div>
 
-                {/* Contenu */}
-                <div className="flex-1 min-w-0">
-                  {/* Ligne haute : Nom, Date & Actions */}
+                <div className="min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-serif text-charcoal-900 text-lg leading-snug truncate">
-                          {entry.guest_name}
-                        </p>
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                            entry.type === 'audio'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : 'bg-champagne-50 text-charcoal-600 border-champagne-200'
-                          }`}
-                        >
-                          {entry.type === 'audio' ? 'Vocal' : 'Écrit'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-charcoal-400 mt-1">{formattedDate}</p>
+                      <h3 className="font-serif text-charcoal-900 text-xl leading-snug" style={{ fontWeight: 500 }}>{entry.guest_name}</h3>
+                      <p className="text-[10px] font-semibold tracking-[0.16em] uppercase mt-1 text-rose-600">
+                        {entry.type === 'audio' ? `Message vocal${entry.duration_sec ? ` · ${fmtDur(entry.duration_sec)}` : ''}` : 'Mot écrit'}
+                        {entry.hidden && <span className="text-charcoal-400"> · masqué</span>}
+                      </p>
                     </div>
-
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFavorite(entry)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          entry.favorite
-                            ? 'text-rose-600 bg-rose-50'
-                            : 'text-charcoal-400 hover:text-rose-600 hover:bg-stone-50'
-                        }`}
-                        title={entry.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                      >
-                        <Heart className={`w-4 h-4 ${entry.favorite ? 'fill-rose-600' : ''}`} />
+                    <div className="flex items-center gap-0.5 flex-shrink-0 -mr-2 sm:opacity-40 sm:group-hover:opacity-100 transition-opacity">
+                      <button type="button" onClick={() => handleToggleFavorite(entry)}
+                        className={`p-2 rounded-md transition-colors ${entry.favorite ? 'text-rose-600' : 'text-charcoal-400 hover:text-rose-600'}`}
+                        title={entry.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'} aria-label="Favori">
+                        <Heart className={`w-[18px] h-[18px] ${entry.favorite ? 'fill-rose-600' : ''}`} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleHidden(entry)}
-                        className="p-2 rounded-lg text-charcoal-400 hover:text-charcoal-700 hover:bg-stone-50 transition-colors"
-                        title={entry.hidden ? 'Rendre visible' : 'Masquer du livre'}
-                      >
-                        {entry.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <button type="button" onClick={() => handleToggleHidden(entry)}
+                        className="p-2 rounded-md text-charcoal-400 hover:text-charcoal-800 transition-colors"
+                        title={entry.hidden ? 'Rendre visible' : 'Masquer du livre'} aria-label="Masquer">
+                        {entry.hidden ? <Eye className="w-[18px] h-[18px]" /> : <EyeOff className="w-[18px] h-[18px]" />}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteEntry(entry)}
-                        className="p-2 rounded-lg text-charcoal-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Supprimer définitivement"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                      <button type="button" onClick={() => handleDeleteEntry(entry)}
+                        className="p-2 rounded-md text-charcoal-300 hover:text-rose-600 transition-colors" title="Supprimer définitivement" aria-label="Supprimer">
+                        <Trash2 className="w-[18px] h-[18px]" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Contenu : Vocal ou Texte */}
                   {entry.type === 'audio' ? (
-                    <div className="mt-3 rounded-xl bg-[#FAF6F2] border border-stone-100 px-4 py-3">
-                      <WaveformPlayer
-                        src={entry.audio_path}
-                        waveform={entry.waveform}
-                        durationSec={entry.duration_sec}
-                        guestName={entry.guest_name}
-                      />
+                    <div className="mt-4 max-w-xl border-y border-charcoal-100 py-3">
+                      <WaveformPlayer src={entry.audio_path} waveform={entry.waveform} durationSec={entry.duration_sec} guestName={entry.guest_name} />
                     </div>
                   ) : (
-                    <blockquote className="mt-3 rounded-lg bg-[#FAF6F2]/70 px-3.5 py-2.5">
-                      <p className="text-[13px] text-charcoal-700 leading-relaxed font-serif italic">
-                        « {entry.body} »
-                      </p>
-                    </blockquote>
+                    <p className="mt-3 font-serif italic text-charcoal-700 leading-[1.7] max-w-2xl" style={{ fontSize: 'clamp(1.05rem, 1.5vw, 1.2rem)' }}>
+                      <span className="text-rose-500 mr-0.5">«</span>&nbsp;{entry.body}&nbsp;<span className="text-rose-500">»</span>
+                    </p>
                   )}
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>

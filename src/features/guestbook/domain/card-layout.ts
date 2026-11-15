@@ -3,7 +3,7 @@
  * Module pur : produit une liste d'opérations de dessin en millimètres, consommée à la fois
  * par le moteur PDF (jsPDF) et par l'aperçu à l'écran → les deux sont identiques.
  *
- *  Panneau 1 : mot manuscrit « table » + grand numéro + noms du couple
+ *  Panneau 1 : photo encadrée de blanc + mot manuscrit + noms, lieu et date
  *  Panneau 2 : titre manuscrit + textes libres du couple
  *  Panneau 3 : « Bienvenue au mariage de » + noms + lieu/date + QR code + appel à scanner + mot de fin
  */
@@ -23,6 +23,7 @@ export type CardOp =
   | { t: 'line'; x1: number; y1: number; x2: number; y2: number; w: number; color: CardColor; dash?: boolean }
   | { t: 'curve'; p: [number, number][]; w: number; color: CardColor }
   | { t: 'qr'; x: number; y: number; size: number }
+  | { t: 'image'; x: number; y: number; w: number; h: number }
   | { t: 'tick'; x: number };
 
 export interface CardPalette { ink: string; paper: string; muted: string; hair: string }
@@ -54,7 +55,10 @@ export function splitNames(names: string): string[] {
 const estimateLines = (text: string, maxWidth: number, sizePt: number, factor = 0.41) =>
   Math.max(1, Math.ceil((text.length * sizePt * 0.3528 * factor) / maxWidth));
 
-export function buildCardLayout(d: GuestbookCardDesign, tableNumber: number): CardOp[] {
+/** Cadre de la photo (mm) — partagé avec le moteur PDF pour recadrer l'image au bon ratio. */
+export const CARD_PHOTO = { x: 12, y: 14, w: 75, h: 108 } as const;
+
+export function buildCardLayout(d: GuestbookCardDesign): CardOp[] {
   const ops: CardOp[] = [];
   const P2 = PANEL_W;       // début panneau 2
   const P3 = PANEL_W * 2;   // début panneau 3
@@ -64,14 +68,13 @@ export function buildCardLayout(d: GuestbookCardDesign, tableNumber: number): Ca
   ops.push({ t: 'line', x1: P3, y1: 0, x2: P3, y2: CARD_H, w: 0.12, color: 'hair', dash: true });
   ops.push({ t: 'tick', x: P2 }, { t: 'tick', x: P3 });
 
-  /* ── Panneau 1 : table + numéro ── */
-  ops.push({ t: 'text', font: 'script', size: 80, x: 11, y: 60, text: d.table_word, color: 'ink' });
-  ops.push({ t: 'curve', p: [[9, 66], [42, 72], [70, 52], [92, 58]], w: 0.28, color: 'ink' });
-  const num = String(tableNumber);
-  ops.push({ t: 'text', font: 'numeral', size: num.length > 1 ? 120 : 170, x: 13, y: 152, text: num, color: 'ink' });
-  ops.push({ t: 'text', font: 'script', size: 24, x: 13, y: 176, text: d.names, color: 'ink', maxWidth: 80, lineHeight: 8 });
-  if (d.place_line) ops.push({ t: 'text', font: 'sans', size: 7.2, x: 13, y: 186, text: d.place_line, color: 'muted', spacing: 0.35 });
-  if (d.date_line) ops.push({ t: 'text', font: 'sans', size: 7.2, x: 13, y: 191.5, text: d.date_line, color: 'muted', spacing: 0.35 });
+  /* ── Panneau 1 : photo + mot manuscrit ── */
+  const cx1 = PANEL_W / 2;
+  ops.push({ t: 'image', ...CARD_PHOTO });
+  ops.push({ t: 'text', font: 'script', size: 34, x: cx1, y: 143, text: d.caption, color: 'ink', align: 'center', maxWidth: 84, lineHeight: 12 });
+  ops.push({ t: 'text', font: 'sansMedium', size: 6.6, x: cx1, y: 168, text: d.names.toUpperCase().replace(/\s*[+&]\s*/g, ' + '), color: 'ink', spacing: 0.6, align: 'center' });
+  if (d.place_line) ops.push({ t: 'text', font: 'sans', size: 6.8, x: cx1, y: 176, text: d.place_line, color: 'muted', spacing: 0.35, align: 'center' });
+  if (d.date_line) ops.push({ t: 'text', font: 'sans', size: 6.8, x: cx1, y: 181.5, text: d.date_line, color: 'muted', spacing: 0.35, align: 'center' });
 
   /* ── Panneau 2 : textes libres ── */
   const x2 = P2 + 11;

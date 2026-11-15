@@ -1,253 +1,129 @@
 'use client';
 
+/**
+ * Fonctionnalités à venir — présentées comme un sommaire de magazine :
+ * grand visuel, numéro en filigrane, texte aéré, alternance gauche/droite.
+ * Les « favoris » sont mémorisés sur cet appareil (localStorage) — rien n'est envoyé à l'équipe,
+ * le texte de l'interface le dit clairement.
+ */
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Gamepad2,
-  HeartHandshake,
-  Church,
-  Compass,
-  Landmark,
-  MailCheck,
-  Bed,
-  Wine,
-  Sparkles,
-  Check,
-  Bell,
-  MessageSquare,
-  FileText,
-} from 'lucide-react';
-import {
-  UPCOMING_FEATURES,
-  FEATURE_CATEGORIES,
-  type UpcomingFeature,
-  type FeatureCategory,
-} from '@/lib/upcoming-features';
-import { toast } from 'sonner';
+import { Bookmark } from 'lucide-react';
+import { UPCOMING_FEATURES, FEATURE_CATEGORIES, type FeatureCategory } from '@/lib/upcoming-features';
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Gamepad2,
-  HeartHandshake,
-  Church,
-  Compass,
-  Landmark,
-  MailCheck,
-  Bed,
-  Wine,
-};
+const STORAGE_KEY = 'leoui_upcoming_votes';
 
 export default function UpcomingFeaturesPage() {
-  const [selectedCategory, setSelectedCategory] = useState<FeatureCategory>('all');
-  const [votedIds, setVotedIds] = useState<string[]>([]);
+  const [category, setCategory] = useState<FeatureCategory>('all');
+  const [saved, setSaved] = useState<string[]>([]);
 
-  // Charger les votes locaux pour mémoriser l'intérêt du couple
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('leoui_upcoming_votes');
-      if (stored) {
-        setVotedIds(JSON.parse(stored));
-      }
-    } catch {
-      // Ignorer si localStorage indisponible
-    }
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setSaved(JSON.parse(raw));
+    } catch { /* localStorage indisponible */ }
   }, []);
 
-  const handleVote = (feature: UpcomingFeature) => {
-    const isVoted = votedIds.includes(feature.id);
-    let next: string[];
-    if (isVoted) {
-      next = votedIds.filter((id) => id !== feature.id);
-      toast('Votre intérêt a été retiré.', { duration: 2500 });
-    } else {
-      next = [...votedIds, feature.id];
-      toast.success(`Votre intérêt pour « ${feature.title} » a été transmis à l'équipe LeOui !`, {
-        duration: 3000,
-      });
-    }
-    setVotedIds(next);
-    try {
-      localStorage.setItem('leoui_upcoming_votes', JSON.stringify(next));
-    } catch {
-      // noop
-    }
+  const toggle = (id: string) => {
+    const next = saved.includes(id) ? saved.filter((x) => x !== id) : [...saved, id];
+    setSaved(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
   };
 
-  const filteredFeatures =
-    selectedCategory === 'all'
-      ? UPCOMING_FEATURES
-      : UPCOMING_FEATURES.filter((f) => f.categoryKey === selectedCategory);
+  const features = category === 'all' ? UPCOMING_FEATURES : UPCOMING_FEATURES.filter((f) => f.categoryKey === category);
+  const cats = FEATURE_CATEGORIES.filter((c) => c.key === 'all' || UPCOMING_FEATURES.some((f) => f.categoryKey === c.key));
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
-      {/* ── En-tête de page sobre & éditorial ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200/70 pb-6">
+    <div className="max-w-6xl mx-auto pb-16">
+      {/* ── Ouverture ── */}
+      <header className="grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-14 items-end pb-10 border-b border-charcoal-200/70">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
-            <p className="text-xs uppercase tracking-widest text-charcoal-400 font-medium">
-              Espace client · Nouveautés
-            </p>
-          </div>
-          <h1
-            className="font-serif text-charcoal-900 leading-tight"
-            style={{ fontSize: 'clamp(1.75rem, 3vw, 2.25rem)', fontWeight: 400 }}
-          >
-            Fonctionnalités à venir
+          <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-rose-600">La suite · {UPCOMING_FEATURES.length} outils en préparation</p>
+          <h1 className="font-serif text-charcoal-900 mt-4 leading-[1.05]" style={{ fontSize: 'clamp(2.3rem, 5vw, 4rem)', fontWeight: 400, letterSpacing: '-0.02em' }}>
+            Ce que nous<br />préparons pour vous
           </h1>
-          <p className="text-sm text-charcoal-600 mt-2 max-w-2xl leading-relaxed">
-            Découvrez les 8 prochains outils en cours de conception pour Le Oui Parfait.
-            Indiquez les modules qui vous intéressent le plus afin de guider le calendrier des livraisons.
+        </div>
+        <div className="lg:pb-2">
+          <p className="text-[15px] text-charcoal-600 leading-relaxed max-w-md">
+            Livrets, démarches, voyage de noces… voici les prochains outils de votre espace.
+            Gardez de côté ceux qui vous parlent : vos favoris restent sur cet appareil.
+          </p>
+          <p className="text-xs text-charcoal-400 mt-3">
+            {saved.length === 0 ? 'Aucun favori pour l’instant' : `${saved.length} favori${saved.length > 1 ? 's' : ''}`}
           </p>
         </div>
+      </header>
 
-        <div className="flex items-center gap-2 text-xs text-charcoal-500 bg-white border border-stone-200/80 px-3.5 py-2 rounded-xl shadow-xs self-start sm:self-auto flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-rose-500 flex-shrink-0" />
-          <span>{votedIds.length} intérêt{votedIds.length > 1 ? 's' : ''} noté{votedIds.length > 1 ? 's' : ''}</span>
-        </div>
-      </div>
+      {/* ── Rubriques : simple texte, trait sous l'actif ── */}
+      <nav className="flex gap-x-7 gap-y-2 flex-wrap py-5 border-b border-charcoal-100" aria-label="Rubriques">
+        {cats.map((c) => (
+          <button key={c.key} type="button" onClick={() => setCategory(c.key)}
+            className={`pb-1.5 text-[13px] border-b-2 transition-colors ${
+              category === c.key ? 'border-rose-600 text-charcoal-900 font-medium' : 'border-transparent text-charcoal-400 hover:text-charcoal-800'
+            }`}>
+            {c.label}
+          </button>
+        ))}
+      </nav>
 
-      {/* ── Filtres de catégories ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {FEATURE_CATEGORIES.map((cat) => {
-          const active = selectedCategory === cat.key;
-          const count =
-            cat.key === 'all'
-              ? UPCOMING_FEATURES.length
-              : UPCOMING_FEATURES.filter((f) => f.categoryKey === cat.key).length;
-
-          if (count === 0) return null;
-
+      {/* ── Sommaire ── */}
+      <div>
+        {features.map((f, idx) => {
+          const isSaved = saved.includes(f.id);
+          const flip = idx % 2 === 1;
           return (
-            <button
-              key={cat.key}
-              onClick={() => setSelectedCategory(cat.key)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-150 whitespace-nowrap flex-shrink-0 ${
-                active
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-white border border-stone-200 text-charcoal-600 hover:text-charcoal-900 hover:border-charcoal-300'
-              }`}
-            >
-              <span>{cat.label}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  active ? 'bg-white/20 text-white' : 'bg-stone-100 text-charcoal-500'
-                }`}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Grille des 8 cartes ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filteredFeatures.map((feature) => {
-          const Icon = ICON_MAP[feature.iconName] || Sparkles;
-          const isVoted = votedIds.includes(feature.id);
-
-          return (
-            <div
-              key={feature.id}
-              className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between group"
-            >
-              <div>
-                {/* Ligne d'en-tête de carte */}
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <span className="text-[11px] font-medium tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-stone-100 text-charcoal-600">
-                    {feature.category}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                    {feature.badge}
-                  </span>
-                </div>
-
-                {/* Titre et icône */}
-                <div className="flex items-start gap-3.5 mb-3">
-                  <div className="w-11 h-11 rounded-xl bg-[#FAF6F8] border border-rose-100 flex items-center justify-center text-rose-600 flex-shrink-0 group-hover:bg-rose-50 transition-colors">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="font-serif text-charcoal-900 text-lg font-normal leading-snug">
-                      {feature.title}
-                    </h2>
-                    <p className="text-xs text-charcoal-400 mt-0.5">
-                      Prévu dans la feuille de route LeOui
-                    </p>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p className="text-sm text-charcoal-600 leading-relaxed mb-4">
-                  {feature.description}
-                </p>
-
-                {/* Détail concret / Livrable */}
-                <div className="rounded-xl bg-[#FAF6F8]/80 border border-stone-200/60 p-3.5 space-y-2 mb-5">
-                  <div className="flex items-start gap-2 text-xs text-charcoal-700 leading-normal">
-                    <span className="text-rose-500 font-bold leading-none mt-0.5">·</span>
-                    <span>{feature.keyBenefit}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-1 border-t border-stone-200/50 text-[11px] text-charcoal-500">
-                    <FileText className="w-3.5 h-3.5 text-charcoal-400 flex-shrink-0" />
-                    <span className="font-medium text-charcoal-700">Livrable :</span>
-                    <span className="truncate">{feature.formatOrDeliverable}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bouton de vote / intérêt */}
-              <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-3">
-                <span className="text-[11px] text-charcoal-400">
-                  {isVoted ? 'Priorité enregistrée' : 'Cette fonctionnalité vous intéresse ?'}
+            <article key={f.id} className="grid md:grid-cols-2 gap-6 md:gap-14 py-10 md:py-14 border-b border-charcoal-100 last:border-b-0 items-center">
+              <div className={`relative overflow-hidden aspect-[5/4] bg-stone-200 ${flip ? 'md:order-2' : ''}`}>
+                <img src={f.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover saturate-[0.85]" style={{ objectPosition: f.focus }} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                <span className="absolute left-5 bottom-3 font-serif text-white/90 leading-none select-none" style={{ fontSize: 'clamp(3.4rem, 7vw, 5.5rem)', fontWeight: 300 }}>
+                  {String(f.order).padStart(2, '0')}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => handleVote(feature)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                    isVoted
-                      ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
-                      : 'bg-white border border-stone-200 text-charcoal-700 hover:border-charcoal-400 hover:text-charcoal-900'
-                  }`}
-                >
-                  {isVoted ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Intérêt noté</span>
-                    </>
-                  ) : (
-                    <>
-                      <Bell className="w-3.5 h-3.5 text-charcoal-400" />
-                      <span>M’avertir</span>
-                    </>
-                  )}
-                </button>
               </div>
-            </div>
+
+              <div className={flip ? 'md:order-1 md:pr-4' : 'md:pl-4'}>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-charcoal-400">{f.category}</p>
+                <h2 className="font-serif text-charcoal-900 mt-3 leading-[1.15]" style={{ fontSize: 'clamp(1.6rem, 2.6vw, 2.3rem)', fontWeight: 400 }}>
+                  {f.title}
+                </h2>
+                <p className="text-[15px] text-charcoal-600 leading-relaxed mt-4">{f.description}</p>
+                <p className="font-serif italic text-charcoal-700 text-[1.05rem] leading-relaxed mt-5 pl-4 border-l border-rose-300">{f.keyBenefit}</p>
+
+                <dl className="mt-6">
+                  <dt className="text-[10px] font-semibold tracking-[0.18em] uppercase text-charcoal-400">Ce que vous recevez</dt>
+                  <dd className="text-sm text-charcoal-800 mt-1">{f.formatOrDeliverable}</dd>
+                </dl>
+
+                <div className="mt-7 flex items-center gap-5">
+                  <button type="button" onClick={() => toggle(f.id)} aria-pressed={isSaved}
+                    className={`inline-flex items-center gap-2 h-10 px-4 text-[13px] font-medium border transition-colors rounded-sm ${
+                      isSaved ? 'bg-charcoal-900 border-charcoal-900 text-white' : 'border-charcoal-300 text-charcoal-800 hover:border-charcoal-900'
+                    }`}>
+                    <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
+                    {isSaved ? 'Dans vos favoris' : 'Garder de côté'}
+                  </button>
+                  <span className="text-[11px] tracking-wide uppercase text-rose-600 font-medium">{f.badge}</span>
+                </div>
+              </div>
+            </article>
           );
         })}
       </div>
 
-      {/* ── Encadré contact / feedback discret ── */}
-      <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <p className="font-serif text-charcoal-900 text-base font-normal">
-            Vous avez un besoin spécifique pour votre mariage ?
-          </p>
-          <p className="text-xs text-charcoal-500 max-w-xl leading-relaxed">
-            Faites-en part à votre agence ou wedding planner via la messagerie. Vos retours nous aident à ajuster l’ordre de déploiement des fonctionnalités.
+      {/* ── Fermeture ── */}
+      <footer className="mt-4 grid md:grid-cols-[1fr_auto] gap-6 items-center bg-charcoal-900 text-white px-7 py-8 sm:px-10 sm:py-10">
+        <div>
+          <p className="font-serif text-2xl leading-snug" style={{ fontWeight: 400 }}>Un besoin précis pour votre mariage ?</p>
+          <p className="text-sm text-white/60 mt-2 max-w-xl leading-relaxed">
+            Dites-le à votre wedding planner via la messagerie : vos demandes orientent l’ordre dans lequel nous livrons ces outils.
           </p>
         </div>
-        <Link
-          href="/espace-client/messages"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium bg-rose-600 text-white hover:bg-rose-700 transition-colors whitespace-nowrap shadow-xs flex-shrink-0"
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>Écrire à votre agence</span>
+        <Link href="/espace-client/messages"
+          className="inline-flex items-center justify-center h-11 px-6 bg-white text-charcoal-900 text-[13px] font-medium hover:bg-rose-50 transition-colors rounded-sm">
+          Écrire à mon wedding planner
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }
-

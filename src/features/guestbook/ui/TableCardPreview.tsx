@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import type { GuestbookCardDesign } from '../domain/customization';
+import { effectiveCardImage } from '../domain/customization';
 import { buildCardLayout, cardPalette, CARD_H, CARD_W, type CardFont, type CardOp } from '../domain/card-layout';
 
 const FAMILY: Record<CardFont, { family: string; weight?: number; style?: string }> = {
@@ -33,10 +34,9 @@ const pctY = (mm: number) => `${(mm / CARD_H) * 100}%`;
 const cqw = (mm: number) => `${(mm / CARD_W) * 100}cqw`;
 
 export function TableCardPreview({
-  design, tableNumber = 1, publicUrl, className = '',
+  design, publicUrl, className = '',
 }: {
   design: GuestbookCardDesign;
-  tableNumber?: number;
   publicUrl: string;
   className?: string;
 }) {
@@ -50,11 +50,16 @@ export function TableCardPreview({
   }, [publicUrl, pal.ink, pal.paper]);
 
   const color = { ink: pal.ink, muted: pal.muted, hair: pal.hair };
-  const ops = buildCardLayout(design, tableNumber);
+  const ops = buildCardLayout(design);
 
   const render = (op: CardOp, i: number) => {
     if (op.t === 'qr')
       return qr ? <img key={i} src={qr} alt="" style={{ position: 'absolute', left: pctX(op.x), top: pctY(op.y), width: pctX(op.size) }} /> : null;
+    if (op.t === 'image')
+      return (
+        <img key={i} src={effectiveCardImage(design)} alt=""
+          style={{ position: 'absolute', left: pctX(op.x), top: pctY(op.y), width: pctX(op.w), height: pctY(op.h), objectFit: 'cover', filter: design.image_grayscale ? 'grayscale(1)' : undefined }} />
+      );
     if (op.t !== 'text') return null;
     const f = FAMILY[op.font];
     const size = op.size * 0.3528; // pt → mm
@@ -73,7 +78,8 @@ export function TableCardPreview({
     };
     if (op.maxWidth) {
       // paragraphe : la 1re ligne a sa ligne de base à y
-      return <div key={i} style={{ ...base, left: pctX(op.x), top: pctY(op.y - (op.lineHeight ?? size * 1.2) * 0.78) }}>{op.text}</div>;
+      const left = op.align === 'center' ? op.x - op.maxWidth / 2 : op.align === 'right' ? op.x - op.maxWidth : op.x;
+      return <div key={i} style={{ ...base, left: pctX(left), top: pctY(op.y - (op.lineHeight ?? size * 1.2) * 0.78) }}>{op.text}</div>;
     }
     const align = op.align ?? 'left';
     const pos: React.CSSProperties =

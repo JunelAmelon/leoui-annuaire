@@ -4,7 +4,7 @@ import { InMemoryGuestbookRepository } from '../repositories/in-memory-guestbook
 import { GuestbookService } from './guestbook.service';
 import { GUESTBOOK_DEFAULTS } from '../domain/types';
 import {
-  CARD_TABLE_COUNT_MAX, DEFAULT_GUESTBOOK_COVER, GUESTBOOK_PAGE_DEFAULTS, resolveCardDesign,
+  DEFAULT_CARD_IMAGE, effectiveCardImage, DEFAULT_GUESTBOOK_COVER, GUESTBOOK_PAGE_DEFAULTS, resolveCardDesign,
 } from '../domain/customization';
 
 test('GuestbookService - Unit Tests', async (t) => {
@@ -308,22 +308,30 @@ test('GuestbookService - Unit Tests', async (t) => {
     assert.ok(!('inconnu' in out), 'champs inconnus ignorés');
   });
 
-  await t.test('10. Carte de table : design validé, nombre de cartes borné, couleurs contrôlées', async () => {
+  await t.test('10. Carte de table : photo remplaçable, design validé, couleurs contrôlées', async () => {
     const gb = await service.getOrCreateGuestbook('event-card', 'owner-card');
+    assert.equal(effectiveCardImage({ image_url: null }), DEFAULT_CARD_IMAGE, 'photo par défaut');
+
     await service.updateCardDesign('event-card', {
-      table_word: 'tablée',
-      table_count: 999,
+      caption: 'share the love',
+      image_url: 'https://res.cloudinary.com/demo/image/upload/duo.jpg',
+      image_grayscale: false,
       ink: 'bordeaux',
       paper: 'ivoire',
       section_lines: ['a', 'b', 'c', 'd', 'e', 'f'],
     });
     const stored = (await repository.getByEventId('event-card'))!.card!;
-    assert.equal(stored.table_count, CARD_TABLE_COUNT_MAX);
+    assert.equal(stored.image_url, 'https://res.cloudinary.com/demo/image/upload/duo.jpg');
+    assert.equal(stored.image_grayscale, false);
     assert.equal(stored.ink, 'bordeaux');
     assert.equal(stored.section_lines?.length, 4, '4 lignes max');
 
+    await assert.rejects(() => service.updateCardDesign('event-card', { image_url: 'javascript:alert(1)' }), /Image invalide/);
     const bad = await service.updateCardDesign('event-card', { ink: 'fluo' as never, paper: 'x' as never });
     assert.deepEqual(bad, {}, 'couleurs inconnues ignorées');
+
+    await service.updateCardDesign('event-card', { image_url: null });
+    assert.equal(effectiveCardImage((await repository.getByEventId('event-card'))!.card!), DEFAULT_CARD_IMAGE, 'retour à la photo par défaut');
 
     const design = resolveCardDesign(gb.card ? gb.card : stored, { names: 'Sophie + Thomas', place: 'Château', date: '15 septembre 2026' });
     assert.equal(design.names, 'Sophie + Thomas', 'noms vides → issus du mariage');

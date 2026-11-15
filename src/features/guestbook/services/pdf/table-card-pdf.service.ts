@@ -1,5 +1,5 @@
 /**
- * Carte de table « livre d'or » — PDF A4 paysage tri-fold (une page par numéro de table).
+ * Carte de table « livre d'or » — PDF A4 paysage tri-fold (photo + QR code).
  * Ne contient aucune mise en page : il exécute les opérations de `buildCardLayout`
  * (identiques à l'aperçu à l'écran) avec les polices embarquées.
  */
@@ -7,8 +7,9 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import type { GuestbookCardDesign } from '../../domain/customization';
-import { buildCardLayout, cardPalette, CARD_H, CARD_W, type CardFont, type CardOp } from '../../domain/card-layout';
-import { drawSpaced, pdfSafe, registerPdfFonts, setDraw, setFill, setText, type PdfFamily } from './pdf-helpers';
+import { buildCardLayout, cardPalette, CARD_H, CARD_PHOTO, CARD_W, type CardFont, type CardOp } from '../../domain/card-layout';
+import { effectiveCardImage } from '../../domain/customization';
+import { drawSpaced, loadCoverJpeg, pdfSafe, registerPdfFonts, setDraw, setFill, setText, type PdfFamily } from './pdf-helpers';
 
 const FONT_MAP: Record<CardFont, { family: PdfFamily; style: 'normal' | 'bold' | 'italic' }> = {
   script: { family: 'Script', style: 'normal' },
@@ -19,7 +20,7 @@ const FONT_MAP: Record<CardFont, { family: PdfFamily; style: 'normal' | 'bold' |
   numeral: { family: 'Numeral', style: 'normal' },
 };
 
-export async function generateTableCardsPdf(design: GuestbookCardDesign, publicUrl: string, fileSuffix: string): Promise<void> {
+export async function generateTableCardPdf(design: GuestbookCardDesign, publicUrl: string, fileSuffix: string): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
   await registerPdfFonts(doc);
   const pal = cardPalette(design);
@@ -30,22 +31,20 @@ export async function generateTableCardsPdf(design: GuestbookCardDesign, publicU
     color: { dark: pal.ink, light: pal.paper },
   });
 
-  const count = Math.max(1, design.table_count);
-  for (let n = 1; n <= count; n++) {
-    if (n > 1) doc.addPage([CARD_W, CARD_H], 'landscape');
-    setFill(doc, pal.paper);
-    doc.rect(0, 0, CARD_W, CARD_H, 'F');
-    for (const op of buildCardLayout(design, n)) drawOp(doc, op, color, qr);
-  }
+  const photo = await loadCoverJpeg(effectiveCardImage(design), CARD_PHOTO.w / CARD_PHOTO.h, 1500, design.image_grayscale);
 
-  doc.save(`Carte-table-livre-or-${fileSuffix}.pdf`);
+  setFill(doc, pal.paper);
+  doc.rect(0, 0, CARD_W, CARD_H, 'F');
+  for (const op of buildCardLayout(design)) drawOp(doc, op, color, qr, photo, pal.hair);
+
+  doc.save(`Carte-livre-or-${fileSuffix}.pdf`);
 }
 
 /** `setLineDashPattern` existe dans jsPDF mais n'est pas déclaré dans ses types. */
 const setDash = (doc: jsPDF, pattern: number[]) =>
   (doc as unknown as { setLineDashPattern: (p: number[], phase: number) => void }).setLineDashPattern(pattern, 0);
 
-function drawOp(doc: jsPDF, op: CardOp, color: Record<'ink' | 'muted' | 'hair', string>, qr: string) {
+function drawOp(doc: jsPDF, op: CardOp, color: Record<'ink' | 'muted' | 'hair', string>, qr: string, photo: string | null, placeholder: string) {
   switch (op.t) {
     case 'line':
       setDraw(doc, color[op.color]);
@@ -69,6 +68,10 @@ function drawOp(doc: jsPDF, op: CardOp, color: Record<'ink' | 'muted' | 'hair', 
     }
     case 'qr':
       doc.addImage(qr, 'PNG', op.x, op.y, op.size, op.size);
+      return;
+    case 'image':
+      if (photo) doc.addImage(photo, 'JPEG', op.x, op.y, op.w, op.h);
+      else { setFill(doc, placeholder); doc.rect(op.x, op.y, op.w, op.h, 'F'); }
       return;
     case 'text': {
       const f = FONT_MAP[op.font];

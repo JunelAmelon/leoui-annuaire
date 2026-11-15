@@ -81,7 +81,7 @@ export function drawSpaced(
 }
 
 /** Charge une image (https ou chemin local) et la recadre en « cover » vers un JPEG data URL. */
-export async function loadCoverJpeg(src: string, targetRatio: number, maxPx = 1600): Promise<string | null> {
+export async function loadCoverJpeg(src: string, targetRatio: number, maxPx = 1600, grayscale = false): Promise<string | null> {
   try {
     const res = await fetch(src, { mode: 'cors' });
     if (!res.ok) return null;
@@ -94,7 +94,18 @@ export async function loadCoverJpeg(src: string, targetRatio: number, maxPx = 16
     const h = Math.round(w / targetRatio);
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
-    cv.getContext('2d')!.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+    const ctx = cv.getContext('2d')!;
+    ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+    if (grayscale) {
+      // Boucle pixel (et non ctx.filter) : fonctionne aussi sur Safari
+      const img = ctx.getImageData(0, 0, w, h);
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        d[i] = d[i + 1] = d[i + 2] = g;
+      }
+      ctx.putImageData(img, 0, 0);
+    }
     return cv.toDataURL('image/jpeg', 0.88);
   } catch {
     return null;

@@ -250,14 +250,30 @@ Un doc par mariage (1 canevas, ≤50 tables / ~300 chaises → tient dans 1 Mo).
 event_id, owner_id,
 tables: [{
   id, label, shape: 'round' | 'oval' | 'rect' | 'head',
-  x, y, rotation, seats, color
+  x, y, rotation, seats, color,
+  seat_types?: { [seatIndex]: 'enfant' | 'pmr' | 'vip' }  // absent = 'standard'
 }],
 room_items: [{ id, type: 'dancefloor'|'bar'|'buffet'|'stage'|'dj'|'entrance'|'photobooth',
                x, y, w, h, rotation, label }],
 assignments: { [seatKey: `${tableId}_${seatIndex}`]: guest_id }, // 1 chaise = 1 invité
+room?: { shape: 'rect'|'square'|'l'|'u'|'t'|'oval', width_m, length_m },  // absent = rect 20×14 m
+decor?: {                                  // décor de la vue 3D — absent = DEFAULT_DECOR
+  floor: 'dalles'|'parquet_chevron'|'parquet_clair'|'marbre'|'beton_cire'|'tapis_sable',
+  wall_color,                              // hex
+  table_style: 'nappe'|'bois_verni'|'bois_chene'|'marbre_or',
+  cloth_color,                             // hex (nappe par défaut ; une table peut surcharger via `color`)
+  chair_style: 'napoleon'|'chiavari_bois'|'chiavari_or'|'chiavari_noire'|'medaillon'|'ghost',
+  centerpiece: 'candelabre'|'boule_blanche'|'couronne_basse'|'eucalyptus'|'bougeoirs'|'aucun',
+  flower_color,                            // hex
+  mood: 'jour'|'soiree'
+},
 background_path,   // chemin Storage
 updated_at
 ```
+- **Repère commun 2D / 3D** : `x`, `y`, `w`, `h` sont en *unités plan* ; **1 m = 50 unités**
+  (`UNITS_PER_M`). Une salle 20 × 14 m = 1000 × 700 unités (valeur historique → anciens plans valides).
+- `room.width_m` / `length_m` : bornés à 8–60 m (pas 0,5 m) ; `square` ⇒ longueur = largeur.
+- Changer `room` ramène dans le contour tout élément resté dehors (rien n'est supprimé).
 - **Invariant « 1 invité = 1 place »** : la clé de `assignments` empêche 2 invités sur
   la même chaise, **pas** un invité sur 2 chaises. Vérifier côté serveur/transaction
   qu'un `guest_id` n'apparaît qu'une fois avant d'écrire.
@@ -325,8 +341,8 @@ page?: {                 // personnalisation page invité — champs partiels, a
   eyebrow, subtitle, tab_text_label, tab_audio_label, name_label, name_placeholder,
   text_label, text_placeholder, submit_label, thanks_title ({nom} = prénom de l'invité), thanks_text, another_label
 },
-card?: {                 // carte de table imprimable (tri-fold A4 paysage, QR) — absents = défauts (resolveCardDesign)
-  table_word, table_count (1-60 : une page par numéro), welcome_label, names, place_line, date_line,
+card?: {                 // carte de table imprimable (tri-fold A4 paysage, photo + QR) — absents = défauts (resolveCardDesign)
+  image_url: string | null (https/chemin local ; null = photo par défaut), image_grayscale: bool, caption, welcome_label, names, place_line, date_line,
   section_title, section_lines (≤ 4), cta_title, cta_text, closing_word,
   ink: 'noir'|'anthracite'|'bordeaux'|'sauge'|'nuit', paper: 'blanc'|'ivoire'
   // names/place_line/date_line vides = valeurs du mariage (couple, lieu, date)

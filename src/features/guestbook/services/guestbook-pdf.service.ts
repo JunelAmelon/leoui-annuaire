@@ -12,7 +12,7 @@ import type { Guestbook, GuestbookEntry } from '../domain/types';
 import type { GuestbookCardDesign } from '../domain/customization';
 import { effectiveCover, resolvePageContent } from '../domain/customization';
 import { drawSpaced, loadCoverJpeg, pdfSafe, registerPdfFonts, setDraw, setFill, setText } from './pdf/pdf-helpers';
-import { generateTableCardsPdf } from './pdf/table-card-pdf.service';
+import { generateTableCardPdf } from './pdf/table-card-pdf.service';
 
 const C = { paper: '#FBF8F4', ink: '#1E1A1C', muted: '#8A8085', hair: '#E4DCD6', accent: '#B84A63', soft: '#EFE6DE' };
 const PAGE_W = 210;
@@ -181,10 +181,10 @@ export class GuestbookPdfService {
     doc.save(`Livre-d-or-${names.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}.pdf`);
   }
 
-  /** Cartes de table (tri-fold A4 paysage) — une page par numéro de 1 à `design.table_count`. */
+  /** Carte de table tri-fold A4 paysage (photo + QR code). */
   static async generateTableCards(guestbook: Guestbook, design: GuestbookCardDesign): Promise<void> {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://leoui.net';
     const suffix = (pdfSafe(design.names) || 'mariage').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
-    await generateTableCardsPdf(design, `${origin}/livre-or/${guestbook.public_token}`, suffix);
+    await generateTableCardPdf(design, `${origin}/livre-or/${guestbook.public_token}`, suffix);
   }
 }
