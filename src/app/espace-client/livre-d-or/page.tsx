@@ -31,6 +31,9 @@ import { GuestbookService } from '@/features/guestbook/services/guestbook.servic
 import { GuestbookPdfService } from '@/features/guestbook/services/guestbook-pdf.service';
 import type { Guestbook, GuestbookEntry } from '@/features/guestbook/domain/types';
 import { QRCodeCard } from '@/features/guestbook/ui/QRCodeCard';
+import { GuestbookSettingsModal, type SettingsSaveInput } from '@/features/guestbook/ui/GuestbookSettingsModal';
+import { resolveCardDesign, type CardFallback } from '@/features/guestbook/domain/customization';
+import { uploadFile } from '@/lib/storage';
 import { WaveformPlayer } from '@/features/guestbook/ui/WaveformPlayer';
 import { toast } from 'sonner';
 
@@ -48,8 +51,6 @@ export default function CoupleGuestbookPage() {
   // Filtres
   const [filterType, setFilterType] = useState<'all' | 'audio' | 'text' | 'favorites' | 'hidden'>('all');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settingsTitle, setSettingsTitle] = useState('');
-  const [settingsMaxDuration, setSettingsMaxDuration] = useState(120);
 
   // Exports PDF
   const [exportingBookPdf, setExportingBookPdf] = useState(false);
@@ -79,8 +80,6 @@ export default function CoupleGuestbookPage() {
         `Le Livre d’Or de ${coupleNames}`
       );
       setGuestbook(gb);
-      setSettingsTitle(gb.title);
-      setSettingsMaxDuration(gb.settings.max_duration_sec);
 
       // Charger les entrées (inclus les masqués pour le couple propriétaire)
       const list = await repository.listByGuestbookId(eventId, {
@@ -142,24 +141,27 @@ export default function CoupleGuestbookPage() {
     }
   };
 
-  const handleSaveSettings = async () => {
+  /** Valeurs du mariage utilisées quand le couple laisse un champ « automatique » vide. */
+  const cardFallback: CardFallback = {
+    names: coupleNames.replace(/\s*&\s*/, ' + '),
+    place: (event as any)?.venue || '',
+    date: event?.event_date
+      ? new Date(event.event_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '',
+  };
+
+  const handleSaveSettings = async (input: SettingsSaveInput) => {
     if (!guestbook) return;
     try {
-      await repository.updateSettings(guestbook.event_id, {
-        max_duration_sec: Number(settingsMaxDuration),
-      });
-      if (settingsTitle !== guestbook.title) {
-        await repository.save({
-          ...guestbook,
-          title: settingsTitle.trim(),
-          updated_at: new Date().toISOString(),
-        });
-      }
-      toast.success('Paramètres enregistrés avec succès.');
+      await service.updateTitle(guestbook.event_id, input.title);
+      await repository.updateSettings(guestbook.event_id, { max_duration_sec: Number(input.maxDuration) });
+      await service.updatePageContent(guestbook.event_id, input.page);
+      await service.updateCardDesign(guestbook.event_id, input.card);
+      toast.success('Personnalisation enregistrée.');
       setShowSettingsModal(false);
       loadGuestbookData();
-    } catch {
-      toast.error('Erreur lors de la sauvegarde');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de la sauvegarde');
     }
   };
 
@@ -172,7 +174,8 @@ export default function CoupleGuestbookPage() {
         guestbook,
         entries,
         coupleNames,
-        event?.event_date
+        event?.event_date,
+        cardFallback.place
       );
       toast.success('Livre d’or PDF imprimable généré avec succès !');
     } catch (err: any) {
@@ -188,12 +191,8 @@ export default function CoupleGuestbookPage() {
     if (!guestbook) return;
     try {
       setExportingFlyerPdf(true);
-      await GuestbookPdfService.generateTableFlyer(
-        guestbook,
-        coupleNames,
-        event?.event_date
-      );
-      toast.success('Carton de table PDF prêt à imprimer !');
+      await GuestbookPdfService.generateTableCards(guestbook, resolveCardDesign(guestbook.card, cardFallback));
+      toast.success('Cartes de table PDF prêtes à imprimer !');
     } catch (err: any) {
       console.error('Erreur génération flyer:', err);
       toast.error('Erreur lors de la création du flyer.');
@@ -501,66 +500,16 @@ export default function CoupleGuestbookPage() {
         </div>
       )}
 
-      {/* ── Modal Paramètres ── */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-stone-200">
-            <div>
-              <h3 className="font-serif text-charcoal-900 text-xl font-normal">
-                Paramètres du Livre d’Or
-              </h3>
-              <p className="text-xs text-charcoal-500 mt-1">
-                Ajustez le titre ou la durée maximale des enregistrements vocaux.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-wider text-charcoal-500 font-medium block">
-                  Titre du livre d’or
-                </label>
-                <input
-                  type="text"
-                  value={settingsTitle}
-                  onChange={(e) => setSettingsTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-charcoal-900 focus:outline-none focus:border-rose-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-wider text-charcoal-500 font-medium block">
-                  Durée maximale par message vocal
-                </label>
-                <select
-                  value={settingsMaxDuration}
-                  onChange={(e) => setSettingsMaxDuration(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-charcoal-900 focus:outline-none focus:border-rose-500 bg-white"
-                >
-                  <option value={60}>1 minute (court & spontané)</option>
-                  <option value={120}>2 minutes (recommandé)</option>
-                  <option value={180}>3 minutes (messages longs)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
-              <button
-                type="button"
-                onClick={() => setShowSettingsModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-charcoal-600 hover:bg-stone-100 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                className="px-4 py-2 rounded-xl text-xs font-medium bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-xs"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ── Modal Paramètres : aperçu à gauche, formulaire à droite ── */}
+      {showSettingsModal && guestbook && (
+        <GuestbookSettingsModal
+          guestbook={guestbook}
+          fallback={cardFallback}
+          publicUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/livre-or/${guestbook.public_token}`}
+          onClose={() => setShowSettingsModal(false)}
+          onSave={handleSaveSettings}
+          onUploadCover={(file) => uploadFile(file, `guestbooks/${guestbook.event_id}`)}
+        />
       )}
     </div>
   );

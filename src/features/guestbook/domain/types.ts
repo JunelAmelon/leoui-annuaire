@@ -1,3 +1,5 @@
+import type { GuestbookPageContent, GuestbookCardDesign } from './customization';
+
 export type GuestbookEntryType = 'audio' | 'text';
 export type GuestbookEntryStatus = 'pending_upload' | 'ready' | 'rejected';
 
@@ -16,6 +18,10 @@ export interface Guestbook {
   token_revoked_at: string | null;
   token_expires_at: string | null;
   settings: GuestbookSettings;
+  /** Personnalisation de la page invité (image + textes) — champs absents = défauts. */
+  page?: Partial<GuestbookPageContent>;
+  /** Personnalisation de la carte de table imprimable — champs absents = défauts. */
+  card?: Partial<GuestbookCardDesign>;
   created_at: string;
   updated_at: string;
 }

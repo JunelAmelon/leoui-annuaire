@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { InMemoryGuestbookRepository } from '../repositories/in-memory-guestbook.repository';
 import { GuestbookService } from './guestbook.service';
 import { GUESTBOOK_DEFAULTS } from '../domain/types';
+import {
+  CARD_TABLE_COUNT_MAX, DEFAULT_GUESTBOOK_COVER, GUESTBOOK_PAGE_DEFAULTS, resolveCardDesign,
+} from '../domain/customization';
 
 test('GuestbookService - Unit Tests', async (t) => {
   const repository = new InMemoryGuestbookRepository();
@@ -267,5 +270,70 @@ test('GuestbookService - Unit Tests', async (t) => {
     await repository.deleteEntry(id1);
     counts = await repository.countByGuestbookId('event-mod');
     assert.equal(counts.total, 0);
+  });
+
+  await t.test('8. Personnalisation de la page invité : image + textes, défauts conservés', async () => {
+    const gb = await service.getOrCreateGuestbook('event-page', 'owner-page', 'Le Livre d’Or de Sophie & Thomas');
+
+    // Sans personnalisation : image par défaut + textes par défaut
+    let info = await service.getPublicGuestbookInfo(gb.public_token);
+    assert.equal(info?.cover_url, DEFAULT_GUESTBOOK_COVER);
+    assert.equal(info?.page.subtitle, GUESTBOOK_PAGE_DEFAULTS.subtitle);
+
+    // Le couple change l'image + un texte : seuls ces champs changent
+    await service.updatePageContent('event-page', {
+      cover_url: 'https://res.cloudinary.com/demo/image/upload/couple.jpg',
+      subtitle: '  Un mot pour nous ?  ',
+    });
+    info = await service.getPublicGuestbookInfo(gb.public_token);
+    assert.equal(info?.cover_url, 'https://res.cloudinary.com/demo/image/upload/couple.jpg');
+    assert.equal(info?.page.subtitle, 'Un mot pour nous ?', 'texte nettoyé (trim)');
+    assert.equal(info?.page.eyebrow, GUESTBOOK_PAGE_DEFAULTS.eyebrow, 'les autres textes gardent leur défaut');
+
+    // Retour à l'image par défaut
+    await service.updatePageContent('event-page', { cover_url: null });
+    info = await service.getPublicGuestbookInfo(gb.public_token);
+    assert.equal(info?.cover_url, DEFAULT_GUESTBOOK_COVER);
+  });
+
+  await t.test('9. Personnalisation : refus des URLs dangereuses, champ vidé = texte par défaut', async () => {
+    await service.getOrCreateGuestbook('event-sec', 'owner-sec');
+    await assert.rejects(() => service.updatePageContent('event-sec', { cover_url: 'javascript:alert(1)' }), /Image invalide/);
+    await assert.rejects(() => service.updatePageContent('event-sec', { cover_url: 'data:image/png;base64,AAAA' }), /Image invalide/);
+    await assert.rejects(() => service.updatePageContent('event-sec', { cover_url: '//evil.com/x.jpg' }), /Image invalide/);
+
+    const out = await service.updatePageContent('event-sec', { submit_label: '   ', eyebrow: 'x'.repeat(500), inconnu: 'zz' } as never);
+    assert.equal(out.submit_label, GUESTBOOK_PAGE_DEFAULTS.submit_label, 'vide → défaut');
+    assert.equal(out.eyebrow?.length, 60, 'longueur plafonnée');
+    assert.ok(!('inconnu' in out), 'champs inconnus ignorés');
+  });
+
+  await t.test('10. Carte de table : design validé, nombre de cartes borné, couleurs contrôlées', async () => {
+    const gb = await service.getOrCreateGuestbook('event-card', 'owner-card');
+    await service.updateCardDesign('event-card', {
+      table_word: 'tablée',
+      table_count: 999,
+      ink: 'bordeaux',
+      paper: 'ivoire',
+      section_lines: ['a', 'b', 'c', 'd', 'e', 'f'],
+    });
+    const stored = (await repository.getByEventId('event-card'))!.card!;
+    assert.equal(stored.table_count, CARD_TABLE_COUNT_MAX);
+    assert.equal(stored.ink, 'bordeaux');
+    assert.equal(stored.section_lines?.length, 4, '4 lignes max');
+
+    const bad = await service.updateCardDesign('event-card', { ink: 'fluo' as never, paper: 'x' as never });
+    assert.deepEqual(bad, {}, 'couleurs inconnues ignorées');
+
+    const design = resolveCardDesign(gb.card ? gb.card : stored, { names: 'Sophie + Thomas', place: 'Château', date: '15 septembre 2026' });
+    assert.equal(design.names, 'Sophie + Thomas', 'noms vides → issus du mariage');
+    assert.equal(design.place_line, 'Château');
+  });
+
+  await t.test('11. Renommer le livre d’or', async () => {
+    await service.getOrCreateGuestbook('event-title', 'owner-title', 'Ancien titre');
+    await service.updateTitle('event-title', '  Notre   grand jour  ');
+    assert.equal((await repository.getByEventId('event-title'))!.title, 'Notre grand jour');
+    await assert.rejects(() => service.updateTitle('event-title', '   '), /ne peut pas être vide/);
   });
 });

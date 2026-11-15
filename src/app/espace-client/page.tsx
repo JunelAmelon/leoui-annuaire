@@ -11,6 +11,7 @@ import {
   ArrowRight, ArrowUpRight, CheckSquare, Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { DEFAULT_COUPLE_PHOTO } from '@/lib/couple-photo';
 
 /* ── Semi-circle gauge (like "Steps for Today" in reference) ── */
 function GaugeChart({ value, max, color = '#E11D48' }: { value: number; max: number; color?: string }) {
@@ -134,6 +135,12 @@ export default function EspaceClientPage() {
 
         {/* FEATURED — dark action card */}
         <div className="lg:col-span-3 rounded-2xl bg-charcoal-900 text-white shadow-sm overflow-hidden p-6 relative" style={{ minHeight: 240 }}>
+          {/* Photo du couple (ou visuel par défaut) fondue à droite — masquée sur mobile pour garder la lisibilité */}
+          <div className="hidden sm:block absolute inset-y-0 right-0 w-[46%] pointer-events-none">
+            <img src={client?.photo || DEFAULT_COUPLE_PHOTO} alt="" className="w-full h-full object-cover object-center" />
+            <div className="absolute inset-0 bg-gradient-to-r from-charcoal-900 via-charcoal-900/55 to-charcoal-900/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/60 via-transparent to-transparent" />
+          </div>
           <div className="absolute -top-10 -right-10 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative h-full flex flex-col">

@@ -19,11 +19,14 @@ import {
 import { AudioRecorder, type RecordingResult } from '@/features/guestbook/utils/audio-recorder';
 import { WaveformPlayer } from '@/features/guestbook/ui/WaveformPlayer';
 import { toast } from 'sonner';
+import type { GuestbookPageContent } from '@/features/guestbook/domain/customization';
 
 interface GuestbookInfo {
   title: string;
   isOpen: boolean;
   reasonClosed?: string;
+  page: GuestbookPageContent;
+  cover_url: string;
   settings: {
     max_duration_sec: number;
     max_audio_mb: number;
@@ -263,10 +266,10 @@ export default function PublicGuestbookPage({
             <Heart className="w-7 h-7 fill-rose-600" />
           </div>
           <div>
-            <h1 className="font-serif text-charcoal-900 text-2xl font-normal">Merci {guestName} !</h1>
-            <p className="text-sm text-charcoal-600 mt-2 leading-relaxed">
-              Votre message a été déposé avec soin dans le livre d’or des mariés. Ils auront un immense plaisir à le découvrir !
-            </p>
+            <h1 className="font-serif text-charcoal-900 text-2xl font-normal">
+              {info.page.thanks_title.replace('{nom}', guestName.trim())}
+            </h1>
+            <p className="text-sm text-charcoal-600 mt-2 leading-relaxed">{info.page.thanks_text}</p>
           </div>
           <button
             type="button"
@@ -278,7 +281,7 @@ export default function PublicGuestbookPage({
             }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-medium bg-stone-100 text-charcoal-700 hover:bg-stone-200 transition-colors"
           >
-            <span>Laisser un autre mot doux</span>
+            <span>{info.page.another_label}</span>
           </button>
         </div>
       </div>
@@ -290,20 +293,20 @@ export default function PublicGuestbookPage({
       {/* ── Panneau visuel immersif — image du couple ─────────────────── */}
       <aside className="relative h-52 sm:h-auto sm:w-[42%] sm:min-h-screen overflow-hidden flex-shrink-0">
         <img
-          src="/mariage%20(5).jpg"
+          src={info.cover_url}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1C1417] via-[#1C1417]/35 to-[#1C1417]/15 sm:bg-gradient-to-r sm:from-transparent sm:via-[#1C1417]/20 sm:to-[#1C1417]/70" />
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 sm:bottom-10">
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-white/70 mb-2">
-            Livre d’or des mariés
+            {info.page.eyebrow}
           </p>
           <h1 className="font-serif text-white leading-tight" style={{ fontSize: 'clamp(1.9rem, 4vw, 3rem)', fontWeight: 400 }}>
             {info.title}
           </h1>
           <p className="text-sm text-white/75 mt-3 max-w-sm leading-relaxed font-light hidden sm:block">
-            Partagez vos vœux, un souvenir chaleureux ou un message vocal spontané.
+            {info.page.subtitle}
           </p>
         </div>
       </aside>
@@ -358,7 +361,7 @@ export default function PublicGuestbookPage({
             }`}
           >
             <PenLine className="w-3.5 h-3.5" />
-            <span>Message écrit</span>
+            <span>{info.page.tab_text_label}</span>
           </button>
 
           <button
@@ -371,7 +374,7 @@ export default function PublicGuestbookPage({
             }`}
           >
             <Mic className="w-3.5 h-3.5" />
-            <span>Message vocal</span>
+            <span>{info.page.tab_audio_label}</span>
           </button>
         </div>
 
@@ -383,14 +386,14 @@ export default function PublicGuestbookPage({
           {/* Identité de l'invité */}
           <div className="space-y-1.5">
             <label className="text-xs uppercase tracking-wider text-charcoal-500 font-medium block">
-              Votre prénom et nom <span className="text-rose-500">*</span>
+              {info.page.name_label} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               required
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Ex: Camille, Thomas & Léa, Tante Sophie…"
+              placeholder={info.page.name_placeholder}
               className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-colors"
             />
           </div>
@@ -399,7 +402,7 @@ export default function PublicGuestbookPage({
           {mode === 'text' && (
             <div className="space-y-1.5">
               <label className="text-xs uppercase tracking-wider text-charcoal-500 font-medium block">
-                Votre mot doux <span className="text-rose-500">*</span>
+                {info.page.text_label} <span className="text-rose-500">*</span>
               </label>
               <textarea
                 rows={5}
@@ -407,7 +410,7 @@ export default function PublicGuestbookPage({
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 maxLength={2000}
-                placeholder="Écrivez quelques mots, une anecdote émouvante ou vos vœux les plus sincères…"
+                placeholder={info.page.text_placeholder}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-colors leading-relaxed resize-none"
               />
               <div className="text-right text-[11px] text-charcoal-400">
@@ -562,7 +565,7 @@ export default function PublicGuestbookPage({
             ) : (
               <>
                 <Send className="w-3.5 h-3.5" />
-                <span>Envoyer aux mariés</span>
+                <span>{info.page.submit_label}</span>
               </>
             )}
           </button>

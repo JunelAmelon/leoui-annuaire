@@ -320,8 +320,22 @@ uploaded_at
 ```
 event_id, owner_id, title, public_token, token_revoked_at, token_expires_at,
 settings { max_duration_sec, max_audio_mb, window_open_at, window_close_at },
+page?: {                 // personnalisation page invité — champs partiels, absents = défauts (resolvePageContent)
+  cover_url: string | null,   // image de gauche : https (Cloudinary) ou chemin local ; null = image par défaut
+  eyebrow, subtitle, tab_text_label, tab_audio_label, name_label, name_placeholder,
+  text_label, text_placeholder, submit_label, thanks_title ({nom} = prénom de l'invité), thanks_text, another_label
+},
+card?: {                 // carte de table imprimable (tri-fold A4 paysage, QR) — absents = défauts (resolveCardDesign)
+  table_word, table_count (1-60 : une page par numéro), welcome_label, names, place_line, date_line,
+  section_title, section_lines (≤ 4), cta_title, cta_text, closing_word,
+  ink: 'noir'|'anthracite'|'bordeaux'|'sauge'|'nuit', paper: 'blanc'|'ivoire'
+  // names/place_line/date_line vides = valeurs du mariage (couple, lieu, date)
+},
 created_at, updated_at
 ```
+- `page` / `card` : mises à jour **partielles par chemin** (`page.subtitle`…) via le service, qui valide
+  (longueurs, https/chemin local pour l'image, couleurs de la liste). L'API publique `GET /api/guestbook/{token}`
+  expose `page` résolu + `cover_url` effectif ; jamais `card`.
 `guestbook_entries/{id}` :
 ```
 guestbook_id (= event_id), event_id, owner_id,   // dupliqués pour les règles / requêtes
