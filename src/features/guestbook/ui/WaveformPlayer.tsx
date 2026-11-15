@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, Download } from 'lucide-react';
+import { Play, Pause, Download, AlertCircle } from 'lucide-react';
 
 interface WaveformPlayerProps {
   src?: string | null;
@@ -10,6 +10,8 @@ interface WaveformPlayerProps {
   guestName?: string;
   allowDownload?: boolean;
 }
+
+const STOP_EVENT = 'guestbook-stop-other-audios';
 
 export function WaveformPlayer({
   src,
@@ -20,7 +22,14 @@ export function WaveformPlayer({
 }: WaveformPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [hasError, setHasError] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerIdRef = useRef(Math.random().toString(36).slice(2));
+
+  // Un chemin Storage (ex. "guestbooks/…/x.webm") n'est pas lisible tel quel : seul un vrai flux audio l'est
+  const isPlayableSrc = !!src && /^(data:audio\/|https?:\/\/|blob:|\/)/.test(src);
+  const unavailable = !isPlayableSrc || hasError;
 
   // Valeurs par défaut si waveform vide
   const bars =
@@ -28,23 +37,49 @@ export function WaveformPlayer({
       ? waveform
       : [0.3, 0.5, 0.7, 0.4, 0.6, 0.8, 0.5, 0.3, 0.6, 0.9, 0.4, 0.2];
 
-  const totalDuration = durationSec || (audioRef.current?.duration ? Math.round(audioRef.current.duration) : 0);
+  // Durée réelle lue dans le fichier audio ; repli sur la durée enregistrée
+  // (les fichiers webm du MediaRecorder renvoient parfois Infinity).
+  const totalDuration = audioDuration > 0 ? audioDuration : durationSec || 0;
+
+  // Une seule note vocale à la fois : lancer une note met les autres en pause (sans les remettre à zéro)
+  useEffect(() => {
+    const handleStopOther = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string }>).detail;
+      if (detail?.id !== playerIdRef.current && audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener(STOP_EVENT, handleStopOther);
+    return () => window.removeEventListener(STOP_EVENT, handleStopOther);
+  }, []);
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!audio.paused) {
+      audio.pause();
       setIsPlaying(false);
-    } else {
-      audioRef.current.play().then(() => setIsPlaying(true)).catch((e) => {
-        console.error('Erreur lecture audio:', e);
-      });
+      return;
     }
+    window.dispatchEvent(new CustomEvent(STOP_EVENT, { detail: { id: playerIdRef.current } }));
+    // Reprend là où la lecture s'était arrêtée (pas de remise à zéro)
+    audio.play().then(() => setIsPlaying(true)).catch((e) => {
+      console.error('Erreur lecture audio:', e);
+      setIsPlaying(false);
+      setHasError(true);
+    });
+  };
+
+  const syncDuration = () => {
+    const d = audioRef.current?.duration;
+    if (d && Number.isFinite(d) && d > 0) setAudioDuration(d);
   };
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
+      syncDuration();
     }
   };
 
@@ -62,20 +97,68 @@ export function WaveformPlayer({
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!src) return;
+    const ext = src.includes('.mp3')
+      ? 'mp3'
+      : src.includes('.m4a')
+      ? 'm4a'
+      : src.includes('.wav')
+      ? 'wav'
+      : src.includes('.aac')
+      ? 'aac'
+      : 'webm';
     const a = document.createElement('a');
     a.href = src;
-    a.download = `Vocal-${(guestName || 'invite').replace(/\s+/g, '-').toLowerCase()}.webm`;
+    a.download = `Vocal-${(guestName || 'invite').replace(/\s+/g, '-').toLowerCase()}.${ext}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
-  const progressPercent = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
+  const progressPercent = totalDuration > 0 ? Math.min(100, (currentTime / totalDuration) * 100) : 0;
+
+  if (unavailable) {
+    return (
+      <div className="bg-stone-50/90 border border-stone-200/70 rounded-xl p-3 flex items-center justify-between gap-2 text-xs text-charcoal-500">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0" />
+          <span>Audio indisponible : ce message vocal ne peut pas être lu.</span>
+        </div>
+        {hasError && (
+          <button
+            type="button"
+            onClick={() => {
+              setHasError(false);
+              if (audioRef.current) audioRef.current.load();
+            }}
+            className="text-rose-600 hover:text-rose-700 font-medium underline flex-shrink-0 text-[11px]"
+          >
+            Réessayer
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3.5">
       {src && (
-        <audio ref={audioRef} src={src} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} preload="metadata" />
+        <audio
+          ref={audioRef}
+          src={src}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={syncDuration}
+          onDurationChange={syncDuration}
+          onPause={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+          onEnded={handleEnded}
+          onError={(e) => {
+            const err = (e.currentTarget as HTMLAudioElement)?.error;
+            if (err && err.code === 1) return; // MEDIA_ERR_ABORTED
+            setIsPlaying(false);
+            setHasError(true);
+          }}
+          preload="metadata"
+        />
       )}
 
       <button
@@ -91,7 +174,8 @@ export function WaveformPlayer({
 
       <div className="flex-1 min-w-0">
         <div
-          className="flex items-center gap-[3px] h-9 cursor-pointer"
+          className="cursor-pointer"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '36px' }}
           onClick={(e) => {
             if (!audioRef.current || !totalDuration) return;
             const rect = e.currentTarget.getBoundingClientRect();
@@ -101,10 +185,20 @@ export function WaveformPlayer({
           }}
         >
           {bars.map((amplitude, i) => {
-            const played = (i / bars.length) * 100 <= progressPercent;
-            const h = Math.max(14, Math.min(100, Math.round(amplitude * 100)));
+            const isPlayed = (i / bars.length) * 100 <= progressPercent;
+            const heightPx = Math.max(5, Math.min(32, Math.round(amplitude * 32)));
             return (
-              <span key={i} className={`flex-1 max-w-[3px] min-w-[2px] rounded-full transition-colors ${played ? 'bg-charcoal-900' : 'bg-charcoal-200'}`} style={{ height: `${h}%` }} />
+              <span
+                key={i}
+                style={{
+                  display: 'block',
+                  width: '3px',
+                  minWidth: '3px',
+                  height: `${heightPx}px`,
+                  borderRadius: '9999px',
+                  backgroundColor: isPlayed ? '#1C1917' : '#D6D3D1',
+                }}
+              />
             );
           })}
         </div>

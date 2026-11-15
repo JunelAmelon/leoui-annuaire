@@ -63,3 +63,8 @@ out
 
 # devin skills (local only, never pushed)
 .devin/
+# Artefact de build TypeScript (régénéré, cause de conflits)
+tsconfig.tsbuildinfo
+
+# Skills d agents IA locaux — ne pas versionner
+.agents/

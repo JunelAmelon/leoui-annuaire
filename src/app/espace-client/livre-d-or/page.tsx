@@ -216,7 +216,18 @@ export default function CoupleGuestbookPage() {
   const totalFavorites = entries.filter((e) => e.favorite && !e.hidden).length;
   const totalHidden = entries.filter((e) => e.hidden).length;
 
-  // Gestion du lecteur Podcast
+  // Gestion du lecteur Podcast : une seule lecture à la fois
+  useEffect(() => {
+    const handleStopOther = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string }>).detail;
+      if (detail?.id !== 'podcast' && podcastAudioRef.current && !podcastAudioRef.current.paused) {
+        podcastAudioRef.current.pause();
+        setIsPodcastPlaying(false);
+      }
+    };
+    window.addEventListener('guestbook-stop-other-audios', handleStopOther);
+    return () => window.removeEventListener('guestbook-stop-other-audios', handleStopOther);
+  }, []);
   const currentPodcastTrack = podcastIndex !== null ? audioEntries[podcastIndex] : null;
 
   const startPodcast = (index = 0) => {
@@ -224,8 +235,17 @@ export default function CoupleGuestbookPage() {
       toast.info('Aucun message vocal disponible pour la lecture continue.');
       return;
     }
+    window.dispatchEvent(new CustomEvent('guestbook-stop-other-audios', { detail: { id: 'podcast' } }));
     setPodcastIndex(index);
     setIsPodcastPlaying(true);
+  };
+
+  const stopPodcast = () => {
+    if (podcastAudioRef.current) {
+      podcastAudioRef.current.pause();
+    }
+    setPodcastIndex(null);
+    setIsPodcastPlaying(false);
   };
 
   const handlePodcastNext = () => {
@@ -233,8 +253,7 @@ export default function CoupleGuestbookPage() {
       setPodcastIndex(podcastIndex + 1);
       setIsPodcastPlaying(true);
     } else {
-      setPodcastIndex(null);
-      setIsPodcastPlaying(false);
+      stopPodcast();
       toast.success('Tous les messages vocaux ont été écoutés ! 🥂');
     }
   };
@@ -328,8 +347,8 @@ export default function CoupleGuestbookPage() {
         {totalAudio > 0 && (
           <button
             type="button"
-            onClick={() => (podcastIndex === null ? startPodcast(0) : setPodcastIndex(null))}
-            className="ml-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white hover:bg-white/20 transition-colors flex-shrink-0"
+            onClick={() => (podcastIndex === null ? startPodcast(0) : stopPodcast())}
+            className="ml-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white hover:bg-white/20 transition-colors flex-shrink-0 cursor-pointer"
           >
             <Radio className="w-3.5 h-3.5 text-rose-300" />
             {podcastIndex !== null ? 'Arrêter' : `Écouter tout (${totalAudio})`}
@@ -337,7 +356,66 @@ export default function CoupleGuestbookPage() {
         )}
       </div>
 
-      {/* ── (Filtres supprimés) ── */}
+      {/* ── Filtres de la liste ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setFilterType('all')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'all'
+              ? 'bg-charcoal-900 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Tous ({entries.filter((e) => !e.hidden).length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType('audio')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'audio'
+              ? 'bg-charcoal-900 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Vocaux ({totalAudio})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType('text')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'text'
+              ? 'bg-charcoal-900 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Écrits ({totalText})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType('favorites')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'favorites'
+              ? 'bg-rose-600 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Favoris ({totalFavorites})
+        </button>
+        {totalHidden > 0 && (
+          <button
+            type="button"
+            onClick={() => setFilterType('hidden')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+              filterType === 'hidden'
+                ? 'bg-stone-700 text-white'
+                : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300'
+            }`}
+          >
+            Masqués ({totalHidden})
+          </button>
+        )}
+      </div>
 
       {/* ── Lecteur continu — barre fine ── */}
       {podcastIndex !== null && currentPodcastTrack && (
@@ -359,10 +437,14 @@ export default function CoupleGuestbookPage() {
               src={currentPodcastTrack.audio_path || undefined}
               autoPlay
               onEnded={handlePodcastNext}
+              onError={() => {
+                toast.error('Impossible de lire ce message vocal.');
+                handlePodcastNext();
+              }}
               className="hidden"
             />
             <button type="button" onClick={handlePodcastPrev} disabled={podcastIndex === 0}
-              className="p-1.5 text-white/60 hover:text-white transition-colors disabled:opacity-30" title="Précédent">
+              className="p-1.5 text-white/60 hover:text-white transition-colors disabled:opacity-30 cursor-pointer" title="Précédent">
               <SkipBack className="w-4 h-4" />
             </button>
             <button
@@ -372,17 +454,17 @@ export default function CoupleGuestbookPage() {
                 if (isPodcastPlaying) { podcastAudioRef.current.pause(); setIsPodcastPlaying(false); }
                 else { podcastAudioRef.current.play(); setIsPodcastPlaying(true); }
               }}
-              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-500 transition-colors"
+              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-500 transition-colors cursor-pointer"
               title={isPodcastPlaying ? 'Pause' : 'Lecture'}
             >
               {isPodcastPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
             </button>
             <button type="button" onClick={handlePodcastNext}
-              className="p-1.5 text-white/60 hover:text-white transition-colors" title="Suivant">
+              className="p-1.5 text-white/60 hover:text-white transition-colors cursor-pointer" title="Suivant">
               <SkipForward className="w-4 h-4" />
             </button>
-            <button type="button" onClick={() => setPodcastIndex(null)}
-              className="p-1.5 text-white/30 hover:text-white/70 transition-colors" title="Fermer">
+            <button type="button" onClick={stopPodcast}
+              className="p-1.5 text-white/30 hover:text-white/70 transition-colors cursor-pointer" title="Fermer">
               <X className="w-4 h-4" />
             </button>
           </div>
