@@ -63,3 +63,7 @@ out
 
 # devin skills (local only, never pushed)
 .devin/
+# Outils locaux et artefacts de build (jamais sur le dépôt)
+.agents/
+.devin/
+tsconfig.tsbuildinfo
