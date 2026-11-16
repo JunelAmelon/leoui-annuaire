@@ -21,8 +21,12 @@ import { GazetteSectionList } from '@/features/gazette/ui/GazetteSectionList';
 import { GazetteSectionEditor } from '@/features/gazette/ui/GazetteSectionEditor';
 import { GazetteMetadataModal } from '@/features/gazette/ui/GazetteMetadataModal';
 import { toast } from 'sonner';
+import { FirestoreDayPlanRepository } from '@/features/day-plan/repositories/firestore-day-plan.repository';
+import type { DayPlanReader } from '@/features/day-plan/repositories/day-plan.repository.interface';
+import { toGazetteProgram } from '@/features/day-plan/domain/timeline';
 
 const repository = new FirestoreGazetteRepository();
+const dayPlanReader: DayPlanReader = new FirestoreDayPlanRepository();
 const service = new GazetteService(repository);
 
 export default function CoupleGazettePage() {
@@ -483,41 +487,22 @@ export default function CoupleGazettePage() {
   const handleSyncPlanning = async () => {
     if (!gazette) return;
 
-    const defaultMoments = [
-      {
-        time: '14:30',
-        title: 'Cérémonie Civile & Échange des Vœux',
-        description: 'Mairie & Salle des Célébrations',
-        location: event?.venue || 'Mairie',
-      },
-      {
-        time: '16:30',
-        title: 'Cocktail & Vin d’Honneur en Musique',
-        description: 'Bulles, délices salés et photos souvenirs',
-        location: 'Les Grands Jardins',
-      },
-      {
-        time: '19:30',
-        title: 'Le Grand Dîner de Fête & Surprises',
-        description: 'Voyage gastronomique et discours émouvants',
-        location: 'Grande Salle des Lustres',
-      },
-      {
-        time: '23:00',
-        title: 'Ouverture du Bal & Soirée Dansante',
-        description: 'Que la fête commence jusqu’au bout de la nuit !',
-        location: 'Piste Principale',
-      },
-    ];
+    // Pont de données : moments du jour J visibles des invités (cérémonie, cocktail, repas, soirée).
+    const dayPlan = await dayPlanReader.getByEventId(gazette.event_id).catch(() => null);
+    const moments = dayPlan ? toGazetteProgram(dayPlan) : [];
+    if (!moments.length) {
+      toast.error('Votre planning du jour J est vide. Ajoutez-y vos moments, puis revenez ici.');
+      return;
+    }
 
     try {
       const updated = await service.syncProgramFromDayPlan(
         gazette.event_id,
-        defaultMoments,
+        moments,
         gazette.version
       );
       setGazette(updated);
-      toast.success('Programme officiel synchronisé avec le planning !');
+      toast.success(`Programme repris du planning (${moments.length} moments).`);
     } catch (err: any) {
       toast.error(err.message || 'Erreur lors de la synchronisation.');
     }

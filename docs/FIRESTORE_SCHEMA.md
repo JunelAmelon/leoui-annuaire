@@ -284,26 +284,55 @@ updated_at
 
 ## 3. Planning du jour J (Junel) — `day_plans/{event_id}`
 
+Code : `src/features/day-plan/` (domaine, repositories, services, UI). Page couple :
+`/espace-client/planning-jour-j`. Lien partagé : `/planning-jour-j/{event_id}/{token}`.
+
 ```
 event_id, owner_id,
 days: {
-  eve:   { date, items: TimelineItem[] },
+  eve:   { date, items: TimelineItem[] },   // date = 'YYYY-MM-DD' (veille = mariage − 1 j)
   day:   { date, items: TimelineItem[] },
   after: { date, items: TimelineItem[] },
 }
 // TimelineItem (id STABLE : jamais modifié, référencé par la playlist et l'album) :
-// { id, title, start_at (ISO 8601 COMPLET avec date, gère après minuit), end_at|null,
-//   duration_min, category, location { name, address, travel_min },
+// { id, title, start_at, end_at|null, duration_min,
+//   category: 'preparation'|'ceremony'|'photo'|'cocktail'|'meal'|'party'|'transport'|'logistics'|'other',
+//   location { name, address, travel_min },   // travel_min = trajet DEPUIS le lieu du moment précédent
 //   people: string[], notes, vendor_ids: string[], sort_key }
-share: { token, token_revoked_at, vendor_links: [{ vendor_id, token, token_revoked_at }] },
-updated_at
+share: {
+  token|null, token_revoked_at,                              // lien général, lecture seule, sans les notes
+  vendor_links: [{ vendor_id, label, token, token_revoked_at }]   // 1 lien par prestataire (≤ 30)
+},
+created_at, updated_at
 ```
+- **`start_at` / `end_at` = heure LOCALE du lieu, sans décalage** : `YYYY-MM-DDTHH:mm:00`
+  (ISO 8601 « flottant »). L'ordre lexicographique est l'ordre chronologique, et l'affichage ne
+  dépend pas du fuseau du lecteur. **Ne pas** passer par `toISOString()` pour ces deux champs.
+- **Après minuit** : une heure saisie avant 06:00 est rangée au lendemain calendaire de sa journée
+  (01:30 « le jour J » ⇒ date du lendemain) ; le tri est donc automatique.
+- `vendor_ids` référence `share.vendor_links[].vendor_id` (`v_xxxxxxxx`). `label` **[ajout Rév. 3]** :
+  nom affiché du prestataire, qui n'a pas forcément de compte sur la plateforme.
+- Max 60 moments par journée. Écriture **par chemin** (`days.day`, `share`), jamais le doc entier.
+- Changement de la date du mariage : toutes les dates sont recalées par le service (heures conservées).
+- Alertes de trajet (calculées, non stockées) : battement < trajet ⇒ impossible ;
+  battement < trajet + 10 min ⇒ serré ; changement de lieu sans `travel_min` ⇒ rappel.
+
 Sous-collection : `day_plans/{event_id}/vendor_requests/{id}` →
-`{ vendor_id, item_id, proposed_start_at, reason, status: 'pending'|'accepted'|'declined', created_at, decided_at }`
-(remplace le tableau `vendor_requests`, écrit par les prestataires via API).
-- `start_time` `'HH:mm'` supprimé : un seul format ISO complet.
-- Suppression d'un `TimelineItem` : met à jour (via service) les `moment_id` de l'album
-  et `linked_moment_id` de la playlist à `null`.
+`{ event_id, owner_id, vendor_id, vendor_label, item_id, proposed_start_at, reason,
+   status: 'pending'|'accepted'|'declined', created_at, decided_at }`
+- Créée **uniquement via l'API** `POST /api/day-plan/share/{event_id}/{token}` (jeton prestataire
+  valide, prestataire affecté au moment, ≤ 10 en attente par prestataire, quota 6 / 10 min).
+- `owner_id` / `event_id` dupliqués pour que la règle Firestore ne relise pas le doc parent.
+- Le couple lit la liste (bornée à 50, `created_at` desc) et ne peut écrire que `status` + `decided_at`.
+- Accepter = le service déplace le moment à `proposed_start_at` (option : décaler toute la suite).
+
+**Ponts de données** (fonctions pures de `domain/timeline.ts`, aucune duplication en base) :
+- Gazette : `toGazetteProgram(plan)` → moments du jour J des catégories visibles des invités
+  (cérémonie, cocktail, repas, soirée, autre), passés à `GazetteService.syncProgramFromDayPlan`.
+- Playlist : `toPlaylistMoments(plan)` → `{ id, label, start_at, day, category }` ; `id` est la valeur
+  à stocker dans `playlists.sections[].linked_moment_id`.
+- Suppression d'un `TimelineItem` : le service appelle le port `MomentLinkCleaner.onMomentDeleted`
+  (à implémenter côté Playlist / album pour remettre `linked_moment_id` / `moment_id` à `null`).
 
 ## 4. Album photo QR (Junel) — `photo_albums/{event_id}` + `photo_album_items/{id}`
 
@@ -462,6 +491,7 @@ Ne supprimer le fallback `client_id` de `invites/page.tsx`, `mariage/page.tsx` e
 | Écriture par chemin / transaction sur gros docs ; `version` gazette | Conventions, 2, 6 |
 | `status 'reserved'` supprimé ; `reservations` avec expiration ; compteurs bufferisés/shardés | 1 |
 | `geohash` ajouté ; recherche texte → Algolia/Typesense **[À VALIDER]** | 1 |
+| Rév. 3 — `day_plans` : heures locales sans décalage, `category` énumérée, `share.vendor_links[].label`, `owner_id`/`event_id`/`vendor_label` dans `vendor_requests`, ponts Gazette/Playlist | 3 |
 | `waveform` ≤ 100 pts ; upload audio/photo par URL signée ; règles Storage | 4, 5, Règles |
 | `start_time` → `start_at` ISO complet ; `TimelineItem.id` stable | 3 |
 | `program_source` remplace 2 booléens ; structure `quiz` ; statut menu `a_valider` | 6, 7 |
