@@ -124,7 +124,7 @@ export default function SharedDayPlanPage({ params }: { params: { eventId: strin
       {/* ── Bandeau ── */}
       <header className="relative bg-[#1A1412] text-white overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/mariage (5).jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+        <img src="/jour-j-cover.jpg" alt="" className="absolute inset-0 w-full h-full object-cover object-[50%_28%] opacity-55" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1A1412] via-[#1A1412]/60 to-[#1A1412]/30" />
         <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-8">
           <p className={`${kicker} text-rose-300`}>Planning du jour J</p>

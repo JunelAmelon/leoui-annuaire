@@ -2,9 +2,9 @@
 
 /** Partage du planning : lien général en lecture seule + un lien personnel par prestataire. */
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Check, Copy, X } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
+import { SplitModal, modalGhostBtn } from '@/components/ui/SplitModal';
 import { toast } from 'sonner';
 import type { DayPlan } from '../domain/types';
 
@@ -49,13 +49,6 @@ export function SharePanel({ plan, busy, itemCounts, onEnableShare, onRevokeShar
   const [name, setName] = useState('');
   const generalActive = Boolean(plan.share.token) && !plan.share.token_revoked_at;
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKey); };
-  }, [onClose]);
-
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (await onAddVendor(name)) setName('');
@@ -63,18 +56,10 @@ export function SharePanel({ plan, busy, itemCounts, onEnableShare, onRevokeShar
 
   const kicker = 'text-[10px] font-semibold tracking-[0.2em] uppercase';
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-stretch sm:justify-end bg-charcoal-950/55 backdrop-blur-sm" onClick={onClose}>
-      <aside onClick={(e) => e.stopPropagation()} className="bg-white w-full sm:w-[30rem] h-[100dvh] flex flex-col shadow-2xl">
-        <div className="flex items-start justify-between gap-4 px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 flex-shrink-0">
-          <div>
-            <p className={`${kicker} text-rose-600`}>Planning du jour J</p>
-            <h2 className="font-serif text-charcoal-900 text-[1.7rem] leading-tight mt-1" style={{ fontWeight: 400 }}>Partager</h2>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="w-9 h-9 -mr-2 flex items-center justify-center text-charcoal-400 hover:text-charcoal-900"><X className="w-5 h-5" /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto overscroll-contain subtle-scroll px-6 sm:px-8 py-7 space-y-10">
+  return (
+    <SplitModal image="/jour-j-cover.jpg" imageClass="object-[50%_60%]" kicker="Planning du jour J" title="Partager"
+      caption="Chacun voit ce qui le concerne, vous gardez la main." widthClass="sm:max-w-4xl" onClose={onClose}
+      footer={<button type="button" onClick={onClose} className={`${modalGhostBtn} ml-auto`}>Fermer</button>}>
           {/* Prestataires */}
           <section>
             <p className={`${kicker} text-charcoal-400`}>Vos prestataires</p>
@@ -129,9 +114,6 @@ export function SharePanel({ plan, busy, itemCounts, onEnableShare, onRevokeShar
               <button type="button" disabled={busy} onClick={onEnableShare} className="mt-4 h-10 px-4 border border-charcoal-900 text-charcoal-900 text-[13px] font-medium hover:bg-charcoal-900 hover:text-white disabled:opacity-35 transition-colors rounded-sm">Créer le lien</button>
             )}
           </section>
-        </div>
-      </aside>
-    </div>,
-    document.body
+    </SplitModal>
   );
 }

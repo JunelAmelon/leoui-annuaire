@@ -2,9 +2,9 @@
 
 /** Création / modification d'un moment. Plein écran sur mobile, fenêtre centrée au-delà. */
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { SplitModal, modalField, modalGhostBtn, modalLabel, modalPrimaryBtn } from '@/components/ui/SplitModal';
 import {
   CATEGORIES, CATEGORY_KEYS, DAY_KEYS, DAY_LABELS, LIMITS,
   type DayKey, type TimelineItem, type TimelineItemInput, type VendorLink,
@@ -13,8 +13,8 @@ import { NIGHT_CUTOFF_HOUR, isValidTime, timeOf } from '../domain/timeline';
 
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180];
 
-const field = 'w-full bg-transparent border-0 border-b border-stone-300 px-0 py-2.5 text-[15px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none focus:ring-0 focus:border-rose-500 transition-colors rounded-none';
-const label = 'block text-[10px] font-semibold tracking-[0.18em] uppercase text-charcoal-400';
+const field = modalField;
+const label = modalLabel;
 
 const emptyInput = (): TimelineItemInput => ({
   title: '', time: '14:00', duration_min: 60, category: 'ceremony',
@@ -54,13 +54,6 @@ export function ItemModal({ item, dayKey, vendors, knownPlaces, saving, errors =
   const [people, setPeople] = useState(() => (item ? item.people.join(', ') : ''));
   const set = <K extends keyof TimelineItemInput>(k: K, v: TimelineItemInput[K]) => setInput((p) => ({ ...p, [k]: v }));
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKey); };
-  }, [onClose]);
-
   const night = isValidTime(input.time) && Number(input.time.slice(0, 2)) < NIGHT_CUTOFF_HOUR;
   const activeVendors = vendors.filter((v) => !v.token_revoked_at || input.vendor_ids.includes(v.vendor_id));
 
@@ -69,19 +62,20 @@ export function ItemModal({ item, dayKey, vendors, knownPlaces, saving, errors =
     onSave({ ...input, people: people.split(',').map((p) => p.trim()).filter(Boolean) }, key);
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-charcoal-950/55 backdrop-blur-sm" onClick={onClose}>
-      <form onSubmit={submit} onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-xl h-[100dvh] sm:h-auto sm:max-h-[92dvh] flex flex-col sm:rounded-2xl overflow-hidden shadow-2xl">
-        <div className="flex items-start justify-between gap-4 px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 flex-shrink-0">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-rose-600">Planning du jour J</p>
-            <h2 className="font-serif text-charcoal-900 text-[1.7rem] leading-tight mt-1" style={{ fontWeight: 400 }}>{item ? 'Modifier le moment' : 'Nouveau moment'}</h2>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="w-9 h-9 -mr-2 flex items-center justify-center text-charcoal-400 hover:text-charcoal-900"><X className="w-5 h-5" /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto overscroll-contain subtle-scroll px-6 sm:px-8 py-6 space-y-7">
+  return (
+    <SplitModal image="/jour-j-cover.jpg" imageClass="object-[50%_30%]" kicker="Planning du jour J" title={item ? 'Modifier le moment' : 'Nouveau moment'}
+      caption="Chaque minute compte, mais personne ne doit le sentir." widthClass="sm:max-w-4xl" onClose={onClose} onSubmit={submit}
+      footer={
+        <>
+          {onDelete && (
+            <button type="button" onClick={onDelete} disabled={saving} className="inline-flex items-center gap-1.5 text-[13px] text-charcoal-500 hover:text-rose-600 disabled:opacity-40 mr-auto">
+              <Trash2 className="w-4 h-4" /> Supprimer
+            </button>
+          )}
+          <button type="button" onClick={onClose} className={`${modalGhostBtn} ${onDelete ? '' : 'ml-auto'}`}>Annuler</button>
+          <button type="submit" disabled={saving || !input.title.trim()} className={modalPrimaryBtn}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+        </>
+      }>
           <label className="block">
             <span className={label}>Intitulé</span>
             <input autoFocus={!item} value={input.title} maxLength={LIMITS.TITLE} onChange={(e) => set('title', e.target.value)} placeholder="Ex : Cérémonie laïque" className={`${field} font-serif text-xl`} />
@@ -175,22 +169,6 @@ export function ItemModal({ item, dayKey, vendors, knownPlaces, saving, errors =
             <textarea rows={3} value={input.notes} maxLength={LIMITS.NOTES} onChange={(e) => set('notes', e.target.value)} placeholder="Ce qu’il ne faut pas oublier. Visible par les prestataires, pas par le lien général."
               className={`${field} resize-none font-serif italic text-[16px] leading-relaxed`} />
           </label>
-        </div>
-
-        <div className="flex items-center gap-3 px-6 sm:px-8 py-4 border-t border-stone-200 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {onDelete && (
-            <button type="button" onClick={onDelete} disabled={saving} className="inline-flex items-center gap-1.5 text-[13px] text-charcoal-500 hover:text-rose-600 disabled:opacity-40 mr-auto">
-              <Trash2 className="w-4 h-4" /> Supprimer
-            </button>
-          )}
-          <button type="button" onClick={onClose} className={`h-11 px-5 border border-stone-300 text-charcoal-700 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm ${onDelete ? '' : 'ml-auto'}`}>Annuler</button>
-          <button type="submit" disabled={saving || !input.title.trim()}
-            className="h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-35 disabled:hover:bg-charcoal-900 transition-colors rounded-sm">
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-        </div>
-      </form>
-    </div>,
-    document.body
+    </SplitModal>
   );
 }

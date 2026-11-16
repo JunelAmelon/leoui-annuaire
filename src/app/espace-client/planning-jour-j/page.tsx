@@ -226,12 +226,12 @@ export default function PlanningJourJPage() {
             </div>
           </div>
 
-          <div className="relative hidden lg:block min-h-[17rem]">
+          <div className="relative order-first lg:order-none h-48 sm:h-60 lg:h-auto lg:min-h-[17rem]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mariage (5).jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#1A1013]/85 to-transparent" />
-            <p className="absolute bottom-5 right-6 left-10 text-right font-serif italic text-white text-lg leading-snug" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
+            <img src="/jour-j-cover.jpg" alt="" className="absolute inset-0 w-full h-full object-cover object-[50%_28%]" />
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent hidden lg:block" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#1A1013]/85 to-transparent" />
+            <p className="absolute bottom-4 sm:bottom-5 right-5 sm:right-6 left-5 lg:left-10 text-right font-serif italic text-white text-base sm:text-lg leading-snug" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
               « Une journée réussie, c’est une journée où personne ne regarde sa montre. »
             </p>
           </div>

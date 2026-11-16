@@ -1,20 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { Gazette, GazetteTheme, GAZETTE_THEMES, WEDDING_COLOR_PALETTES } from '../domain/types';
-import {
-  X,
-  Palette,
-  Image as ImageIcon,
-  Calendar,
-  MapPin,
-  Type,
-  Sparkles,
-  Trash2,
-  Tag,
-  BookOpen,
-  QrCode,
-} from 'lucide-react';
+/**
+ * Réglages de la Gazette : photo de Une à gauche (aperçu direct), formulaire à droite en trois onglets
+ * (Journal, Style, Détails). Ne persiste rien : remonte le résultat via `onSave`.
+ */
+
+import { useRef, useState } from 'react';
+import { Check, Loader2, Trash2, Upload } from 'lucide-react';
+import { toast } from 'sonner';
+import { uploadFile } from '@/lib/storage';
+import { SplitModal, modalField, modalGhostBtn, modalLabel, modalPrimaryBtn } from '@/components/ui/SplitModal';
+import { GAZETTE_THEMES, WEDDING_COLOR_PALETTES, type Gazette, type GazetteTheme } from '../domain/types';
+
+type FontId = 'bodoni' | 'playfair' | 'cinzel' | 'sans';
+type QrTarget = 'guestbook' | 'photos' | 'honeymoon';
+type Tab = 'journal' | 'style' | 'details';
 
 interface GazetteMetadataModalProps {
   gazette: Gazette;
@@ -30,18 +30,36 @@ interface GazetteMetadataModalProps {
     theme: GazetteTheme;
     price_tag?: string;
     edition_tag?: string;
-    font_family?: 'bodoni' | 'playfair' | 'cinzel' | 'sans';
+    font_family?: FontId;
     accent_color?: string;
-    qr_code_target?: 'guestbook' | 'photos' | 'honeymoon';
+    qr_code_target?: QrTarget;
   }) => void;
   onClose: () => void;
 }
 
-export function GazetteMetadataModal({
-  gazette,
-  onSave,
-  onClose,
-}: GazetteMetadataModalProps) {
+const DEFAULT_COVER = '/mariage (4).jpg';
+
+const FONTS: { id: FontId; label: string; sample: string; style: React.CSSProperties }[] = [
+  { id: 'bodoni', label: 'Bodoni', sample: 'Sophie & Thomas', style: { fontFamily: "'Bodoni Moda', serif" } },
+  { id: 'playfair', label: 'Cormorant', sample: 'Sophie & Thomas', style: { fontFamily: 'var(--font-serif), serif' } },
+  { id: 'cinzel', label: 'Capitales', sample: 'Sophie & Thomas', style: { fontFamily: "'Bodoni Moda', serif", textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 15 } },
+  { id: 'sans', label: 'Jost', sample: 'Sophie & Thomas', style: { fontFamily: "'Jost', sans-serif" } },
+];
+
+const QR_TARGETS: { id: QrTarget; label: string }[] = [
+  { id: 'guestbook', label: 'Livre d’or' },
+  { id: 'photos', label: 'Photos des invités' },
+  { id: 'honeymoon', label: 'Cagnotte voyage de noces' },
+];
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'journal', label: 'Le journal' },
+  { id: 'style', label: 'Style' },
+  { id: 'details', label: 'Détails' },
+];
+
+export function GazetteMetadataModal({ gazette, onSave, onClose }: GazetteMetadataModalProps) {
+  const [tab, setTab] = useState<Tab>('journal');
   const [title, setTitle] = useState(gazette.title || '');
   const [subtitle, setSubtitle] = useState(gazette.subtitle || '');
   const [weddingDate, setWeddingDate] = useState(gazette.wedding_date || '');
@@ -49,19 +67,30 @@ export function GazetteMetadataModal({
   const [coverPath, setCoverPath] = useState(gazette.cover_path || '');
   const [coverCaption, setCoverCaption] = useState(gazette.cover_caption || '');
   const [editorial, setEditorial] = useState(gazette.editorial || '');
-  const [weatherForecast, setWeatherForecast] = useState(gazette.weather_forecast || '');
+  const [weather, setWeather] = useState(gazette.weather_forecast || '');
   const [theme, setTheme] = useState<GazetteTheme>(gazette.layout?.theme || 'vintage_gazette');
-  const [priceTag, setPriceTag] = useState(gazette.price_tag || 'PRIX : TOUT VOTRE AMOUR');
-  const [editionTag, setEditionTag] = useState(gazette.edition_tag || 'VOL. I — N° 001');
-  const [accentColor, setAccentColor] = useState(gazette.layout?.accent_color || '#be123c');
-  const [fontFamily, setFontFamily] = useState<'bodoni' | 'playfair' | 'cinzel' | 'sans'>(
-    gazette.layout?.font_family || 'bodoni'
-  );
-  const [qrCodeTarget, setQrCodeTarget] = useState<'guestbook' | 'photos' | 'honeymoon'>(
-    gazette.qr_code_target || 'guestbook'
-  );
+  const [priceTag, setPriceTag] = useState(gazette.price_tag || '');
+  const [editionTag, setEditionTag] = useState(gazette.edition_tag || '');
+  const [accent, setAccent] = useState(gazette.layout?.accent_color || '#be123c');
+  const [font, setFont] = useState<FontId>(gazette.layout?.font_family || 'bodoni');
+  const [qr, setQr] = useState<QrTarget>(gazette.qr_code_target || 'guestbook');
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const pickCover = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Choisissez une image.'); return; }
+    setUploading(true);
+    try {
+      setCoverPath(await uploadFile(file, 'gazettes'));
+    } catch {
+      toast.error('Import de la photo impossible.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
       title: title.trim() || 'La Gazette des Mariés',
@@ -71,349 +100,162 @@ export function GazetteMetadataModal({
       cover_path: coverPath.trim() || null,
       cover_caption: coverCaption.trim(),
       editorial: editorial.trim(),
-      weather_forecast: weatherForecast.trim(),
+      weather_forecast: weather.trim(),
       theme,
       price_tag: priceTag.trim(),
       edition_tag: editionTag.trim(),
-      accent_color: accentColor,
-      font_family: fontFamily,
-      qr_code_target: qrCodeTarget,
+      accent_color: accent,
+      font_family: font,
+      qr_code_target: qr,
     });
   };
 
+  const choice = (active: boolean) =>
+    `border text-left transition-colors rounded-sm ${active ? 'border-charcoal-900 bg-[#FBF8F4]' : 'border-stone-200 hover:border-stone-400'}`;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-stone-200">
-        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/60">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-rose-50 text-rose-600">
-              <Sparkles className="w-5 h-5" />
-            </span>
-            <div>
-              <h3 className="font-semibold text-stone-900 text-lg">
-                Paramètres de la Gazette
-              </h3>
-              <p className="text-xs text-stone-500">
-                Personnalisez les couleurs, la typographie, la Une et les micro-détails
-              </p>
-            </div>
+    <SplitModal
+      image={coverPath || DEFAULT_COVER}
+      kicker="La Gazette"
+      title="Réglages"
+      caption={title || 'La Gazette des Mariés'}
+      widthClass="sm:max-w-5xl"
+      onClose={onClose}
+      onSubmit={submit}
+      footer={
+        <>
+          <button type="button" onClick={onClose} className={`${modalGhostBtn} ml-auto`}>Annuler</button>
+          <button type="submit" disabled={uploading} className={modalPrimaryBtn}>Enregistrer</button>
+        </>
+      }
+    >
+      <nav className="flex gap-x-7 border-b border-stone-200 -mt-1" aria-label="Rubriques des réglages">
+        {TABS.map((t) => (
+          <button key={t.id} type="button" onClick={() => setTab(t.id)}
+            className={`pb-3 -mb-px text-[13.5px] border-b-2 transition-colors ${tab === t.id ? 'border-rose-600 text-charcoal-900 font-medium' : 'border-transparent text-charcoal-400 hover:text-charcoal-800'}`}>{t.label}</button>
+        ))}
+      </nav>
+
+      {tab === 'journal' && (
+        <>
+          <label className="block">
+            <span className={modalLabel}>Titre du journal</span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="La Gazette de Sophie & Thomas" className={`${modalField} font-serif text-xl`} />
+          </label>
+          <label className="block">
+            <span className={modalLabel}>Gros titre de la Une</span>
+            <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Ils se sont dit oui !" className={modalField} />
+          </label>
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-7">
+            <label className="block">
+              <span className={modalLabel}>Date du mariage</span>
+              <input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} className={modalField} />
+            </label>
+            <label className="block">
+              <span className={modalLabel}>Lieu de réception</span>
+              <input value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="Château de la Mariée" className={modalField} />
+            </label>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1">
-          {/* 1. Charte Graphique & Couleurs du Mariage */}
-          <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-                <Palette className="w-4 h-4 text-stone-600" />
-                Couleur d'accentuation du mariage
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  className="w-7 h-7 rounded-lg cursor-pointer border border-stone-300 p-0.5 bg-white"
-                  title="Couleur personnalisée"
-                />
-                <span className="font-mono text-xs text-stone-600 uppercase">{accentColor}</span>
-              </div>
+          <div>
+            <span className={modalLabel}>Photo de Une</span>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { void pickCover(e.target.files?.[0]); e.target.value = ''; }} />
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3">
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                className="inline-flex items-center gap-2 h-10 px-4 border border-stone-300 text-[13px] text-charcoal-800 hover:border-charcoal-900 disabled:opacity-50 transition-colors rounded-sm">
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {coverPath ? 'Changer la photo' : 'Importer une photo'}
+              </button>
+              {coverPath && (
+                <button type="button" onClick={() => setCoverPath('')} className="inline-flex items-center gap-1.5 text-[13px] text-charcoal-500 hover:text-rose-600">
+                  <Trash2 className="w-4 h-4" /> Retirer
+                </button>
+              )}
             </div>
+            <p className="text-[12px] text-charcoal-400 mt-2">L’aperçu à gauche se met à jour tout de suite.</p>
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              {WEDDING_COLOR_PALETTES.map((pal) => (
-                <button
-                  key={pal.id}
-                  type="button"
-                  onClick={() => setAccentColor(pal.hex)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition ${
-                    accentColor.toLowerCase() === pal.hex.toLowerCase()
-                      ? 'border-stone-900 bg-white shadow-xs font-bold'
-                      : 'border-stone-200 bg-white/70 hover:bg-white text-stone-700'
-                  }`}
-                >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
-                    style={{ backgroundColor: pal.hex }}
-                  />
-                  <span>{pal.label}</span>
+          <label className="block">
+            <span className={modalLabel}>Légende de la photo</span>
+            <input value={coverCaption} onChange={(e) => setCoverCaption(e.target.value)} placeholder="Le commencement d’une vie à deux" className={`${modalField} font-serif italic text-[16px]`} />
+          </label>
+        </>
+      )}
+
+      {tab === 'style' && (
+        <>
+          <div>
+            <span className={modalLabel}>Style du journal</span>
+            <div className="grid sm:grid-cols-3 gap-3 mt-3">
+              {(Object.keys(GAZETTE_THEMES) as GazetteTheme[]).map((key) => (
+                <button key={key} type="button" onClick={() => setTheme(key)} className={`${choice(theme === key)} p-3.5`}>
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="font-serif text-[1.1rem] text-charcoal-900 leading-tight">{GAZETTE_THEMES[key].label}</span>
+                    {theme === key && <Check className="w-4 h-4 text-rose-600 flex-shrink-0" />}
+                  </span>
+                  <span className="block text-[12px] text-charcoal-500 mt-1.5 leading-snug">{GAZETTE_THEMES[key].tag}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* 2. Typographie & Thème du journal */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1.5">
-                <Type className="w-3.5 h-3.5 text-stone-500" /> Police des Grands Titres
-              </label>
-              <select
-                value={fontFamily}
-                onChange={(e) => setFontFamily(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500 bg-white"
-              >
-                <option value="bodoni">Bodoni Didot (Haute Couture, Vogue)</option>
-                <option value="playfair">Playfair Display (Classique & Poétique)</option>
-                <option value="cinzel">Cinzel Antique (Noble & Romain)</option>
-                <option value="sans">Sans Épuré (Moderne & Contemporain)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1.5">
-                <QrCode className="w-3.5 h-3.5 text-stone-500" /> Cible du QR Code (Page 4)
-              </label>
-              <select
-                value={qrCodeTarget}
-                onChange={(e) => setQrCodeTarget(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500 bg-white"
-              >
-                <option value="guestbook">Livre d'or interactif</option>
-                <option value="photos">Galerie photos des invités</option>
-                <option value="honeymoon">Cagnotte Voyage de Noces</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Choix du Thème */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-2 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-stone-500" /> Style de Presse
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {(Object.keys(GAZETTE_THEMES) as GazetteTheme[]).map((tKey) => {
-                const item = GAZETTE_THEMES[tKey];
-                const isSelected = theme === tKey;
-                return (
-                  <button
-                    key={tKey}
-                    type="button"
-                    onClick={() => setTheme(tKey)}
-                    className={`p-3 text-left rounded-xl border-2 transition-all flex flex-col justify-between ${
-                      isSelected
-                        ? 'border-stone-900 bg-stone-50 shadow-xs'
-                        : 'border-stone-200 hover:border-stone-300'
-                    }`}
-                  >
-                    <div>
-                      <span className="font-bold text-xs text-stone-900 block">
-                        {item.label}
-                      </span>
-                      <span className="text-[11px] text-stone-500 line-clamp-2 mt-1">
-                        {item.description}
-                      </span>
-                    </div>
-                    <span
-                      className={`text-[10px] mt-2 font-medium px-2 py-0.5 rounded-full inline-block w-fit ${
-                        isSelected
-                          ? 'bg-stone-900 text-white'
-                          : 'bg-stone-100 text-stone-600'
-                      }`}
-                    >
-                      {isSelected ? 'Sélectionné' : 'Choisir'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Micro-détails de presse */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Tag className="w-3 h-3 text-stone-500" /> Numéro d'Édition
-              </label>
-              <input
-                type="text"
-                value={editionTag}
-                onChange={(e) => setEditionTag(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-                placeholder="Ex: VOL. I — N° 001"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Tag className="w-3 h-3 text-stone-500" /> Mention de Prix
-              </label>
-              <input
-                type="text"
-                value={priceTag}
-                onChange={(e) => setPriceTag(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-                placeholder="Ex: PRIX : TOUT VOTRE AMOUR"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
-                Titre du Journal (Manchette)
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-                placeholder="Ex: La Gazette des Mariés"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
-                Gros Titre / Sensation (Headline)
-              </label>
-              <input
-                type="text"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-                placeholder="Ex: ILS SE SONT DIT OUI !"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-stone-500" /> Date du mariage
-              </label>
-              <input
-                type="date"
-                value={weddingDate}
-                onChange={(e) => setWeddingDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-stone-500" /> Lieu de réception
-              </label>
-              <input
-                type="text"
-                value={locationName}
-                onChange={(e) => setLocationName(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-                placeholder="Ex: Château de Champlâtreux"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1">
-                <ImageIcon className="w-3.5 h-3.5 text-stone-500" /> Photo de couverture (Une du journal)
-              </label>
-              {coverPath && (
-                <button
-                  type="button"
-                  onClick={() => setCoverPath('')}
-                  className="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 transition cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Supprimer la photo</span>
+            <span className={modalLabel}>Police des titres</span>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {FONTS.map((f) => (
+                <button key={f.id} type="button" onClick={() => setFont(f.id)} className={`${choice(font === f.id)} px-3.5 py-3`}>
+                  <span className="block text-[1.2rem] leading-tight text-charcoal-900 truncate" style={f.style}>{f.sample}</span>
+                  <span className="block text-[11px] text-charcoal-400 mt-1">{f.label}</span>
                 </button>
-              )}
+              ))}
             </div>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={coverPath}
-                onChange={(e) => setCoverPath(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-                placeholder="https://... (Lien de la photo des mariés)"
-              />
-              {coverPath && (
-                <button
-                  type="button"
-                  onClick={() => setCoverPath('')}
-                  className="px-3.5 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 cursor-pointer"
-                  title="Supprimer la photo"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Supprimer</span>
-                </button>
-              )}
+          </div>
+
+          <div>
+            <span className={modalLabel}>Couleur d’accent</span>
+            <div className="flex flex-wrap items-center gap-2.5 mt-3">
+              {WEDDING_COLOR_PALETTES.map((pal) => (
+                <button key={pal.id} type="button" title={pal.label} aria-label={pal.label} onClick={() => setAccent(pal.hex)}
+                  className={`w-8 h-8 rounded-full transition-shadow ${accent.toLowerCase() === pal.hex.toLowerCase() ? 'ring-1 ring-offset-2 ring-charcoal-900' : 'hover:ring-1 hover:ring-offset-2 hover:ring-stone-300'}`} style={{ backgroundColor: pal.hex }} />
+              ))}
+              <label className="relative w-8 h-8 rounded-full border border-dashed border-stone-400 flex items-center justify-center cursor-pointer text-[11px] text-charcoal-500" title="Couleur personnalisée">
+                +<input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </label>
+              <span className="text-[12px] tabular-nums text-charcoal-400 uppercase ml-1">{accent}</span>
             </div>
-            {coverPath && (
-              <div className="mt-2 relative w-24 h-16 rounded-lg overflow-hidden border border-stone-200 group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverPath} alt="Aperçu couverture" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setCoverPath('')}
-                  className="absolute inset-0 bg-stone-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold transition cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Supprimer
-                </button>
-              </div>
-            )}
           </div>
+        </>
+      )}
 
-          <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
-              Légende de la photo de une
+      {tab === 'details' && (
+        <>
+          <label className="block">
+            <span className={modalLabel}>Le mot des mariés</span>
+            <textarea rows={4} value={editorial} onChange={(e) => setEditorial(e.target.value)} placeholder="Chers invités, soyez les bienvenus…" className={`${modalField} resize-none font-serif text-[16px] leading-relaxed`} />
+          </label>
+          <label className="block">
+            <span className={modalLabel}>Météo du cœur</span>
+            <textarea rows={2} value={weather} onChange={(e) => setWeather(e.target.value)} placeholder="Grand soleil, averses de rires en soirée." className={`${modalField} resize-none font-serif italic text-[16px]`} />
+          </label>
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-7">
+            <label className="block">
+              <span className={modalLabel}>Numéro d’édition</span>
+              <input value={editionTag} onChange={(e) => setEditionTag(e.target.value)} placeholder="Édition n° 1" className={modalField} />
             </label>
-            <input
-              type="text"
-              value={coverCaption}
-              onChange={(e) => setCoverCaption(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-              placeholder="Ex: « Le commencement d'une vie à deux... »"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
-              Éditorial des mariés (Mot de bienvenue)
+            <label className="block">
+              <span className={modalLabel}>Mention de prix</span>
+              <input value={priceTag} onChange={(e) => setPriceTag(e.target.value)} placeholder="Prix : tout votre amour" className={modalField} />
             </label>
-            <textarea
-              rows={3}
-              value={editorial}
-              onChange={(e) => setEditorial(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-              placeholder="Bienvenue dans notre gazette exclusive..."
-            />
           </div>
-
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
-              Météo de l'amour humoristique
-            </label>
-            <textarea
-              rows={2}
-              value={weatherForecast}
-              onChange={(e) => setWeatherForecast(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
-              placeholder="Température : 32°C de bonheur absolu, averses de confettis..."
-            />
+            <span className={modalLabel}>Le QR code de la dernière page mène à</span>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {QR_TARGETS.map((t) => (
+                <button key={t.id} type="button" onClick={() => setQr(t.id)} className={`${choice(qr === t.id)} h-10 px-4 text-[13px] text-charcoal-800`}>{t.label}</button>
+              ))}
+            </div>
           </div>
-
-          <div className="px-2 pt-2 border-t border-stone-100 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 rounded-xl hover:bg-stone-100 transition cursor-pointer"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-sm font-semibold text-white bg-stone-900 hover:bg-stone-800 rounded-xl shadow-xs transition cursor-pointer"
-            >
-              Enregistrer les paramètres
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </>
+      )}
+    </SplitModal>
   );
 }

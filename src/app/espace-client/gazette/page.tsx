@@ -548,10 +548,10 @@ export default function CoupleGazettePage() {
   ];
 
   return (
-    <div className="w-full pb-10">
+    <div className="w-full min-w-0 pb-10 overflow-x-clip">
       {/* ── En-tête ── */}
       <header className="relative bg-white border border-stone-200 overflow-hidden">
-        <div className="grid lg:grid-cols-[1fr_22rem]">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="px-5 sm:px-9 lg:px-12 pt-8 sm:pt-11 pb-7">
             <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-rose-600">Papeterie · Le jour J</p>
             <h1 className="font-serif text-charcoal-900 mt-3 leading-none" style={{ fontSize: 'clamp(2.1rem, 4.4vw, 3.2rem)', fontWeight: 400, letterSpacing: '-0.02em' }}>La Gazette</h1>
@@ -585,15 +585,16 @@ export default function CoupleGazettePage() {
             </div>
           </div>
 
-          {/* Visuel : la Une posée sur une photo */}
-          <div className="relative hidden lg:block min-h-[19rem]">
+          {/* Visuel : la Une posée sur une photo (visible aussi sur mobile et tablette) */}
+          <div className="relative order-first lg:order-none h-52 sm:h-64 lg:h-auto lg:min-h-[19rem] overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={gazette.cover_path || '/mariage (4).jpg'} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/10 to-transparent" />
-            <div className="absolute right-8 bottom-0 w-44 bg-white px-4 pt-4 pb-6 shadow-2xl translate-y-3 rotate-[-3deg]">
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/10 to-transparent hidden lg:block" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 to-transparent lg:hidden" />
+            <div className="absolute right-5 sm:right-8 -bottom-2 lg:bottom-0 w-36 sm:w-44 bg-white px-3.5 sm:px-4 pt-3.5 sm:pt-4 pb-6 shadow-2xl translate-y-3 rotate-[-3deg]">
               <p className="text-[6px] tracking-[0.25em] uppercase text-charcoal-400 border-b border-charcoal-900 pb-1" style={{ fontFamily: "'Jost', sans-serif" }}>{gazette.edition_tag || 'Édition n° 1'}</p>
-              <p className="text-center text-[17px] leading-[1.05] py-2.5 text-charcoal-900 break-words" style={{ fontFamily: "'Bodoni Moda', serif" }}>{gazette.title}</p>
-              <p className="text-center italic font-serif text-[9px] text-rose-700 border-y border-charcoal-900 py-1">{gazette.subtitle || 'Ils se sont dit oui !'}</p>
+              <p className="text-center text-[15px] sm:text-[17px] leading-[1.05] py-2 sm:py-2.5 text-charcoal-900 break-words" style={{ fontFamily: "'Bodoni Moda', serif" }}>{gazette.title}</p>
+              <p className="text-center italic font-serif text-[9px] text-rose-700 border-y border-charcoal-900 py-1 break-words">{gazette.subtitle || 'Ils se sont dit oui !'}</p>
               <div className="mt-2 space-y-1">
                 {[100, 92, 96, 70].map((w, i) => <div key={i} className="h-[3px] bg-stone-200" style={{ width: `${w}%` }} />)}
               </div>
@@ -602,8 +603,8 @@ export default function CoupleGazettePage() {
         </div>
 
         {/* Onglets */}
-        <nav className="flex items-center justify-between gap-4 px-5 sm:px-9 lg:px-12 border-t border-stone-200" aria-label="Sections de la gazette">
-          <div className="flex gap-x-7 overflow-x-auto subtle-scroll">
+        <nav className="flex flex-wrap items-center justify-between gap-x-6 px-5 sm:px-9 lg:px-12 border-t border-stone-200" aria-label="Sections de la gazette">
+          <div className="flex flex-wrap gap-x-7">
             {tabs.map((tb) => (
               <button key={tb.id} type="button" onClick={() => setActiveTab(tb.id)}
                 className={`py-4 -mb-px text-[13px] whitespace-nowrap border-b-2 transition-colors ${
@@ -614,7 +615,7 @@ export default function CoupleGazettePage() {
             ))}
           </div>
           <button type="button" onClick={handleSyncPlanning}
-            className="hidden sm:inline-flex items-center gap-1.5 text-[13px] text-charcoal-600 hover:text-rose-600 transition-colors whitespace-nowrap">
+            className="inline-flex items-center gap-1.5 py-3 sm:py-0 text-[13px] text-charcoal-600 hover:text-rose-600 transition-colors">
             <RefreshCw className="w-3.5 h-3.5" /> Reprendre le programme du planning
           </button>
         </nav>
@@ -641,8 +642,8 @@ export default function CoupleGazettePage() {
 
       {/* ── Rubriques ── */}
       {activeTab === 'editor' && (
-        <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-5 items-start">
-          <div className="bg-white border border-stone-200 p-5 sm:p-8">
+        <div className="mt-5 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] gap-5 items-start">
+          <div className="min-w-0 bg-white border border-stone-200 p-5 sm:p-8">
             <GazetteSectionList
               sections={gazette.sections}
               onEditSection={(section) => setEditingSection(section)}

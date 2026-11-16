@@ -11,17 +11,11 @@ import {
   CustomSectionContent,
   SectionContent,
 } from '../domain/types';
-import {
-  X,
-  Plus,
-  Trash2,
-  Clock,
-  HelpCircle,
-  BookOpen,
-  Sparkles,
-  AlignLeft,
-  CheckCircle,
-} from 'lucide-react';
+import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import { SplitModal, modalField, modalGhostBtn, modalLabel, modalPrimaryBtn } from '@/components/ui/SplitModal';
+
+const SECTION_KICKERS: Record<string, string> = { story: 'Histoire', anecdote: 'Confidences', quiz: 'Quiz', program: 'Programme', custom: 'Tribune' };
+const SECTION_IMAGES: Record<string, string> = { story: '/mariage (2).jpg', anecdote: '/mariage (3).jpg', quiz: '/mariage (1).jpg', program: '/jour-j-cover.jpg', custom: '/mariage (5).jpg' };
 
 interface GazetteSectionEditorProps {
   section: GazetteSection;
@@ -48,48 +42,25 @@ export function GazetteSectionEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-stone-200">
-        {/* Header de la modale */}
-        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/60">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-rose-50 text-rose-600">
-              {section.type === 'story' && <BookOpen className="w-5 h-5" />}
-              {section.type === 'anecdote' && <Sparkles className="w-5 h-5" />}
-              {section.type === 'quiz' && <HelpCircle className="w-5 h-5" />}
-              {section.type === 'program' && <Clock className="w-5 h-5" />}
-              {section.type === 'custom' && <AlignLeft className="w-5 h-5" />}
-            </span>
-            <div>
-              <h3 className="font-semibold text-stone-900 text-lg">
-                Modifier la rubrique
-              </h3>
-              <p className="text-xs text-stone-500">
-                Type : <span className="capitalize font-medium">{section.type}</span>
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Corps du formulaire scrollable */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+    <SplitModal image={SECTION_IMAGES[section.type] ?? '/mariage (4).jpg'} kicker={SECTION_KICKERS[section.type] ?? 'Rubrique'} title="Modifier la rubrique"
+      caption={title} widthClass="sm:max-w-4xl" onClose={onClose}
+      footer={
+        <>
+          <button type="button" onClick={onClose} className={`${modalGhostBtn} ml-auto`}>Annuler</button>
+          <button type="button" onClick={handleSave} className={modalPrimaryBtn}>Enregistrer</button>
+        </>
+      }>
+        <div className="space-y-6">
           {/* Titre de la rubrique */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-1.5">
+            <label className={modalLabel}>
               Titre de la rubrique
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+              className={modalField}
               placeholder="Ex : Notre Histoire d’Amour"
             />
           </div>
@@ -112,7 +83,7 @@ export function GazetteSectionEditor({
                       narrative: e.target.value,
                     } as StorySectionContent)
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                  className={modalField}
                   placeholder="Racontez comment tout a commencé..."
                 />
               </div>
@@ -518,7 +489,7 @@ export function GazetteSectionEditor({
                       subtitle: e.target.value,
                     } as CustomSectionContent)
                   }
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                  className={modalField}
                   placeholder="Ex : Par les témoins de la mariée"
                 />
               </div>
@@ -536,7 +507,7 @@ export function GazetteSectionEditor({
                       body: e.target.value,
                     } as CustomSectionContent)
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                  className={modalField}
                   placeholder="Écrivez votre message..."
                 />
               </div>
@@ -554,7 +525,7 @@ export function GazetteSectionEditor({
                       signature: e.target.value,
                     } as CustomSectionContent)
                   }
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                  className={modalField}
                   placeholder="Ex : Avec toute notre affection, Sophie & Thomas"
                 />
               </div>
@@ -562,25 +533,6 @@ export function GazetteSectionEditor({
           )}
         </div>
 
-        {/* Footer avec boutons d'action */}
-        <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-end gap-3 bg-stone-50/60">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 rounded-xl hover:bg-stone-100 transition"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-5 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition"
-          >
-            Enregistrer les modifications
-          </button>
-        </div>
-      </div>
-    </div>
+    </SplitModal>
   );
 }
-
