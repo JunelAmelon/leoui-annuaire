@@ -3,33 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
-import {
-  Newspaper,
-  BookOpen,
-  Sparkles,
-  Download,
-  Settings,
-  RefreshCw,
-  Eye,
-  Edit3,
-  Calendar,
-  MapPin,
-  Plus,
-  Heart,
-  HelpCircle,
-  Clock,
-  Printer,
-  Columns,
-  Layers,
-  ChevronRight,
-  CheckCircle2,
-  Info,
-  Wand2,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRight, Download, RefreshCw, Settings } from 'lucide-react';
+import { uploadFile } from '@/lib/storage';
 import { FirestoreGazetteRepository } from '@/features/gazette/repositories/firestore-gazette.repository';
 import { GazetteService } from '@/features/gazette/services/gazette.service';
 import { GazettePdfService } from '@/features/gazette/services/gazette-pdf.service';
+import { GAZETTE_THEMES } from '@/features/gazette/domain/types';
 import type {
   Gazette,
   GazetteSection,
@@ -322,18 +301,18 @@ export default function CoupleGazettePage() {
     file: File
   ) => {
     if (!gazette) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      await handleInlineMetadataUpdate({ [field]: dataUrl });
-      const fieldNames = {
-        cover_path: 'Photo de couverture (Une)',
-        story_photo_path: 'Photo de l’histoire (Page 2)',
-        witnesses_photo_path: 'Photo des témoins (Page 3)',
-      };
-      toast.success(`${fieldNames[field]} mise à jour !`);
+    const fieldNames = {
+      cover_path: 'Photo de Une',
+      story_photo_path: 'Photo de votre histoire',
+      witnesses_photo_path: 'Photo des témoins',
     };
-    reader.readAsDataURL(file);
+    try {
+      const url = await uploadFile(file, 'gazettes');
+      await handleInlineMetadataUpdate({ [field]: url });
+      toast.success(`${fieldNames[field]} mise à jour.`);
+    } catch {
+      toast.error('Import de la photo impossible.');
+    }
   };
 
   // Suppression directe d'une photo
@@ -562,179 +541,123 @@ export default function CoupleGazettePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-10 h-10 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 font-sans">
-          Ouverture de l'Atelier de Presse...
-        </p>
+      <div className="w-full animate-pulse space-y-6">
+        <div className="h-44 bg-white border border-stone-200" />
+        <div className="h-[60vh] bg-stone-200/60" />
       </div>
     );
   }
 
   if (!gazette) return null;
 
+  const themeLabel = GAZETTE_THEMES[gazette.layout.theme]?.label ?? 'Éditorial';
+  const tabs: { id: typeof activeTab; label: string }[] = [
+    { id: 'preview', label: 'Le journal' },
+    { id: 'editor', label: 'Rubriques' },
+    { id: 'guide', label: 'Impression' },
+  ];
+  const printSteps = [
+    { title: 'Le papier', text: 'Un papier mat, vergé ou recyclé, entre 90 et 120 g. Le brillant écrase les noirs et fait « flyer » : évitez-le.' },
+    { title: 'Le pliage', text: 'Imprimez en A3 recto verso (pages 4 et 1 d’un côté, 2 et 3 de l’autre), puis pliez en deux. En A4, agrafez simplement les deux feuilles.' },
+    { title: 'Le jour J', text: 'Un exemplaire par assiette ou une pile au vin d’honneur. Prévoyez 10 % de plus : les invités en emportent toujours.' },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 font-sans">
-      {/* ── BREADCRUMB & TITRE HAUT DE GAMME ── */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
-          <span>Espace Mariage</span>
-          <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-          <span>Papeterie & Souvenirs</span>
-          <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-          <span className="text-stone-900 font-semibold">Atelier de Presse Gazette</span>
-        </div>
+    <div className="w-full pb-10">
+      {/* ── En-tête ── */}
+      <header className="relative bg-white border border-stone-200 overflow-hidden">
+        <div className="grid lg:grid-cols-[1fr_22rem]">
+          <div className="px-5 sm:px-9 lg:px-12 pt-8 sm:pt-11 pb-7">
+            <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-rose-600">Papeterie · Le jour J</p>
+            <h1 className="font-serif text-charcoal-900 mt-3 leading-none" style={{ fontSize: 'clamp(2.1rem, 4.4vw, 3.2rem)', fontWeight: 400, letterSpacing: '-0.02em' }}>La Gazette</h1>
+            <p className="text-[15px] text-charcoal-500 mt-3 max-w-xl leading-relaxed">
+              Le petit journal de votre mariage : votre histoire, le programme, un quiz. Quatre pages à glisser sur chaque table.
+            </p>
 
-        {/* HERO BANNER ÉDITORIAL LUXE (Design conservé & enrichi) */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-stone-900 via-stone-800 to-stone-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
-          <div className="absolute -right-6 -bottom-6 opacity-10 pointer-events-none">
-            <Newspaper className="w-48 h-48 -rotate-12" />
-          </div>
+            <dl className="flex flex-wrap gap-x-10 gap-y-3 mt-7 text-[13px]">
+              {[
+                ['Format', '4 pages A4'],
+                ['Rubriques', String(gazette.sections.length)],
+                ['Style', themeLabel],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-[10px] font-semibold tracking-[0.18em] uppercase text-charcoal-400">{k}</dt>
+                  <dd className="font-serif text-charcoal-900 text-lg mt-0.5">{v}</dd>
+                </div>
+              ))}
+            </dl>
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-rose-300">
-                Journal Officiel des Mariés • Format Bifold 4 Pages A4
-              </p>
-              <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-white">
-                {gazette.title || 'La Gazette des Mariés'}
-              </h1>
-              <p className="text-xs sm:text-sm text-stone-300 font-serif italic leading-relaxed">
-                Cliquez directement sur n’importe quel texte ou titre du journal pour le personnaliser en direct, comme sur Canva.
-              </p>
-            </div>
-
-            {/* Actions principales */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowMetadataModal(true)}
-                className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 backdrop-blur-xs flex items-center gap-2 transition"
-              >
-                <Settings className="w-4 h-4" />
-                <span>Paramètres & Style</span>
+            <div className="flex flex-wrap gap-3 mt-8">
+              <button type="button" onClick={handleExportPdf} disabled={isExportingPdf}
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-50 transition-colors rounded-sm">
+                {isExportingPdf ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Télécharger le PDF
               </button>
-
-              <button
-                type="button"
-                onClick={handleExportPdf}
-                disabled={isExportingPdf}
-                className="px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-900/30 flex items-center gap-2 transition disabled:opacity-50"
-              >
-                {isExportingPdf ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Printer className="w-4 h-4" />
-                )}
-                <span>Télécharger le Bon à Tirer (PDF A4)</span>
+              <button type="button" onClick={() => setShowMetadataModal(true)}
+                className="inline-flex items-center justify-center gap-2 h-11 px-5 border border-stone-300 text-charcoal-800 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm">
+                <Settings className="w-4 h-4" /> Réglages
               </button>
             </div>
           </div>
 
-          {/* KPI Mini-barre */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10 text-xs">
-            <div>
-              <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Format d'impression</span>
-              <strong className="text-white text-sm font-serif">4 Pages A4 Pliées</strong>
-            </div>
-            <div>
-              <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Rubriques actives</span>
-              <strong className="text-white text-sm font-serif">{gazette.sections.length} sur 30</strong>
-            </div>
-            <div>
-              <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Style graphique</span>
-              <strong className="text-white text-sm font-serif capitalize">
-                {gazette.layout.theme === 'vintage_gazette' ? 'Gazette 1920' : gazette.layout.theme === 'romantic_rose' ? 'Romance Florale' : 'Vogue Éditorial'}
-              </strong>
-            </div>
-            <div>
-              <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Mode Édition</span>
-              <strong className="text-emerald-400 text-sm font-serif flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> Canva En Direct
-              </strong>
+          {/* Visuel : la Une posée sur une photo */}
+          <div className="relative hidden lg:block min-h-[19rem]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={gazette.cover_path || '/mariage (4).jpg'} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/10 to-transparent" />
+            <div className="absolute right-8 bottom-0 w-44 bg-white px-4 pt-4 pb-6 shadow-2xl translate-y-3 rotate-[-3deg]">
+              <p className="text-[6px] tracking-[0.25em] uppercase text-charcoal-400 border-b border-charcoal-900 pb-1" style={{ fontFamily: "'Jost', sans-serif" }}>{gazette.edition_tag || 'Édition n° 1'}</p>
+              <p className="text-center text-[17px] leading-[1.05] py-2.5 text-charcoal-900 break-words" style={{ fontFamily: "'Bodoni Moda', serif" }}>{gazette.title}</p>
+              <p className="text-center italic font-serif text-[9px] text-rose-700 border-y border-charcoal-900 py-1">{gazette.subtitle || 'Ils se sont dit oui !'}</p>
+              <div className="mt-2 space-y-1">
+                {[100, 92, 96, 70].map((w, i) => <div key={i} className="h-[3px] bg-stone-200" style={{ width: `${w}%` }} />)}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── ONGLETS DE TRAVAIL ÉPURÉS ── */}
-      <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('preview')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 ${
-              activeTab === 'preview'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-            <span>Feuilletoir & Éditeur Canva</span>
+        {/* Onglets */}
+        <nav className="flex items-center justify-between gap-4 px-5 sm:px-9 lg:px-12 border-t border-stone-200" aria-label="Sections de la gazette">
+          <div className="flex gap-x-7 overflow-x-auto subtle-scroll">
+            {tabs.map((tb) => (
+              <button key={tb.id} type="button" onClick={() => setActiveTab(tb.id)}
+                className={`py-4 -mb-px text-[13px] whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tb.id ? 'border-rose-600 text-charcoal-900 font-medium' : 'border-transparent text-charcoal-400 hover:text-charcoal-800'
+                }`}>
+                {tb.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={handleSyncPlanning}
+            className="hidden sm:inline-flex items-center gap-1.5 text-[13px] text-charcoal-600 hover:text-rose-600 transition-colors whitespace-nowrap">
+            <RefreshCw className="w-3.5 h-3.5" /> Reprendre le programme du planning
           </button>
+        </nav>
+      </header>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('editor')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 ${
-              activeTab === 'editor'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Gestionnaire d'Articles</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('guide')}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-2 ${
-              activeTab === 'guide'
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
-          >
-            <Info className="w-3.5 h-3.5" />
-            <span>Guide & Imprimerie</span>
-          </button>
-        </div>
-
-        {activeTab === 'editor' && (
-          <button
-            type="button"
-            onClick={handleSyncPlanning}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-xl transition"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Resynchroniser le planning</span>
-          </button>
-        )}
-      </div>
-
-      {/* ── CONTENU DES ONGLETS ── */}
-      {/* 1. ONGLET FEUILLETOIR & ÉDITEUR CANVA DIRECT */}
+      {/* ── Le journal ── */}
       {activeTab === 'preview' && (
-        <GazettePreview
-          gazette={gazette}
-          onEditSection={(section) => setEditingSection(section)}
-          onEditMetadata={() => setShowMetadataModal(true)}
-          onThemeChange={handleThemeChange}
-          onUpdateMetadataField={handleInlineMetadataUpdate}
-          onUpdateSectionContent={handleInlineSectionUpdate}
-          onAddQuickBlock={handleInlineAddQuickBlock}
-          onUploadCoverImage={handleUploadCover}
-          onDeleteCoverImage={handleDeleteCover}
-          onUploadPhoto={handleUploadPhoto}
-          onDeletePhoto={handleDeletePhoto}
-        />
+        <div className="mt-5">
+          <GazettePreview
+            gazette={gazette}
+            onEditSection={(section) => setEditingSection(section)}
+            onEditMetadata={() => setShowMetadataModal(true)}
+            onThemeChange={handleThemeChange}
+            onUpdateMetadataField={handleInlineMetadataUpdate}
+            onUpdateSectionContent={handleInlineSectionUpdate}
+            onAddQuickBlock={handleInlineAddQuickBlock}
+            onUploadCoverImage={handleUploadCover}
+            onDeleteCoverImage={handleDeleteCover}
+            onUploadPhoto={handleUploadPhoto}
+            onDeletePhoto={handleDeletePhoto}
+          />
+        </div>
       )}
 
-      {/* 2. ONGLET GESTIONNAIRE D'ARTICLES */}
+      {/* ── Rubriques ── */}
       {activeTab === 'editor' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Colonne gauche : Gestionnaire des articles */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-5 items-start">
+          <div className="bg-white border border-stone-200 p-5 sm:p-8">
             <GazetteSectionList
               sections={gazette.sections}
               onEditSection={(section) => setEditingSection(section)}
@@ -745,136 +668,56 @@ export default function CoupleGazettePage() {
             />
           </div>
 
-          {/* Colonne droite : Aperçu synthétique & actions */}
-          <div className="space-y-6">
-            {/* Carte d'accès rapide au Bon à Tirer */}
-            <div className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                  Épreuve d'Impression
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Prêt pour tirage
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="font-serif font-bold text-base text-stone-900">
-                  {gazette.title}
-                </h4>
-                <p className="text-xs text-stone-500 italic font-serif leading-relaxed">
-                  « {gazette.subtitle || 'ILS SE SONT DIT OUI !'} »
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-stone-100 text-xs text-stone-600 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-stone-400" /> Date :
-                  </span>
-                  <span className="font-medium text-stone-900">
-                    {gazette.wedding_date || 'À définir'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-stone-400" /> Lieu :
-                  </span>
-                  <span className="font-medium text-stone-900 truncate max-w-[150px]">
-                    {gazette.location_name || 'À définir'}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleExportPdf}
-                disabled={isExportingPdf}
-                className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Générer le PDF de contrôle</span>
-              </button>
-            </div>
-
-            {/* Bannière de passage au mode visuel Canva */}
-            <div className="bg-gradient-to-br from-rose-50 to-amber-50 border border-rose-200 rounded-3xl p-6 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-rose-600" />
-                Édition Visuelle Directe
-              </span>
-              <p className="text-xs text-stone-700 leading-relaxed">
-                Vous préférez modifier vos articles directement sur la mise en page finale du journal ?
-              </p>
-              <button
-                type="button"
-                onClick={() => setActiveTab('preview')}
-                className="w-full py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <span>Ouvrir l'Atelier Visuel</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Bannière de conseils de rédaction */}
-            <div className="bg-stone-50 border border-stone-200 rounded-3xl p-6 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-800 block">
-                Astuces de Rédaction
-              </span>
-              <ul className="text-xs text-stone-600 space-y-2 leading-relaxed">
-                <li>• <strong>L'Histoire :</strong> 3 dates fortes suffisent pour captiver les invités.</li>
-                <li>• <strong>Le Quiz :</strong> Prévoyez 4 questions drôles et inattendues sur le couple.</li>
-                <li>• <strong>Le Timing :</strong> Distribuez la gazette au vin d'honneur pour lancer les conversations !</li>
-              </ul>
-            </div>
-          </div>
+          <aside className="bg-white border border-stone-200 p-6 sm:p-7">
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-600">Conseils de rédaction</p>
+            <ol className="mt-4 space-y-5">
+              {[
+                ['Votre histoire', 'Trois dates suffisent. Les invités lisent debout, un verre à la main.'],
+                ['Le quiz', 'Quatre questions, dont une que seule la famille connaît.'],
+                ['Le programme', 'Reprenez-le du planning : les horaires resteront justes.'],
+              ].map(([title, text], i) => (
+                <li key={title} className="grid grid-cols-[2rem_1fr] gap-x-2">
+                  <span className="font-serif text-2xl leading-none text-charcoal-300">{i + 1}</span>
+                  <div>
+                    <p className="font-serif text-charcoal-900 text-lg leading-tight">{title}</p>
+                    <p className="text-[13px] text-charcoal-500 mt-1 leading-relaxed">{text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <button type="button" onClick={handleSyncPlanning}
+              className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 h-11 border border-stone-300 text-[13px] text-charcoal-800 rounded-sm">
+              <RefreshCw className="w-3.5 h-3.5" /> Reprendre le programme du planning
+            </button>
+            <button type="button" onClick={() => setActiveTab('preview')}
+              className="mt-6 inline-flex items-center gap-2 text-[13px] text-charcoal-900 border-b border-charcoal-900 pb-0.5 hover:text-rose-600 hover:border-rose-600 transition-colors">
+              Voir le journal <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </aside>
         </div>
       )}
 
-      {/* 3. ONGLET GUIDE & IMPRIMERIE */}
+      {/* ── Impression ── */}
       {activeTab === 'guide' && (
-        <div className="bg-white border border-stone-200 rounded-3xl p-8 shadow-xs max-w-4xl mx-auto space-y-6">
-          <div className="border-b border-stone-100 pb-4">
-            <h3 className="text-xl font-serif font-bold text-stone-900">
-              Guide d'Impression & Fabrication de Votre Gazette
-            </h3>
-            <p className="text-xs text-stone-500 mt-1">
-              Tous nos secrets d'imprimeurs pour réussir un rendu professionnel digne d'un grand quotidien.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-900 block">
-                1. Choix du Papier
-              </span>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Optez pour un papier <strong>vergé ivoire ou papier kraft 90g à 120g</strong>. Évitez le papier glacé brillant pour préserver l'authenticité de la texture de presse.
-              </p>
-            </div>
-
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-900 block">
-                2. Pliage & Format
-              </span>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Imprimez en <strong>recto-verso A4</strong> (Page 1 & 4 sur la première face, Page 2 & 3 sur la seconde). Un simple pli central transforme vos feuilles en un superbe journal.
-              </p>
-            </div>
-
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-900 block">
-                3. Distribution Jour J
-              </span>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Déposez un exemplaire par table ou distribuez-le dans des paniers en osier lors du cocktail. Succès garanti auprès de toutes les générations !
-              </p>
-            </div>
-          </div>
+        <div className="mt-5 bg-white border border-stone-200 px-5 sm:px-9 lg:px-12 py-9 sm:py-12">
+          <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-rose-600">Avant d’imprimer</p>
+          <h2 className="font-serif text-charcoal-900 mt-3 leading-tight" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400 }}>Trois choses qui changent tout</h2>
+          <ol className="grid md:grid-cols-3 gap-x-10 gap-y-8 mt-9">
+            {printSteps.map((step, i) => (
+              <li key={step.title} className="border-t border-charcoal-900 pt-5">
+                <span className="font-serif text-5xl leading-none text-charcoal-200" style={{ fontWeight: 300 }}>{i + 1}</span>
+                <p className="font-serif text-charcoal-900 text-xl mt-3">{step.title}</p>
+                <p className="text-sm text-charcoal-500 mt-2 leading-relaxed">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+          <button type="button" onClick={handleExportPdf} disabled={isExportingPdf}
+            className="mt-10 inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-50 transition-colors rounded-sm">
+            {isExportingPdf ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Télécharger le PDF
+          </button>
         </div>
       )}
 
-      {/* ── MODALES COMPLÉMENTAIRES (Pour réglages approfondis) ── */}
       {editingSection && (
         <GazetteSectionEditor
           section={editingSection}

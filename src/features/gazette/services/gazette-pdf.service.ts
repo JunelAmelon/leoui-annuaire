@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
+import { registerPdfFonts, pdfSafe } from '@/features/guestbook/services/pdf/pdf-helpers';
 import type {
   Gazette,
   StorySectionContent,
@@ -60,6 +61,14 @@ export class GazettePdfService {
       format: 'a4',
     });
 
+    // Polices embarquées (Cormorant Garamond + Jost) : typographie éditoriale et accents fiables.
+    await registerPdfFonts(doc);
+    doc.setFont('Serif', 'normal');
+    // Les polices embarquées ne dessinent pas les emojis : on nettoie tout texte avant tracé.
+    const rawText = doc.text.bind(doc);
+    doc.text = ((text: string | string[], ...rest: unknown[]) =>
+      (rawText as (...args: unknown[]) => jsPDF)(Array.isArray(text) ? text.map(pdfSafe) : pdfSafe(text), ...rest)) as typeof doc.text;
+
     const pageWidth = doc.internal.pageSize.getWidth(); // 210 mm
     const pageHeight = doc.internal.pageSize.getHeight(); // 297 mm
     const margin = 15;
@@ -109,7 +118,7 @@ export class GazettePdfService {
       doc.setLineWidth(0.2);
       doc.line(margin, pageHeight - 12, margin + contentWidth, pageHeight - 12);
 
-      doc.setFont('times', 'italic');
+      doc.setFont('Serif', 'italic');
       doc.setFontSize(8);
       doc.setTextColor(110, 110, 110);
       doc.text(
@@ -146,7 +155,7 @@ export class GazettePdfService {
     applyPageBackground();
 
     // 1. Bandeau supérieur (Header presse avec micro-caps)
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(7);
     doc.setTextColor(70, 70, 70);
     const topBar = isVogue
@@ -159,7 +168,7 @@ export class GazettePdfService {
     doc.line(margin, margin + 4, margin + contentWidth, margin + 4);
 
     // Titre principal (Masthead)
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(isVogue ? 30 : 26);
     doc.setTextColor(15, 15, 15);
     const mastheadTitle = (gazette.title || 'LA GAZETTE DES MARIÉS').toUpperCase();
@@ -169,7 +178,7 @@ export class GazettePdfService {
     doc.setLineWidth(0.3);
     doc.line(margin, margin + 18, margin + contentWidth, margin + 18);
 
-    doc.setFont('times', 'italic');
+    doc.setFont('Serif', 'italic');
     doc.setFontSize(8.5);
     doc.setTextColor(70, 70, 70);
     doc.text(
@@ -183,13 +192,13 @@ export class GazettePdfService {
     doc.line(margin, margin + 24, margin + contentWidth, margin + 24);
 
     // 3. Gros titre (Headline avec couleur d'accent)
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(isVogue ? 20 : 18);
     doc.setTextColor(isVogue ? 10 : accentRgb[0], isVogue ? 10 : accentRgb[1], isVogue ? 10 : accentRgb[2]);
     const headline = (gazette.subtitle || 'ILS SE SONT DIT OUI !').toUpperCase();
     doc.text(headline, pageWidth / 2, margin + 33, { align: 'center' });
 
-    doc.setFont('times', 'italic');
+    doc.setFont('Serif', 'italic');
     doc.setFontSize(8.5);
     doc.setTextColor(90, 90, 90);
     doc.text(
@@ -229,7 +238,7 @@ export class GazettePdfService {
       doc.setDrawColor(200, 200, 200);
       doc.line(margin, photoBoxY + photoBoxHeight - 8.5, margin + contentWidth, photoBoxY + photoBoxHeight - 8.5);
 
-      doc.setFont('times', 'italic');
+      doc.setFont('Serif', 'italic');
       doc.setFontSize(8.5);
       doc.setTextColor(60, 60, 60);
       doc.text(
@@ -251,12 +260,12 @@ export class GazettePdfService {
       doc.line(margin + 40, photoBoxY + photoBoxHeight / 2 - 12, margin + contentWidth - 40, photoBoxY + photoBoxHeight / 2 - 12);
       doc.line(margin + 40, photoBoxY + photoBoxHeight / 2 + 16, margin + contentWidth - 40, photoBoxY + photoBoxHeight / 2 + 16);
 
-      doc.setFont('times', 'bold');
+      doc.setFont('Serif', 'bold');
       doc.setFontSize(18);
       doc.setTextColor(isVogue ? 30 : accentRgb[0], isVogue ? 30 : accentRgb[1], isVogue ? 30 : accentRgb[2]);
       doc.text('NOTRE HISTOIRE EN IMAGES', pageWidth / 2, photoBoxY + photoBoxHeight / 2 - 3, { align: 'center' });
 
-      doc.setFont('times', 'italic');
+      doc.setFont('Serif', 'italic');
       doc.setFontSize(10);
       doc.setTextColor(90, 90, 90);
       doc.text(
@@ -273,7 +282,7 @@ export class GazettePdfService {
     const bottomColHeight = 100;
 
     // Colonne 1 : Éditorial des mariés
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(20, 20, 20);
     doc.text('ÉDITORIAL : LE MOT DES MARIÉS', margin, colY + 5);
@@ -281,7 +290,7 @@ export class GazettePdfService {
     doc.setDrawColor(30, 30, 30);
     doc.line(margin, colY + 7.5, margin + colWidth, colY + 7.5);
 
-    doc.setFont('times', 'normal');
+    doc.setFont('Serif', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(45, 45, 45);
     const editorial =
@@ -291,7 +300,7 @@ export class GazettePdfService {
     doc.text(editLines, margin, colY + 13.5);
 
     // Signature des mariés au bas de l'édito
-    doc.setFont('times', 'italic');
+    doc.setFont('Serif', 'italic');
     doc.setFontSize(9.5);
     doc.setTextColor(isVogue ? 20 : accentRgb[0], isVogue ? 20 : accentRgb[1], isVogue ? 20 : accentRgb[2]);
     doc.text('— Avec tout notre amour, les mariés.', margin + colWidth - 2, colY + 13.5 + editLines.length * 4.6 + 6, {
@@ -304,7 +313,7 @@ export class GazettePdfService {
     doc.line(margin + colWidth + 4, colY + 2, margin + colWidth + 4, colY + bottomColHeight - 8);
 
     // Colonne 2 : Météo du cœur & Temps forts
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(20, 20, 20);
     doc.text('MÉTÉO DU CŒUR & EN BREF', margin + colWidth + 8, colY + 5);
@@ -312,7 +321,7 @@ export class GazettePdfService {
     doc.setDrawColor(30, 30, 30);
     doc.line(margin + colWidth + 8, colY + 7.5, margin + contentWidth, colY + 7.5);
 
-    doc.setFont('times', 'italic');
+    doc.setFont('Serif', 'italic');
     doc.setFontSize(9);
     doc.setTextColor(60, 60, 60);
     const weather =
@@ -323,7 +332,7 @@ export class GazettePdfService {
 
     // Temps forts réels en français
     let highlightY = colY + 13.5 + weatherLines.length * 4.6 + 6;
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(30, 30, 30);
     doc.text('LES TEMPS FORTS DE LA JOURNÉE :', margin + colWidth + 8, highlightY);
@@ -333,10 +342,10 @@ export class GazettePdfService {
     const progItems = (progSection?.content as ProgramSectionContent)?.items?.slice(0, 4);
     if (progItems && progItems.length > 0) {
       progItems.forEach((it) => {
-        doc.setFont('times', 'bold');
+        doc.setFont('Serif', 'bold');
         doc.setFontSize(8.5);
         doc.text(`• ${it.time} —`, margin + colWidth + 8, highlightY);
-        doc.setFont('times', 'normal');
+        doc.setFont('Serif', 'normal');
         doc.text(it.title, margin + colWidth + 24, highlightY, { maxWidth: colWidth - 26 });
         highlightY += 5;
       });
@@ -348,10 +357,10 @@ export class GazettePdfService {
         { time: '23:00', title: 'Ouverture du Bal & Soirée Dansante' },
       ];
       defaultHighlights.forEach((it) => {
-        doc.setFont('times', 'bold');
+        doc.setFont('Serif', 'bold');
         doc.setFontSize(8.5);
         doc.text(`• ${it.time} —`, margin + colWidth + 8, highlightY);
-        doc.setFont('times', 'normal');
+        doc.setFont('Serif', 'normal');
         doc.text(it.title, margin + colWidth + 24, highlightY, { maxWidth: colWidth - 26 });
         highlightY += 5;
       });
@@ -365,7 +374,7 @@ export class GazettePdfService {
     doc.addPage();
     applyPageBackground();
 
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(30, 30, 30);
     doc.text('PAGE 2 — LES COULISSES DE NOTRE HISTOIRE', pageWidth / 2, margin + 4, {
@@ -395,7 +404,7 @@ export class GazettePdfService {
           // Légende délicate
           doc.setFillColor(255, 255, 255);
           doc.rect(margin, currentY + imgH - 6.5, contentWidth, 6.5, 'F');
-          doc.setFont('times', 'italic');
+          doc.setFont('Serif', 'italic');
           doc.setFontSize(8);
           doc.setTextColor(80, 80, 80);
           doc.text('Le souvenir de notre première rencontre', pageWidth / 2, currentY + imgH - 2, { align: 'center' });
@@ -408,7 +417,7 @@ export class GazettePdfService {
     }
 
     if (storySection) {
-      doc.setFont('times', 'bold');
+      doc.setFont('Serif', 'bold');
       doc.setFontSize(11.5);
       doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
       doc.text(storySection.title.toUpperCase(), margin, currentY);
@@ -416,7 +425,7 @@ export class GazettePdfService {
 
       const storyContent = storySection.content as StorySectionContent;
       if (storyContent?.narrative) {
-        doc.setFont('times', 'normal');
+        doc.setFont('Serif', 'normal');
         doc.setFontSize(9.5);
         doc.setTextColor(40, 40, 40);
         const narrativeLines = doc.splitTextToSize(storyContent.narrative, contentWidth);
@@ -432,12 +441,12 @@ export class GazettePdfService {
           doc.setLineWidth(0.3);
           doc.rect(margin, currentY, contentWidth, 18);
 
-          doc.setFont('times', 'bold');
+          doc.setFont('Serif', 'bold');
           doc.setFontSize(9.5);
           doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
           doc.text(`[${item.year_or_date}] ${item.title}`, margin + 4, currentY + 5.5);
 
-          doc.setFont('times', 'normal');
+          doc.setFont('Serif', 'normal');
           doc.setFontSize(9);
           doc.setTextColor(60, 60, 60);
           const lines = doc.splitTextToSize(item.text, contentWidth - 8);
@@ -455,7 +464,7 @@ export class GazettePdfService {
     currentY += 8;
 
     if (anecdoteSection) {
-      doc.setFont('times', 'bold');
+      doc.setFont('Serif', 'bold');
       doc.setFontSize(11.5);
       doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
       doc.text(anecdoteSection.title.toUpperCase(), margin, currentY);
@@ -478,12 +487,12 @@ export class GazettePdfService {
           doc.setFillColor(isVogue ? 20 : accentRgb[0], isVogue ? 20 : accentRgb[1], isVogue ? 20 : accentRgb[2]);
           doc.rect(margin, currentY, 2.5, boxHeight, 'F');
 
-          doc.setFont('times', 'bold');
+          doc.setFont('Serif', 'bold');
           doc.setFontSize(9.5);
           doc.setTextColor(30, 30, 30);
           doc.text(item.title, margin + 6, currentY + 5.5);
 
-          doc.setFont('times', 'italic');
+          doc.setFont('Serif', 'italic');
           doc.setFontSize(9);
           doc.setTextColor(70, 70, 70);
           doc.text(lines, margin + 6, currentY + 11);
@@ -501,7 +510,7 @@ export class GazettePdfService {
     doc.addPage();
     applyPageBackground();
 
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(30, 30, 30);
     doc.text('PAGE 3 — LE DÉROULÉ OFFICIEL DU JOUR J', pageWidth / 2, margin + 4, {
@@ -530,7 +539,7 @@ export class GazettePdfService {
 
           doc.setFillColor(255, 255, 255);
           doc.rect(margin, currentY + imgH - 6.5, contentWidth, 6.5, 'F');
-          doc.setFont('times', 'italic');
+          doc.setFont('Serif', 'italic');
           doc.setFontSize(8);
           doc.setTextColor(80, 80, 80);
           doc.text('Nos précieux témoins & complices du grand jour', pageWidth / 2, currentY + imgH - 2, { align: 'center' });
@@ -543,7 +552,7 @@ export class GazettePdfService {
     }
 
     if (programSection) {
-      doc.setFont('times', 'bold');
+      doc.setFont('Serif', 'bold');
       doc.setFontSize(11.5);
       doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
       doc.text(programSection.title.toUpperCase(), margin, currentY);
@@ -555,19 +564,19 @@ export class GazettePdfService {
           // Badge horaire stylé et aéré avec couleur d'accent
           doc.setFillColor(isVogue ? 20 : accentRgb[0], isVogue ? 20 : accentRgb[1], isVogue ? 20 : accentRgb[2]);
           doc.roundedRect(margin, currentY - 4, 18, 7.5, 1, 1, 'F');
-          doc.setFont('helvetica', 'bold');
+          doc.setFont('Sans', 'bold');
           doc.setFontSize(8.5);
           doc.setTextColor(255, 255, 255);
           doc.text(item.time, margin + 9, currentY + 1, { align: 'center' });
 
-          doc.setFont('times', 'bold');
+          doc.setFont('Serif', 'bold');
           doc.setFontSize(10.5);
           doc.setTextColor(20, 20, 20);
           doc.text(item.title, margin + 23, currentY);
           currentY += 5;
 
           if (item.description || item.location) {
-            doc.setFont('times', 'italic');
+            doc.setFont('Serif', 'italic');
             doc.setFontSize(9);
             doc.setTextColor(80, 80, 80);
             const sub = [item.location ? `Lieu : ${item.location}` : '', item.description]
@@ -596,7 +605,7 @@ export class GazettePdfService {
 
     if (customSections.length > 0) {
       const firstCustom = customSections[0];
-      doc.setFont('times', 'bold');
+      doc.setFont('Serif', 'bold');
       doc.setFontSize(11.5);
       doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
       doc.text(firstCustom.title.toUpperCase(), margin, currentY);
@@ -611,14 +620,14 @@ export class GazettePdfService {
       doc.rect(margin, currentY, contentWidth, 48);
 
       if (customContent?.subtitle) {
-        doc.setFont('times', 'italic');
+        doc.setFont('Serif', 'italic');
         doc.setFontSize(9.5);
         doc.setTextColor(isVogue ? 20 : accentRgb[0], isVogue ? 20 : accentRgb[1], isVogue ? 20 : accentRgb[2]);
         doc.text(customContent.subtitle, margin + 5, currentY + 7);
       }
 
       if (customContent?.body) {
-        doc.setFont('times', 'normal');
+        doc.setFont('Serif', 'normal');
         doc.setFontSize(9.5);
         doc.setTextColor(40, 40, 40);
         const lines = doc.splitTextToSize(customContent.body, contentWidth - 10);
@@ -626,7 +635,7 @@ export class GazettePdfService {
       }
 
       if (customContent?.signature) {
-        doc.setFont('times', 'italic');
+        doc.setFont('Serif', 'italic');
         doc.setFontSize(9.5);
         doc.setTextColor(30, 30, 30);
         doc.text(`— ${customContent.signature}`, margin + contentWidth - 5, currentY + 42, { align: 'right' });
@@ -641,7 +650,7 @@ export class GazettePdfService {
     doc.addPage();
     applyPageBackground();
 
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(30, 30, 30);
     doc.text('PAGE 4 — LE GRAND JEU-CONCOURS & REMERCIEMENTS', pageWidth / 2, margin + 4, {
@@ -655,7 +664,7 @@ export class GazettePdfService {
     currentY = margin + 15;
 
     if (quizSection) {
-      doc.setFont('times', 'bold');
+      doc.setFont('Serif', 'bold');
       doc.setFontSize(11.5);
       doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
       doc.text(quizSection.title.toUpperCase(), margin, currentY);
@@ -664,13 +673,13 @@ export class GazettePdfService {
       const quizContent = quizSection.content as QuizSectionContent;
       if (quizContent?.questions) {
         quizContent.questions.slice(0, 4).forEach((q, qIndex) => {
-          doc.setFont('times', 'bold');
+          doc.setFont('Serif', 'bold');
           doc.setFontSize(10);
           doc.setTextColor(20, 20, 20);
           doc.text(`${qIndex + 1}. ${q.question}`, margin, currentY);
           currentY += 5.5;
 
-          doc.setFont('times', 'normal');
+          doc.setFont('Serif', 'normal');
           doc.setFontSize(9);
           doc.setTextColor(50, 50, 50);
           q.options.forEach((opt, optIndex) => {
@@ -692,12 +701,12 @@ export class GazettePdfService {
     doc.setLineWidth(0.3);
     doc.rect(margin, currentY, contentWidth, thanksBoxHeight);
 
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(isVogue ? 15 : accentRgb[0], isVogue ? 15 : accentRgb[1], isVogue ? 15 : accentRgb[2]);
     doc.text('UN IMMENSE MERCI', margin + 6, currentY + 8);
 
-    doc.setFont('times', 'italic');
+    doc.setFont('Serif', 'italic');
     doc.setFontSize(9);
     doc.setTextColor(50, 50, 50);
     const thanksText =
@@ -723,7 +732,7 @@ export class GazettePdfService {
 
       const qrDataUrl = await QRCode.toDataURL(targetUrl);
       doc.addImage(qrDataUrl, 'PNG', margin + contentWidth - 36, currentY + 4, 30, 30);
-      doc.setFont('times', 'normal');
+      doc.setFont('Serif', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(90, 90, 90);
       doc.text(targetLabel, margin + contentWidth - 21, currentY + 38, { align: 'center' });
@@ -740,7 +749,7 @@ export class GazettePdfService {
     doc.setLineWidth(0.2);
     doc.rect(margin, solutionsY, contentWidth, solutionsHeight);
 
-    doc.setFont('times', 'bold');
+    doc.setFont('Serif', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(80, 80, 80);
     doc.text('SOLUTIONS DU QUIZ (À NE LIRE QU’À LA FIN DU REPAS !) :', margin + 4, solutionsY + 5);
@@ -752,7 +761,7 @@ export class GazettePdfService {
         .map((q, idx) => `Q${idx + 1}: ${String.fromCharCode(65 + q.answer_index)} (${q.options[q.answer_index]})`)
         .join('  •  ');
 
-      doc.setFont('times', 'italic');
+      doc.setFont('Serif', 'italic');
       doc.setFontSize(7.5);
       doc.setTextColor(70, 70, 70);
       doc.text(solutionsText, margin + 4, solutionsY + 10.5, { maxWidth: contentWidth - 8 });

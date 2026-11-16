@@ -243,105 +243,107 @@ export default function ContactsPage() {
 
   return (
     <PrestataireDashboardLayout>
-      <div className="mb-5">
-        <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace prestataire</p>
-        <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Contacts &amp; Messages</h1>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: 480 }}>
+      <div className="-m-5 sm:-m-6 lg:-m-8 h-[calc(100dvh-3.5rem)] lg:h-[100dvh] bg-white overflow-hidden lg:border-l lg:border-stone-200">
         <div className="flex h-full">
           {/* Conversation list */}
-          <div className={`border-r border-charcoal-100 flex flex-col flex-shrink-0 ${showMobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-72`}>
-            <div className="p-3 border-b border-charcoal-100">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+          <div className={`border-r border-stone-200 flex flex-col flex-shrink-0 bg-white ${showMobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-[21rem] lg:w-[23rem]`}>
+            <div className="px-5 pt-6 pb-4 flex-shrink-0">
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-rose-600">Espace prestataire</p>
+              <h1 className="font-serif text-charcoal-900 mt-1.5" style={{ fontSize: '1.7rem', fontWeight: 400, letterSpacing: '-0.01em' }}>Messages</h1>
+              <p className="text-xs text-charcoal-400 mt-1">{conversations.length} couple{conversations.length > 1 ? 's' : ''} en contact</p>
+              <div className="relative mt-4">
+                <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-charcoal-400" />
                 <input
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-ivory-50 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all"
-                  placeholder="Rechercher…"
+                  className="w-full pl-6 pr-2 py-2 bg-transparent border-b border-stone-300 text-sm text-charcoal-800 placeholder:text-charcoal-300 focus:outline-none focus:border-rose-500 transition-colors"
+                  placeholder="Rechercher un couple"
                 />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto subtle-scroll">
               {loading ? (
                 <div className="p-4 space-y-3">
-                  {[1,2,3].map(i => <div key={i} className="h-14 bg-charcoal-50 rounded-xl animate-pulse" />)}
+                  {[1,2,3].map(i => <div key={i} className="h-12 bg-stone-200/60 animate-pulse" />)}
                 </div>
               ) : filtered.length === 0 ? (
-                <div className="p-8 text-center">
-                  <MessageSquare className="w-8 h-8 text-charcoal-300 mx-auto mb-2" />
-                  <p className="text-sm text-charcoal-500">Aucun contact</p>
-                  <p className="text-xs text-charcoal-400 mt-1">Les couples vous contacteront via votre annonce</p>
+                <div className="px-6 py-14 text-center">
+                  <p className="font-serif italic text-charcoal-500 text-lg">Aucun contact</p>
+                  <p className="text-xs text-charcoal-400 mt-2 leading-relaxed">Les couples vous écriront depuis votre annonce.</p>
                 </div>
               ) : (
-                filtered.map(conv => (
+                filtered.map(conv => {
+                  const active = selected?.id === conv.id;
+                  const unread = Number(((conv.unread_count_vendor as any) ?? (conv as any).unread_vendor) ?? 0);
+                  return (
                   <button
                     key={conv.id}
                     onClick={() => openConversation(conv)}
-                    className={`w-full text-left px-4 py-3.5 border-b border-charcoal-50 transition-colors hover:bg-charcoal-50 ${selected?.id === conv.id ? 'bg-rose-50 border-l-2 border-l-rose-400' : ''}`}
+                    className={`w-full text-left px-5 py-4 border-t border-stone-200/70 transition-colors relative ${active ? 'bg-[#F7F1EA]' : 'hover:bg-[#FBF8F4]'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      {conv.client_id && clientPhotos[conv.client_id] ? (
-                        <img src={clientPhotos[conv.client_id]} alt={conv.client_name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700 flex-shrink-0">
-                          {conv.client_name?.charAt(0) || 'C'}
-                        </div>
-                      )}
+                    {active && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-rose-600" />}
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-full flex-shrink-0 overflow-hidden bg-stone-200">
+                        {conv.client_id && clientPhotos[conv.client_id] ? (
+                          <img src={clientPhotos[conv.client_id]} alt={conv.client_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-serif text-lg text-charcoal-700">{conv.client_name?.charAt(0) || 'C'}</div>
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-charcoal-900 truncate">{conv.client_name || 'Client'}</p>
-                          {(((conv.unread_count_vendor as any) ?? (conv as any).unread_vendor) ?? 0) > 0 && (
-                            <span className="ml-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center flex-shrink-0">
-                              {((conv.unread_count_vendor as any) ?? (conv as any).unread_vendor) ?? 0}
-                            </span>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className={`truncate text-[15px] ${unread ? 'font-semibold text-charcoal-900' : 'font-medium text-charcoal-800'}`}>{conv.client_name || 'Client'}</p>
+                          {conv.last_message_at && <span className="text-[10.5px] text-charcoal-400 flex-shrink-0 tabular-nums">{dayKey(conv.last_message_at) === dayKey(new Date().toISOString()) ? formatTime(conv.last_message_at) : new Date(conv.last_message_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>}
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-0.5">
+                          <p className={`text-[13px] truncate ${unread ? 'text-charcoal-700' : 'text-charcoal-400'}`}>{conv.last_message || 'Nouvelle conversation'}</p>
+                          {unread > 0 && (
+                            <span className="min-w-[1.15rem] h-[1.15rem] px-1 bg-rose-600 text-white text-[10px] font-semibold rounded-full flex items-center justify-center flex-shrink-0">{unread}</span>
                           )}
                         </div>
-                        <p className="text-xs text-charcoal-500 truncate mt-0.5">{conv.last_message || 'Nouvelle conversation'}</p>
                       </div>
                     </div>
                   </button>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
           {/* Chat area */}
-          <div className={`flex-1 flex flex-col min-w-0 ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
+          <div className={`flex-1 flex flex-col min-w-0 bg-white ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
             {!selected ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                <Heart className="w-10 h-10 text-rose-200 mb-3" />
-                <p className="text-charcoal-600 font-medium">Sélectionnez une conversation</p>
-                <p className="text-sm text-charcoal-400 mt-1">Répondez aux couples qui s'intéressent à vos services</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 chat-canvas">
+                <p className="font-serif italic text-charcoal-500 text-2xl" style={{ fontWeight: 400 }}>Choisissez une conversation</p>
+                <p className="text-sm text-charcoal-500 mt-2">Répondez aux couples qui s’intéressent à vos services.</p>
               </div>
             ) : (
               <>
                 {/* Header */}
-                <div className="px-4 py-3.5 border-b border-charcoal-100 flex items-center gap-3 flex-shrink-0">
-                  <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1.5 text-charcoal-400 hover:text-charcoal-700 rounded-lg hover:bg-charcoal-50 transition-colors flex-shrink-0">
-                    <ChevronLeft className="w-4 h-4" />
+                <div className="px-4 sm:px-7 h-[4.5rem] border-b border-stone-200 flex items-center gap-3.5 flex-shrink-0 bg-white">
+                  <button onClick={() => setShowMobileChat(false)} className="md:hidden -ml-1 p-2 text-charcoal-500 hover:text-charcoal-900 flex-shrink-0" aria-label="Retour">
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
-                  {selected.client_id && clientPhotos[selected.client_id] ? (
-                    <img src={clientPhotos[selected.client_id]} alt={selected.client_name} className="w-9 h-9 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-sm font-bold text-charcoal-700">
-                      {selected.client_name?.charAt(0) || 'C'}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-semibold text-charcoal-900">{selected.client_name}</p>
-                    {selected.client_email && <p className="text-xs text-charcoal-500">{selected.client_email}</p>}
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-stone-200">
+                    {selected.client_id && clientPhotos[selected.client_id] ? (
+                      <img src={clientPhotos[selected.client_id]} alt={selected.client_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-serif text-base text-charcoal-700">{selected.client_name?.charAt(0) || 'C'}</div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-serif text-charcoal-900 text-lg leading-tight truncate" style={{ fontWeight: 500 }}>{selected.client_name}</p>
+                    <p className="text-[11px] text-charcoal-400 mt-0.5 truncate">{selected.client_email || 'Couple'}</p>
                   </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                <div className="flex-1 overflow-y-auto subtle-scroll px-4 sm:px-8 lg:px-12 py-6 space-y-2 chat-canvas">
                   {messages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-charcoal-400">Démarrez la conversation</p>
+                    <div className="h-full flex items-center justify-center">
+                      <p className="font-serif italic text-charcoal-500 text-xl">Démarrez la conversation…</p>
                     </div>
                   ) : (
                     messages.map((msg, idx) => {
@@ -353,10 +355,10 @@ export default function ContactsPage() {
                       return (
                         <div key={msg.id}>
                           {showDay && msg.created_at && (
-                            <div className="flex justify-center my-3">
-                              <span className="text-[11px] font-semibold text-charcoal-500 bg-charcoal-50 border border-charcoal-100 px-3 py-1 rounded-full">
-                                {formatDayLabel(msg.created_at)}
-                              </span>
+                            <div className="flex items-center gap-4 my-6">
+                              <span className="flex-1 h-px bg-stone-300/70" />
+                              <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-charcoal-500">{formatDayLabel(msg.created_at)}</span>
+                              <span className="flex-1 h-px bg-stone-300/70" />
                             </div>
                           )}
                           <div className={`flex items-end gap-2 ${isVendor ? 'justify-end' : 'justify-start'}`}>
@@ -364,17 +366,17 @@ export default function ContactsPage() {
                               selected.client_id && clientPhotos[selected.client_id] ? (
                                 <img src={clientPhotos[selected.client_id]} alt={clientInitial} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5" />
                               ) : (
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-100 to-champagne-200 flex items-center justify-center text-xs font-bold text-charcoal-700 flex-shrink-0 mb-0.5">
+                                <div className="w-7 h-7 rounded-full bg-white border border-stone-200 flex items-center justify-center font-serif text-xs text-charcoal-700 flex-shrink-0 mb-0.5">
                                   {clientInitial}
                                 </div>
                               )
                             ) : vendorPhoto ? (
                               <img src={vendorPhoto} alt="Vous" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-0.5 order-last" />
                             ) : null}
-                            <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
+                            <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg px-4 py-2.5 text-[14.5px] leading-relaxed ${
                               isVendor
-                                ? 'bg-rose-600 text-white rounded-br-md'
-                                : 'bg-charcoal-100 text-charcoal-900 rounded-bl-md'
+                                ? 'bg-charcoal-900 text-white rounded-[14px] rounded-br-[3px]'
+                                : 'bg-white text-charcoal-900 border border-stone-200 shadow-[0_1px_1px_rgba(60,40,30,0.04)] rounded-[14px] rounded-bl-[3px]'
                             }`}>
                               {msg.type === 'document' && msg.file_url && (
                                 <button
@@ -448,7 +450,7 @@ export default function ContactsPage() {
                                 );
                               })()}
                               {msg.created_at && (
-                                <p className={`text-xs mt-1 ${isVendor ? 'text-rose-200' : 'text-charcoal-400'}`}>
+                                <p className={`text-[10.5px] mt-1 tabular-nums ${isVendor ? 'text-white/50 text-right' : 'text-charcoal-400'}`}>
                                   {formatTime(msg.created_at)}
                                 </p>
                               )}
@@ -462,7 +464,7 @@ export default function ContactsPage() {
                 </div>
 
                 {/* Input */}
-                <div className="px-4 py-3 border-t border-charcoal-100 flex-shrink-0 space-y-2">
+                <div className="px-3 sm:px-7 py-3 border-t border-stone-200 flex-shrink-0 space-y-2 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                   {pendingFiles.length > 0 && (
                     <div className="flex items-center gap-2 flex-wrap">
                       {pendingFiles.map((file, i) => (
@@ -482,7 +484,7 @@ export default function ContactsPage() {
                         type="button"
                         disabled={!selected || sending}
                         onClick={() => setShowAttachMenu(v => !v)}
-                        className="p-2 text-charcoal-400 hover:text-charcoal-600 hover:bg-charcoal-50 rounded-lg transition-colors disabled:opacity-40"
+                        className="p-2 text-charcoal-400 hover:text-rose-600 transition-colors disabled:opacity-40"
                       >
                         <Paperclip className="w-4 h-4" />
                       </button>
@@ -510,13 +512,13 @@ export default function ContactsPage() {
                       value={newMsg}
                       onChange={e => setNewMsg(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                      className="flex-1 px-4 py-2 bg-ivory-50 border border-charcoal-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 transition-all"
+                      className="flex-1 min-w-0 h-11 px-4 bg-[#F7F3EE] border border-stone-200 rounded-sm text-[15px] text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:border-rose-500 focus:bg-white transition-colors"
                       placeholder="Votre réponse…"
                     />
                     <button
                       onClick={sendMessage}
                       disabled={(!newMsg.trim() && pendingFiles.length === 0) || sending}
-                      className="p-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 disabled:opacity-40 transition-colors"
+                      className="w-11 h-11 flex items-center justify-center bg-charcoal-900 text-white hover:bg-rose-600 disabled:opacity-30 disabled:hover:bg-charcoal-900 transition-colors rounded-sm flex-shrink-0"
                     >
                       {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </button>

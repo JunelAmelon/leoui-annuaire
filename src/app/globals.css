@@ -277,3 +277,35 @@
     display: none;
   }
 }
+
+/* Fond du fil de discussion : papier chaud finement pointillé (messageries client & pro). */
+.chat-canvas {
+  background-color: #F3ECE4;
+  background-image: radial-gradient(rgba(120, 90, 70, 0.11) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* ── Gazette : polices de titraille (fichiers partagés avec l'export PDF) ── */
+@font-face { font-family: 'Bodoni Moda'; src: url('/fonts/pdf/BodoniModa-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url('/fonts/pdf/Jost-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url('/fonts/pdf/Jost-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Mrs Saint Delafield'; src: url('/fonts/pdf/MrsSaintDelafield-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+
+/* Table de travail sous le journal */
+.gz-desk {
+  background-color: #E9E2D9;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 180px);
+}
+.gz-paper { overflow-wrap: anywhere; }
+/* Texte modifiable au clic : simple soulignement pointillé, pas de cadre */
+.gz-editable { outline: none; cursor: text; border-radius: 1px; transition: background-color 0.15s, box-shadow 0.15s; }
+.gz-editable:hover { box-shadow: 0 1px 0 0 rgba(190, 18, 60, 0.55); background-color: rgba(190, 18, 60, 0.04); }
+.gz-editable:focus { box-shadow: 0 0 0 1px rgba(190, 18, 60, 0.7); background-color: rgba(255, 255, 255, 0.6); }
+/* Lettrine */
+.gz-dropcap::first-letter {
+  font-family: 'Bodoni Moda', 'Didot', serif;
+  float: left;
+  font-size: 3.1em;
+  line-height: 0.82;
+  padding: 0.06em 0.09em 0 0;
+}
