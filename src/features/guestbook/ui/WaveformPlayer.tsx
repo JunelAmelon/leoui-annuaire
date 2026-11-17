@@ -165,7 +165,7 @@ export function WaveformPlayer({
         type="button"
         onClick={togglePlay}
         disabled={!src}
-        className="w-10 h-10 rounded-full bg-charcoal-900 hover:bg-rose-600 text-white flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
+        className="w-10 h-10 rounded-full bg-rose-600 hover:bg-rose-600 text-white flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
         title={isPlaying ? 'Mettre en pause' : 'Écouter le message'}
         aria-label={isPlaying ? 'Mettre en pause' : 'Écouter le message'}
       >

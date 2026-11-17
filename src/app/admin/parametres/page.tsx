@@ -288,7 +288,7 @@ export default function AdminParametresPage() {
             <button
               onClick={handleSaveName}
               disabled={savingName || !displayName.trim()}
-              className="mt-2.5 flex items-center gap-1.5 px-3.5 py-2 bg-charcoal-900 hover:bg-charcoal-800 disabled:opacity-40 text-white text-xs font-semibold rounded-xl transition-colors"
+              className="mt-2.5 flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-xs font-semibold rounded-xl transition-colors"
             >
               {savingName ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               Enregistrer
@@ -367,7 +367,7 @@ export default function AdminParametresPage() {
           <button
             onClick={handleCreateUser}
             disabled={creating || !createEmail.trim() || !createPassword || !createName.trim()}
-            className="w-full py-2.5 bg-charcoal-900 hover:bg-charcoal-800 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
             Créer le compte
@@ -412,7 +412,7 @@ export default function AdminParametresPage() {
           <button
             onClick={handleSetRole}
             disabled={settingRole || !roleEmail.trim()}
-            className="w-full py-2.5 bg-charcoal-900 hover:bg-charcoal-800 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             {settingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
             Attribuer le rôle &quot;{roleTarget}&quot;

@@ -363,7 +363,7 @@ export default function CoupleGuestbookPage() {
           onClick={() => setFilterType('all')}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
             filterType === 'all'
-              ? 'bg-charcoal-900 text-white'
+              ? 'bg-rose-600 text-white'
               : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
           }`}
         >
@@ -374,7 +374,7 @@ export default function CoupleGuestbookPage() {
           onClick={() => setFilterType('audio')}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
             filterType === 'audio'
-              ? 'bg-charcoal-900 text-white'
+              ? 'bg-rose-600 text-white'
               : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
           }`}
         >
@@ -385,7 +385,7 @@ export default function CoupleGuestbookPage() {
           onClick={() => setFilterType('text')}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
             filterType === 'text'
-              ? 'bg-charcoal-900 text-white'
+              ? 'bg-rose-600 text-white'
               : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
           }`}
         >

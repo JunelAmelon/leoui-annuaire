@@ -647,7 +647,7 @@ export default function PlanDeTablePage() {
                 <Ruler className="w-3.5 h-3.5" /> Salle
               </button>
               <button type="button" onClick={() => setPreview3D(true)} title="Vue 3D"
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-charcoal-900 text-white hover:bg-charcoal-800 text-xs font-semibold transition-colors">
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-rose-600 text-white hover:bg-rose-700 text-xs font-semibold transition-colors">
                 <Box className="w-3.5 h-3.5" /> Vue 3D
               </button>
               <div className="w-px h-5 bg-stone-200" />

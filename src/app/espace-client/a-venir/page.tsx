@@ -98,7 +98,7 @@ export default function UpcomingFeaturesPage() {
                 <div className="mt-7 flex items-center gap-5">
                   <button type="button" onClick={() => toggle(f.id)} aria-pressed={isSaved}
                     className={`inline-flex items-center gap-2 h-10 px-4 text-[13px] font-medium border transition-colors rounded-sm ${
-                      isSaved ? 'bg-charcoal-900 border-charcoal-900 text-white' : 'border-charcoal-300 text-charcoal-800 hover:border-charcoal-900'
+                      isSaved ? 'bg-rose-600 border-charcoal-900 text-white' : 'border-charcoal-300 text-charcoal-800 hover:border-charcoal-900'
                     }`}>
                     <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
                     {isSaved ? 'Dans vos favoris' : 'Garder de côté'}
@@ -112,7 +112,7 @@ export default function UpcomingFeaturesPage() {
       </div>
 
       {/* ── Fermeture ── */}
-      <footer className="mt-4 grid md:grid-cols-[1fr_auto] gap-6 items-center bg-charcoal-900 text-white px-7 py-8 sm:px-10 sm:py-10">
+      <footer className="mt-4 grid md:grid-cols-[1fr_auto] gap-6 items-center bg-rose-600 text-white px-7 py-8 sm:px-10 sm:py-10">
         <div>
           <p className="font-serif text-2xl leading-snug" style={{ fontWeight: 400 }}>Un besoin précis pour votre mariage ?</p>
           <p className="text-sm text-white/60 mt-2 max-w-xl leading-relaxed">

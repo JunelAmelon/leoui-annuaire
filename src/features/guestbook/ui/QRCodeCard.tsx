@@ -76,7 +76,7 @@ export function QRCodeCard({ publicToken, weddingTitle, cardDesign, onDownloadFl
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
             {onDownloadFlyer && (
               <button type="button" onClick={onDownloadFlyer}
-                className="inline-flex items-center gap-2 px-5 h-11 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm">
+                className="inline-flex items-center gap-2 px-5 h-11 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm">
                 <Printer className="w-4 h-4" /> Télécharger la carte (PDF)
               </button>
             )}

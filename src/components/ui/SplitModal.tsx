@@ -83,4 +83,4 @@ export function SplitModal({
 export const modalField = 'w-full bg-transparent border-0 border-b border-stone-300 px-0 py-2.5 text-[15px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none focus:ring-0 focus:border-rose-500 transition-colors rounded-none';
 export const modalLabel = 'block text-[10px] font-semibold tracking-[0.18em] uppercase text-charcoal-400';
 export const modalGhostBtn = 'h-11 px-5 border border-stone-300 text-charcoal-700 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm';
-export const modalPrimaryBtn = 'h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-35 disabled:hover:bg-charcoal-900 transition-colors rounded-sm';
+export const modalPrimaryBtn = 'h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-35 disabled:hover:bg-rose-600 transition-colors rounded-sm';

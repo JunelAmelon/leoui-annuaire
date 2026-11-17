@@ -147,7 +147,7 @@ export function SetupWizard({
                 <div className="flex justify-center gap-2 flex-wrap">
                   {[40, 60, 80, 100, 150, 200].map((n) => (
                     <button key={n} type="button" onClick={() => setGuests(n)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${guests === n ? 'bg-charcoal-900 text-white' : 'bg-white text-charcoal-500 border border-stone-200'}`}>
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${guests === n ? 'bg-rose-600 text-white' : 'bg-white text-charcoal-500 border border-stone-200'}`}>
                       {n}
                     </button>
                   ))}
@@ -211,7 +211,7 @@ export function SetupWizard({
                   <div className="flex gap-1.5">
                     {[4, 6, 8, 10, 12].map((n) => (
                       <button key={n} type="button" onClick={() => setSeats(n)}
-                        className={`flex-1 h-10 rounded-lg text-[13px] font-semibold transition-colors ${seats === n ? 'bg-charcoal-900 text-white' : 'bg-white border border-stone-200 text-charcoal-700'}`}>
+                        className={`flex-1 h-10 rounded-lg text-[13px] font-semibold transition-colors ${seats === n ? 'bg-rose-600 text-white' : 'bg-white border border-stone-200 text-charcoal-700'}`}>
                         {n}
                       </button>
                     ))}
@@ -268,7 +268,7 @@ export function SetupWizard({
             </button>
             {step < STEPS.length - 1 ? (
               <button type="button" onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-charcoal-900 text-white text-xs font-semibold shadow hover:bg-charcoal-800">
+                className="flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-rose-600 text-white text-xs font-semibold shadow hover:bg-rose-700">
                 Continuer <ChevronRight className="w-4 h-4" />
               </button>
             ) : (

@@ -439,7 +439,7 @@ export default function PublicGuestbookPage({
 
         <div>
           <button type="submit" disabled={submitting || isRecording || (mode === 'audio' && !audioResult)}
-            className="w-full h-[3.25rem] bg-charcoal-900 text-white text-[12px] font-medium tracking-[0.16em] uppercase hover:bg-rose-600 transition-colors disabled:opacity-35 disabled:hover:bg-charcoal-900 disabled:cursor-not-allowed">
+            className="w-full h-[3.25rem] bg-rose-600 text-white text-[12px] font-medium tracking-[0.16em] uppercase hover:bg-rose-600 transition-colors disabled:opacity-35 disabled:hover:bg-rose-600 disabled:cursor-not-allowed">
             {submitting ? 'Envoi en cours…' : P.submit_label}
           </button>
           <p className="text-center font-serif italic text-charcoal-400 text-sm mt-5">

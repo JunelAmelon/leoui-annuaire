@@ -303,7 +303,7 @@ export default function Scene3D({
           </button>
           <button type="button" onClick={() => setDrawerOpen((o) => !o)} aria-expanded={drawerOpen}
             className={`inline-flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold transition-colors ${
-              drawerOpen ? 'bg-rose-600 text-white' : 'bg-charcoal-900 text-white hover:bg-charcoal-800'
+              drawerOpen ? 'bg-rose-600 text-white' : 'bg-rose-600 text-white hover:bg-rose-700'
             }`}>
             <Palette className="w-3.5 h-3.5" /> Personnaliser
           </button>

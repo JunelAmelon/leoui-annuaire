@@ -55,7 +55,7 @@ export default function MessageBubble({
             <Ban className="w-3.5 h-3.5" /> Message supprimé
           </p>
         ) : editing ? (
-          <div className="w-[min(24rem,80vw)] bg-charcoal-900 text-white rounded-2xl rounded-br-sm p-3 space-y-2">
+          <div className="w-[min(24rem,80vw)] bg-rose-600 text-white rounded-2xl rounded-br-sm p-3 space-y-2">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -89,7 +89,7 @@ export default function MessageBubble({
           <div
             className={`relative rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
               mine
-                ? 'bg-charcoal-900 text-white rounded-br-sm'
+                ? 'bg-rose-600 text-white rounded-br-sm'
                 : 'bg-white border border-charcoal-200 text-charcoal-900 rounded-bl-sm'
             }`}
           >

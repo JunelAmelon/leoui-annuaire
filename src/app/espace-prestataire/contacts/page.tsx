@@ -375,7 +375,7 @@ export default function ContactsPage() {
                             ) : null}
                             <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg px-4 py-2.5 text-[14.5px] leading-relaxed ${
                               isVendor
-                                ? 'bg-charcoal-900 text-white rounded-[14px] rounded-br-[3px]'
+                                ? 'bg-rose-600 text-white rounded-[14px] rounded-br-[3px]'
                                 : 'bg-white text-charcoal-900 border border-stone-200 shadow-[0_1px_1px_rgba(60,40,30,0.04)] rounded-[14px] rounded-bl-[3px]'
                             }`}>
                               {msg.type === 'document' && msg.file_url && (
@@ -518,7 +518,7 @@ export default function ContactsPage() {
                     <button
                       onClick={sendMessage}
                       disabled={(!newMsg.trim() && pendingFiles.length === 0) || sending}
-                      className="w-11 h-11 flex items-center justify-center bg-charcoal-900 text-white hover:bg-rose-600 disabled:opacity-30 disabled:hover:bg-charcoal-900 transition-colors rounded-sm flex-shrink-0"
+                      className="w-11 h-11 flex items-center justify-center bg-rose-600 text-white hover:bg-rose-600 disabled:opacity-30 disabled:hover:bg-rose-600 transition-colors rounded-sm flex-shrink-0"
                     >
                       {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </button>

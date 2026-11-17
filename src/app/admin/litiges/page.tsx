@@ -490,7 +490,7 @@ export default function AdminLitigesPage() {
                     <button
                       onClick={() => resolve('seller')}
                       disabled={resolving || note.trim().length < 10}
-                      className="h-11 bg-charcoal-900 hover:bg-charcoal-800 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-11 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {resolving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Libérer les fonds vendeur'}
                     </button>

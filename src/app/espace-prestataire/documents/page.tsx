@@ -287,7 +287,7 @@ export default function ContratsPage() {
               <p className="text-sm text-charcoal-500 mt-3">Contrats, devis et factures à partager avec vos clients.</p>
             </div>
             <button onClick={openCreate}
-              className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm self-start sm:self-auto">
+              className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm self-start sm:self-auto">
               <Plus className="w-4 h-4" /> Nouveau document
             </button>
           </header>
@@ -577,7 +577,7 @@ export default function ContratsPage() {
                 <Upload className="w-4 h-4" /> Importer PDF
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-1.5 h-11 px-5 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">
+                className="flex items-center gap-1.5 h-11 px-5 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">
                 <Save className="w-4 h-4" /> {saving ? 'Sauvegarde…' : editItem ? 'Mettre à jour' : 'Sauvegarder'}
               </button>
             </div>

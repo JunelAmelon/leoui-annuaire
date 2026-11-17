@@ -155,7 +155,7 @@ export default function DocumentsPage() {
           </p>
         </div>
         <button onClick={() => setIsUploadOpen(true)}
-          className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm self-start sm:self-auto">
+          className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm self-start sm:self-auto">
           <Upload className="w-4 h-4" /> Ajouter un document
         </button>
       </header>
@@ -279,7 +279,7 @@ export default function DocumentsPage() {
             <div className="px-6 sm:px-7 py-4 border-t border-stone-200 flex gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <button onClick={() => setIsUploadOpen(false)} className="flex-1 h-11 border border-stone-300 text-charcoal-700 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm">Annuler</button>
               <button onClick={handleUpload} disabled={uploading || !selectedFile || !docName}
-                className="flex-1 h-11 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-35 disabled:hover:bg-charcoal-900 transition-colors rounded-sm">
+                className="flex-1 h-11 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-35 disabled:hover:bg-rose-600 transition-colors rounded-sm">
                 {uploading ? 'Ajout…' : 'Ajouter'}
               </button>
             </div>
