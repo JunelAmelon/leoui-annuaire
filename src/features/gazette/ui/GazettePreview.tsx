@@ -9,9 +9,13 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import QRCode from 'qrcode';
-import { Camera, Check, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  CakeSlice, Camera, Car, Check, ChevronLeft, ChevronRight, Church, Coffee, Flower2,
+  Heart, Loader2, Music, Pencil, Plus, Sparkles, Trash2, UtensilsCrossed, Wine,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  deriveCoupleNames,
   GAZETTE_THEMES,
   WEDDING_COLOR_PALETTES,
   type AnecdoteSectionContent,
@@ -25,7 +29,7 @@ import {
 } from '../domain/types';
 
 type PhotoField = 'cover_path' | 'story_photo_path' | 'witnesses_photo_path';
-type QuickBlock = 'trombinoscope' | 'crosswords' | 'truefalse' | 'dresscode' | 'interview' | 'horoscope' | 'annonces' | 'quiz';
+type QuickBlock = 'trombinoscope' | 'crosswords' | 'truefalse' | 'dresscode' | 'interview' | 'horoscope' | 'annonces' | 'quiz' | 'devine_qui';
 type FontId = NonNullable<Gazette['layout']['font_family']>;
 type PageNum = 1 | 2 | 3 | 4;
 
@@ -48,6 +52,8 @@ const THEME_TOKENS: Record<GazetteTheme, { paper: string; ink: string; muted: st
   chic_minimal: { paper: '#FFFFFF', ink: '#141414', muted: '#6F6F6F', hairline: '#DAD7D2', accent: '#18181b', grayscale: true, mastheadItalic: false, doubleRule: false },
   romantic_rose: { paper: '#FBF5F0', ink: '#2A2023', muted: '#7C6C6C', hairline: '#E6D8D0', accent: '#be123c', grayscale: false, mastheadItalic: true, doubleRule: false },
   vintage_gazette: { paper: '#F5EFE1', ink: '#1E1A15', muted: '#6B6153', hairline: '#CFC5AF', accent: '#881337', grayscale: true, mastheadItalic: false, doubleRule: true },
+  gazette_maries: { paper: '#FBF7EC', ink: '#1B1611', muted: '#6E6353', hairline: '#C9BFA6', accent: '#1B1611', grayscale: true, mastheadItalic: false, doubleRule: true },
+  wedding_post: { paper: '#FFFFFF', ink: '#16120F', muted: '#6E665E', hairline: '#DCD5CB', accent: '#16120F', grayscale: true, mastheadItalic: false, doubleRule: true },
 };
 
 const FONTS: { id: FontId; label: string; family: string; upper: boolean }[] = [
@@ -60,6 +66,7 @@ const FONTS: { id: FontId; label: string; family: string; upper: boolean }[] = [
 const QUICK_BLOCKS: { id: QuickBlock; label: string }[] = [
   { id: 'interview', label: 'Interview croisée' },
   { id: 'trombinoscope', label: 'Trombinoscope des témoins' },
+  { id: 'devine_qui', label: 'La mariée ou le marié ?' },
   { id: 'dresscode', label: 'Dress code & hashtag' },
   { id: 'truefalse', label: 'Vrai ou faux' },
   { id: 'crosswords', label: 'Mots croisés' },
@@ -75,6 +82,69 @@ const KICKERS: Record<GazetteSection['type'], string> = {
 const SANS = "'Jost', var(--font-sans), sans-serif";
 const BODY = 'var(--font-serif), Georgia, serif';
 const SCRIPT = "'Mrs Saint Delafield', cursive";
+/** La calligraphie n'est lisible que sur une courte phrase : au-delà, on bascule en italique serif. */
+const isShortScript = (text?: string): boolean => (text ?? '').length <= 30;
+const PIRATA = "'Pirata One', 'Bodoni Moda', serif";
+
+/** Pictogramme du programme selon l'intitulé (modèle « The Wedding Post »). */
+const PROGRAM_ICONS: [RegExp, typeof Sparkles][] = [
+  [/cérémon|vœu|voeu|messe|église|eglise|mairie|office/i, Church],
+  [/cocktail|vin|apéro|apero|bar/i, Wine],
+  [/dîner|diner|repas|banquet|buffet/i, UtensilsCrossed],
+  [/gâteau|gateau|pièce montée|piece montee|dessert/i, CakeSlice],
+  [/photo|shoot|séance|seance/i, Camera],
+  [/brunch|café|cafe|lendemain|thé|the/i, Coffee],
+  [/trajet|arrivée|arrivee|départ|depart|navette/i, Car],
+  [/fleurs?|bouquet/i, Flower2],
+  [/alliances?|demande|fiançailles|fiancailles/i, Heart],
+  [/bal|dans|soirée|soiree|party|dj|ouverture|musique/i, Music],
+];
+const programIcon = (title = '') => (PROGRAM_ICONS.find(([re]) => re.test(title)) ?? [null, Sparkles])[1];
+
+/** Vignette du modèle de gazette (sélecteur + modale de réglages). */
+export function GazetteModelThumb({ theme }: { theme: GazetteTheme }) {
+  const tk = THEME_TOKENS[theme];
+  const masthead: Record<GazetteTheme, { text: string; style: CSSProperties }> = {
+    chic_minimal: { text: 'VOGUE', style: { fontFamily: FONTS[0].family, letterSpacing: '0.14em' } },
+    romantic_rose: { text: 'La Gazette', style: { fontFamily: BODY, fontStyle: 'italic' } },
+    vintage_gazette: { text: 'La Gazette', style: { fontFamily: FONTS[0].family } },
+    gazette_maries: { text: 'La Gazette', style: { fontFamily: BODY, fontStyle: 'italic' } },
+    wedding_post: { text: 'The Post', style: { fontFamily: PIRATA, fontSize: '7.5px' } },
+  };
+  const m = masthead[theme];
+  const isPost = theme === 'wedding_post';
+  return (
+    <div className="w-11 sm:w-12 aspect-[3/4] border shadow-[0_1px_3px_rgba(30,20,10,0.15)] px-1 pt-1 pb-1 flex flex-col"
+      style={{ backgroundColor: tk.paper, borderColor: tk.hairline }} aria-hidden>
+      <p className="text-center leading-none truncate" style={{ fontSize: '6px', color: tk.ink, ...m.style }}>{m.text}</p>
+      <div className="mt-[2px]" style={{ borderTop: `1px solid ${tk.ink}` }} />
+      {isPost ? (
+        <>
+          <div className="mt-[2px] mx-2 h-[3px]" style={{ backgroundColor: tk.ink }} />
+          <div className="relative mt-[3px] flex-1" style={{ backgroundColor: `${tk.ink}38` }}>
+            <p className="absolute bottom-[2px] inset-x-0 text-center truncate px-0.5" style={{ fontFamily: SCRIPT, fontSize: '6.5px', color: tk.paper }}>S &amp; T</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mt-[2px] mx-1 h-[3px]" style={{ backgroundColor: tk.ink }} />
+          <div className="mt-[2px] flex-1 grid gap-[2px]" style={{ gridTemplateColumns: theme === 'gazette_maries' ? '1.5fr 1fr' : '1fr' }}>
+            <div style={{ backgroundColor: `${tk.ink}38` }} />
+            {theme === 'gazette_maries' && (
+              <div className="space-y-[2px]">
+                {[100, 80, 100, 60].map((w) => <div key={w} className="h-[2px]" style={{ width: `${w}%`, backgroundColor: `${tk.ink}30` }} />)}
+              </div>
+            )}
+          </div>
+          <div className="mt-[2px] space-y-[2px]">
+            {[100, 88, 96].map((w) => <div key={w} className="h-[2px]" style={{ width: `${w}%`, backgroundColor: `${tk.ink}22` }} />)}
+          </div>
+        </>
+      )}
+      <div className="mt-auto" style={{ borderTop: `1px solid ${tk.ink}` }} />
+    </div>
+  );
+}
 
 /** Texte modifiable au clic ; ne remonte la valeur que si elle a réellement changé. */
 function Editable({ value, placeholder, editable, onSave, className = '', style, as = 'span' }: {
@@ -122,6 +192,7 @@ export function GazettePreview({
 
   const theme: GazetteTheme = localTheme || gazette.layout?.theme || 'chic_minimal';
   const t = THEME_TOKENS[theme];
+  const names = gazette.couple_names || deriveCoupleNames(gazette.title);
   const accent = gazette.layout?.accent_color || t.accent;
   const font = FONTS.find((f) => f.id === (gazette.layout?.font_family || 'bodoni')) ?? FONTS[0];
   const headline: CSSProperties = { fontFamily: font.family, ...(font.upper ? { textTransform: 'uppercase', letterSpacing: '0.08em' } : {}) };
@@ -278,6 +349,36 @@ export function GazettePreview({
 
   const programBlock = ({ section }: { section: GazetteSection }) => {
     const items = (section.content as ProgramSectionContent).items ?? [];
+    // Modèle « The Wedding Post » : déroulé rythmé par des pictos comme sur les faire-part de presse.
+    if (theme === 'wedding_post') {
+      return (
+        <div className="space-y-4">
+          {sectionHead({ section: section })}
+          <ol className="relative">
+            <div className="absolute left-[0.72rem] top-2 bottom-2 w-px" style={{ backgroundColor: t.hairline }} aria-hidden />
+            {items.map((item, i) => {
+              const Icon = programIcon(item.title);
+              return (
+                <li key={i} className="relative grid grid-cols-[1.5rem_1fr_auto] gap-x-4 items-start py-3.5">
+                  <span className="relative z-10 w-6 h-6 flex items-center justify-center rounded-full" style={{ backgroundColor: t.paper, border: `1px solid ${t.ink}` }}>
+                    <Icon className="w-3 h-3" strokeWidth={1.5} style={{ color: t.ink }} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] sm:text-[16px] leading-tight" style={headline}>{item.title}</p>
+                    {(item.description || item.location) && (
+                      <p className="text-[12.5px] leading-snug mt-1 italic" style={{ fontFamily: BODY, color: t.muted }}>
+                        {[item.location, item.description].filter(Boolean).join(' — ')}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[1.15rem] sm:text-[1.3rem] leading-none tabular-nums pt-0.5" style={{ fontFamily: FONTS[0].family, color: accent }}>{item.time}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
         {sectionHead({ section: section })}
@@ -374,6 +475,151 @@ export function GazettePreview({
   );
 
   // ── Pages ──────────────────────────────────────────────────────────────────
+
+  /** Une « Gazette des Mariés » : titre calligraphié, prénoms en manchette, photo N&B + marge de rubriques. */
+  const pageOneMaries = (
+    <>
+      {/* Oreilles de presse */}
+      <div className={`${label()} flex items-center justify-between gap-3 pb-1.5`} style={{ fontFamily: SANS, color: t.muted }}>
+        <Editable value={gazette.location_name} placeholder="Paris" editable={editable} onSave={(location_name) => saveMeta({ location_name })} className="uppercase" />
+        <span className="hidden sm:inline">{dateLabel}</span>
+        <Editable value={gazette.edition_tag} placeholder="N° 01" editable={editable} onSave={(edition_tag) => saveMeta({ edition_tag })} className="text-right" />
+      </div>
+      <div style={{ borderTop: `3px solid ${t.ink}` }} />
+      <div className="mt-[2.5px]" style={{ borderTop: `1px solid ${t.ink}` }} />
+
+      {/* Titre calligraphié */}
+      <div className="text-center pt-3 pb-2">
+        <Editable as="h1" value={gazette.title} placeholder="La Gazette des Mariés" editable={editable} onSave={(title) => saveMeta({ title })}
+          className="block italic leading-[1.02] text-[2.3rem] sm:text-[3.2rem] break-words" style={{ fontFamily: BODY, letterSpacing: '-0.01em' }} />
+        <p className={`${label()} mt-2 sm:hidden`} style={{ fontFamily: SANS, color: t.muted }}>{dateLabel}</p>
+      </div>
+      <div style={{ borderTop: `1px solid ${t.ink}` }} />
+      <div className="mt-[2.5px]" style={{ borderTop: `3px solid ${t.ink}` }} />
+
+      {/* Manchette : les prénoms + la phrase d'accroche */}
+      <div className="text-center pt-4 sm:pt-6 pb-1">
+        <Editable as="h2" value={names} placeholder="Sophie & Thomas" editable={editable}
+          onSave={(couple_names) => saveMeta({ couple_names })}
+          className="block uppercase leading-[1.02] text-[2rem] sm:text-[3rem] break-words" style={{ fontFamily: FONTS[0].family, letterSpacing: '0.02em' }} />
+        <Editable as="p" value={gazette.subtitle} placeholder="s'unissent pour la vie !" editable={editable} onSave={(subtitle) => saveMeta({ subtitle })}
+          className={`block mt-1.5 ${isShortScript(gazette.subtitle) ? 'text-[1.7rem] sm:text-[2.3rem] leading-[0.9]' : 'italic text-[1.15rem] sm:text-[1.45rem] leading-snug'}`}
+          style={{ fontFamily: isShortScript(gazette.subtitle) ? SCRIPT : BODY, color: accent }} />
+      </div>
+
+      {/* Corps : grande photo + marge de rubriques */}
+      <div className="grid sm:grid-cols-[1.55fr_1fr] gap-x-6 gap-y-6 mt-4 pt-5" style={{ borderTop: `1px solid ${t.ink}` }}>
+        <div>
+          <figure>
+            {photo({ field: 'cover_path', ratio: '4 / 3', hint: 'La photo de Une' })}
+            <figcaption className="pt-2">
+              <Editable value={gazette.cover_caption} placeholder="Légende de la photo" editable={editable} onSave={(cover_caption) => saveMeta({ cover_caption })}
+                className="italic text-[12px] leading-snug" style={{ fontFamily: BODY, color: t.muted }} />
+            </figcaption>
+          </figure>
+          {programItems.length > 0 && (
+            <div className="mt-5 pt-3" style={{ borderTop: `1px solid ${t.hairline}` }}>
+              <span className={label('font-medium')} style={{ fontFamily: SANS, color: accent }}>Le déroulé en bref</span>
+              <ul className="mt-2.5 grid sm:grid-cols-2 gap-x-5 gap-y-2">
+                {programItems.slice(0, 6).map((it, i) => (
+                  <li key={i} className="flex gap-2.5 text-[12.5px] leading-snug" style={{ fontFamily: BODY }}>
+                    <span className="tabular-nums flex-shrink-0" style={{ fontFamily: FONTS[0].family, color: accent }}>{it.time}</span>
+                    <span>{it.title}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <aside>
+          <div className="sm:border-l sm:pl-5 sm:h-full" style={{ borderColor: t.hairline }}>
+            <div>
+              <span className={label('font-medium')} style={{ fontFamily: SANS, color: accent }}>Annonce · Le mot des mariés</span>
+              <Editable as="p" value={gazette.editorial} editable={editable} onSave={(editorial) => saveMeta({ editorial })}
+                placeholder="Chers invités, soyez les bienvenus dans notre édition spéciale…"
+                className="gz-dropcap block text-[12.5px] leading-[1.55] text-justify mt-2" style={{ fontFamily: BODY }} />
+            </div>
+            <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${t.hairline}` }}>
+              <span className={label('font-medium')} style={{ fontFamily: SANS, color: accent }}>Dicton du jour</span>
+              <Editable as="p" value={gazette.weather_forecast} editable={editable} onSave={(weather_forecast) => saveMeta({ weather_forecast })}
+                placeholder="« Le bonheur est la seule chose qui se double si on le partage. »"
+                className="block italic text-[12.5px] leading-snug mt-2" style={{ fontFamily: BODY }} />
+            </div>
+            <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${t.hairline}` }}>
+              <span className={label('font-medium')} style={{ fontFamily: SANS, color: accent }}>À vos photos !</span>
+              <p className="text-[11.5px] leading-snug mt-1.5" style={{ fontFamily: BODY, color: t.muted }}>
+                Scannez pour {qrTarget === 'photos' ? 'partager vos plus beaux clichés' : qrTarget === 'honeymoon' ? 'contribuer à notre voyage de noces' : 'nous laisser un mot doux'}.
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {qr && <img src={qr} alt="QR code" className="w-20 h-20 mt-2.5" />}
+            </div>
+            <p className="text-right text-[1.5rem] leading-[0.8] mt-5" style={{ fontFamily: SCRIPT, color: accent }}>{names}</p>
+          </div>
+        </aside>
+      </div>
+    </>
+  );
+
+  /** Une « The Wedding Post » : titre gothique, immense photo, noms calligraphiés sur l'image. */
+  const pageOnePost = (
+    <>
+      <div className={`${label()} flex items-center justify-between gap-3 pb-1.5`} style={{ fontFamily: SANS, color: t.muted }}>
+        <span>{dateLabel}</span>
+        <Editable value={gazette.edition_tag} placeholder="N° 01" editable={editable} onSave={(edition_tag) => saveMeta({ edition_tag })} className="text-right" />
+      </div>
+      <div style={{ borderTop: `3px solid ${t.ink}` }} />
+      <div className="mt-[2.5px]" style={{ borderTop: `1px solid ${t.ink}` }} />
+
+      <div className="text-center pt-2.5 pb-1">
+        <Editable as="h1" value={gazette.title} placeholder="The Wedding Post" editable={editable} onSave={(title) => saveMeta({ title })}
+          className="block leading-[1.05] text-[2.5rem] sm:text-[3.4rem] break-words" style={{ fontFamily: PIRATA }} />
+        <p className={`${label()} mt-2`} style={{ fontFamily: SANS, color: t.muted }}>
+          <Editable value={gazette.location_name} placeholder="Lieu de la réception" editable={editable} onSave={(location_name) => saveMeta({ location_name })} className="uppercase" />
+        </p>
+      </div>
+      <div style={{ borderTop: `1px solid ${t.ink}` }} />
+      <Editable as="h2" value={gazette.subtitle} placeholder="Le mariage de l'année" editable={editable} onSave={(subtitle) => saveMeta({ subtitle })}
+        className="block text-center uppercase leading-[1.05] text-[1.5rem] sm:text-[2rem] py-2.5 break-words" style={{ fontFamily: FONTS[0].family, letterSpacing: '0.03em' }} />
+      <div style={{ borderTop: `1px solid ${t.ink}` }} />
+
+      <figure className="relative mt-4">
+        <div className="relative">
+          {photo({ field: 'cover_path', ratio: '4 / 4.4', hint: 'La photo de Une — grand format' })}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 pb-3.5 text-center px-4">
+            <Editable as="p" value={names} placeholder="Sophie & Thomas" editable={editable}
+              onSave={(couple_names) => saveMeta({ couple_names })}
+              className="block text-[2.1rem] sm:text-[2.7rem] leading-[0.95]" style={{ fontFamily: SCRIPT, color: '#fff' }} />
+            <p className={`${label()} mt-1.5`} style={{ fontFamily: SANS, color: 'rgba(255,255,255,0.85)' }}>se disent oui</p>
+          </div>
+        </div>
+        <figcaption className="pt-2">
+          <Editable value={gazette.cover_caption} placeholder="Légende de la photo" editable={editable} onSave={(cover_caption) => saveMeta({ cover_caption })}
+            className="italic text-[12px] leading-snug" style={{ fontFamily: BODY, color: t.muted }} />
+        </figcaption>
+      </figure>
+
+      <div className="mt-4 pt-4 grid sm:grid-cols-[1.6fr_1fr] gap-x-6 gap-y-4" style={{ borderTop: `1px solid ${t.ink}` }}>
+        <div>
+          <span className={label('font-medium')} style={{ fontFamily: SANS, color: accent }}>Le mot des mariés</span>
+          <Editable as="p" value={gazette.editorial} editable={editable} onSave={(editorial) => saveMeta({ editorial })}
+            placeholder="Chers invités, soyez les bienvenus…"
+            className="gz-dropcap block text-[12.5px] leading-[1.55] text-justify mt-2" style={{ fontFamily: BODY }} />
+        </div>
+        <div>
+          <span className={label('font-medium')} style={{ fontFamily: SANS, color: accent }}>À vos photos !</span>
+          <div className="flex items-start gap-3 mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {qr && <img src={qr} alt="QR code" className="w-16 h-16 flex-shrink-0" />}
+            <p className="text-[11.5px] leading-snug" style={{ fontFamily: BODY, color: t.muted }}>
+              Scannez pour {qrTarget === 'photos' ? 'partager vos clichés' : qrTarget === 'honeymoon' ? 'contribuer à notre voyage de noces' : 'nous laisser un mot'}.
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 
   const pageOne = (
     <>
@@ -494,7 +740,12 @@ export function GazettePreview({
     </>
   );
 
-  const pages: Record<PageNum, ReactNode> = { 1: pageOne, 2: pageTwo, 3: pageThree, 4: pageFour };
+  const pages: Record<PageNum, ReactNode> = {
+    1: theme === 'gazette_maries' ? pageOneMaries : theme === 'wedding_post' ? pageOnePost : pageOne,
+    2: pageTwo,
+    3: pageThree,
+    4: pageFour,
+  };
 
   const renderPage = (n: PageNum) => (
     <article key={n} className="gz-paper relative w-full max-w-[640px] flex-shrink-0 px-5 py-6 sm:px-10 sm:py-10 shadow-[0_1px_2px_rgba(40,30,20,0.08),0_18px_50px_-18px_rgba(40,30,20,0.35)]"
@@ -529,7 +780,7 @@ export function GazettePreview({
               <button type="button" aria-label="Page précédente" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1) as PageNum)} className="p-1.5 text-charcoal-500 disabled:opacity-25 hover:text-rose-600"><ChevronLeft className="w-4 h-4" /></button>
               {([1, 2, 3, 4] as const).map((n) => (
                 <button key={n} type="button" onClick={() => setPage(n)}
-                  className={`w-8 h-8 text-[13px] tabular-nums transition-colors ${page === n ? 'bg-charcoal-900 text-white' : 'text-charcoal-500 hover:text-charcoal-900'}`}>{n}</button>
+                  className={`w-8 h-8 text-[13px] tabular-nums transition-colors ${page === n ? 'bg-rose-600 text-white' : 'text-charcoal-500 hover:text-charcoal-900'}`}>{n}</button>
               ))}
               <button type="button" aria-label="Page suivante" disabled={page === 4} onClick={() => setPage((p) => Math.min(4, p + 1) as PageNum)} className="p-1.5 text-charcoal-500 disabled:opacity-25 hover:text-rose-600"><ChevronRight className="w-4 h-4" /></button>
             </div>
@@ -537,14 +788,19 @@ export function GazettePreview({
         </div>
 
         <div className="grid gap-x-10 gap-y-4 px-4 sm:px-6 py-4 md:grid-cols-[auto_auto_1fr] md:items-center">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className={toolLabel}>Style</span>
-            {(Object.keys(GAZETTE_THEMES) as GazetteTheme[]).map((key) => (
-              <button key={key} type="button" title={GAZETTE_THEMES[key].description} onClick={() => selectTheme(key)} className={`inline-flex items-center gap-2 ${tab(theme === key)}`}>
-                <span className="w-3 h-4 border border-stone-300" style={{ backgroundColor: THEME_TOKENS[key].paper, borderTop: `3px solid ${THEME_TOKENS[key].accent}` }} />
-                {GAZETTE_THEMES[key].label}
-              </button>
-            ))}
+          <div className="flex items-start gap-4 flex-wrap">
+            <span className={`${toolLabel} pt-4`}>Modèle</span>
+            <div className="flex gap-3 flex-wrap">
+              {(Object.keys(GAZETTE_THEMES) as GazetteTheme[]).map((key) => (
+                <button key={key} type="button" title={GAZETTE_THEMES[key].description} onClick={() => selectTheme(key)}
+                  className={`flex flex-col items-center gap-1.5 pb-1 border-b-2 transition-colors ${theme === key ? 'border-rose-600' : 'border-transparent'}`}>
+                  <GazetteModelThumb theme={key} />
+                  <span className={`text-[9px] uppercase tracking-[0.1em] leading-none max-w-[4.6rem] text-center ${theme === key ? 'text-charcoal-900 font-semibold' : 'text-charcoal-400 group-hover:text-charcoal-700'}`}>
+                    {GAZETTE_THEMES[key].label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">

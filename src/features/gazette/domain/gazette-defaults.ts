@@ -1,4 +1,4 @@
-import type { Gazette, GazetteSection } from './types';
+import { deriveCoupleNames, type Gazette, type GazetteSection } from './types';
 
 export function createDefaultGazetteSections(): GazetteSection[] {
   return [
@@ -143,6 +143,7 @@ export function createDefaultGazette(
     owner_id: ownerId,
     title,
     subtitle: 'Édition Spéciale — Tirage Unique pour nos Invités',
+    couple_names: deriveCoupleNames(title),
     wedding_date: weddingDate,
     location_name: locationName,
     cover_path: null,

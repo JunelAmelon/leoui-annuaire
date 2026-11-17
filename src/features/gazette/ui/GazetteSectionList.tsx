@@ -41,7 +41,7 @@ export function GazetteSectionList({ sections, onEditSection, onDeleteSection, o
 
         <div className="relative">
           <button type="button" onClick={() => setMenuOpen((v) => !v)} disabled={sections.length >= MAX}
-            className="inline-flex items-center gap-2 h-11 px-5 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">
+            className="inline-flex items-center gap-2 h-11 px-5 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">
             <Plus className="w-4 h-4" /> Ajouter une rubrique
           </button>
           {menuOpen && (

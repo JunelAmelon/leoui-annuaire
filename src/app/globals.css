@@ -290,6 +290,7 @@
 @font-face { font-family: 'Jost'; src: url('/fonts/pdf/Jost-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Jost'; src: url('/fonts/pdf/Jost-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
 @font-face { font-family: 'Mrs Saint Delafield'; src: url('/fonts/pdf/MrsSaintDelafield-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Pirata One'; src: url('/fonts/pdf/PirataOne-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
 
 /* Table de travail sous le journal */
 .gz-desk {

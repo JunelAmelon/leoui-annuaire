@@ -87,15 +87,7 @@ export default function CoupleGazettePage() {
         expected_version: gazette.version,
       });
       setGazette(updated);
-      toast.success(
-        `Style « ${
-          newTheme === 'chic_minimal'
-            ? 'Vogue Éditorial'
-            : newTheme === 'romantic_rose'
-            ? 'Romance Florale'
-            : 'Gazette Parisienne'
-        } » activé.`
-      );
+      toast.success(`Modèle « ${GAZETTE_THEMES[newTheme]?.label ?? newTheme} » activé.`);
     } catch (err: any) {
       console.error(err);
     }
@@ -193,6 +185,7 @@ export default function CoupleGazettePage() {
       | 'horoscope'
       | 'annonces'
       | 'quiz'
+      | 'devine_qui'
   ) => {
     if (!gazette) return;
 
@@ -277,6 +270,18 @@ export default function CoupleGazettePage() {
         ],
       });
       toast.success('Petites annonces ajoutées en Page 2 !');
+    } else if (type === 'devine_qui') {
+      await handleAddSection('quiz', 'La Mariée ou le Marié ? Devinez qui !', {
+        questions: [
+          { question: 'Qui cuisine le mieux ?', options: ['La mariée', 'Le marié'], answer_index: 0 },
+          { question: 'Qui a fait le premier pas ?', options: ['La mariée', 'Le marié'], answer_index: 1 },
+          { question: 'Qui est le plus romantique ?', options: ['La mariée', 'Le marié'], answer_index: 0 },
+          { question: 'Qui a peur devant un film d’horreur ?', options: ['La mariée', 'Le marié'], answer_index: 1 },
+          { question: 'Qui est toujours en retard ?', options: ['La mariée', 'Le marié'], answer_index: 1 },
+          { question: 'Qui met le plus de temps à se préparer ?', options: ['La mariée', 'Le marié'], answer_index: 0 },
+        ],
+      });
+      toast.success('Jeu « Devinez qui » ajouté en Page 4 !');
     } else if (type === 'quiz') {
       const quiz = gazette.sections.find((s) => s.type === 'quiz');
       if (quiz) {
@@ -574,7 +579,7 @@ export default function CoupleGazettePage() {
 
             <div className="flex flex-wrap gap-3 mt-8">
               <button type="button" onClick={handleExportPdf} disabled={isExportingPdf}
-                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-50 transition-colors rounded-sm">
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors rounded-sm">
                 {isExportingPdf ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 Télécharger le PDF
               </button>
@@ -698,7 +703,7 @@ export default function CoupleGazettePage() {
             ))}
           </ol>
           <button type="button" onClick={handleExportPdf} disabled={isExportingPdf}
-            className="mt-10 inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-50 transition-colors rounded-sm">
+            className="mt-10 inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors rounded-sm">
             {isExportingPdf ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Télécharger le PDF
           </button>
         </div>

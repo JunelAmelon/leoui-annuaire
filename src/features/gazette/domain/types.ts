@@ -1,6 +1,11 @@
 export type GazetteSectionType = 'story' | 'anecdote' | 'quiz' | 'program' | 'custom';
 
-export type GazetteTheme = 'chic_minimal' | 'romantic_rose' | 'vintage_gazette';
+export type GazetteTheme =
+  | 'chic_minimal'
+  | 'romantic_rose'
+  | 'vintage_gazette'
+  | 'gazette_maries'
+  | 'wedding_post';
 
 export interface QuizQuestion {
   question: string;
@@ -76,6 +81,8 @@ export interface Gazette {
   owner_id: string;
   title: string;
   subtitle?: string;
+  // Prénoms affichés en manchette par les modèles « Gazette des Mariés » et « Wedding Post »
+  couple_names?: string;
   wedding_date?: string;
   location_name?: string;
   cover_path: string | null;
@@ -109,6 +116,7 @@ export interface CreateGazetteInput {
 export interface UpdateGazetteInput {
   title?: string;
   subtitle?: string;
+  couple_names?: string;
   wedding_date?: string;
   location_name?: string;
   cover_path?: string | null;
@@ -159,4 +167,24 @@ export const GAZETTE_THEMES: Record<
     previewBg: 'bg-[#fcf9f2] text-stone-950 border-stone-400',
     fontClass: 'font-serif',
   },
+  gazette_maries: {
+    label: 'Gazette des Mariés',
+    tag: 'Une façon grand quotidien',
+    description: 'Titre calligraphié, vos prénoms en manchette, photo noir & blanc et rubriques en marge.',
+    previewBg: 'bg-[#fcf9f0] text-stone-950 border-stone-400',
+    fontClass: 'font-serif',
+  },
+  wedding_post: {
+    label: 'The Wedding Post',
+    tag: 'Une façon poster photo',
+    description: 'Titre gothique de gazette anglaise, immense photo de Une et programme rythmé de pictos.',
+    previewBg: 'bg-white text-stone-950 border-stone-300',
+    fontClass: 'font-serif',
+  },
 };
+
+/** Retire « La Gazette de/des… » du titre pour n'en garder que les prénoms. */
+export function deriveCoupleNames(title: string): string {
+  const stripped = (title || '').replace(/^la\s+gazette\s+(de|des|du|d'|d’)\s*/i, '').trim();
+  return stripped || 'Les Mariés';
+}

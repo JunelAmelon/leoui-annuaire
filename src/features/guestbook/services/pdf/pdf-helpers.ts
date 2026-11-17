@@ -6,7 +6,7 @@
 
 import type jsPDF from 'jspdf';
 
-export type PdfFamily = 'Script' | 'Serif' | 'Sans' | 'Numeral';
+export type PdfFamily = 'Script' | 'Serif' | 'Sans' | 'Numeral' | 'Blackletter';
 
 const FONT_FILES: { file: string; family: PdfFamily; style: 'normal' | 'bold' | 'italic' }[] = [
   { file: 'MrsSaintDelafield-Regular.ttf', family: 'Script', style: 'normal' },
@@ -16,6 +16,7 @@ const FONT_FILES: { file: string; family: PdfFamily; style: 'normal' | 'bold' | 
   { file: 'Jost-Regular.ttf', family: 'Sans', style: 'normal' },
   { file: 'Jost-Medium.ttf', family: 'Sans', style: 'bold' },
   { file: 'BodoniModa-Regular.ttf', family: 'Numeral', style: 'normal' },
+  { file: 'PirataOne-Regular.ttf', family: 'Blackletter', style: 'normal' },
 ];
 
 const fontCache = new Map<string, string>();

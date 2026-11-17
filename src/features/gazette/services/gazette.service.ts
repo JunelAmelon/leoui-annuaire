@@ -58,6 +58,7 @@ export class GazetteService {
     const updatePayload: Partial<Gazette> = {};
     if (input.title !== undefined) updatePayload.title = input.title.trim();
     if (input.subtitle !== undefined) updatePayload.subtitle = input.subtitle.trim();
+    if (input.couple_names !== undefined) updatePayload.couple_names = input.couple_names.trim();
     if (input.wedding_date !== undefined) updatePayload.wedding_date = input.wedding_date;
     if (input.location_name !== undefined) updatePayload.location_name = input.location_name.trim();
     if (input.cover_path !== undefined) updatePayload.cover_path = input.cover_path;

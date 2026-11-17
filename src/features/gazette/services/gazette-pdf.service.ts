@@ -1,6 +1,7 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { registerPdfFonts, pdfSafe } from '@/features/guestbook/services/pdf/pdf-helpers';
+import { deriveCoupleNames } from '../domain/types';
 import type {
   Gazette,
   StorySectionContent,
@@ -76,15 +77,18 @@ export class GazettePdfService {
 
     const isVogue = gazette.layout.theme === 'chic_minimal';
     const isRomantic = gazette.layout.theme === 'romantic_rose';
+    const isMaries = gazette.layout.theme === 'gazette_maries';
+    const isPost = gazette.layout.theme === 'wedding_post';
+    const coupleNames = gazette.couple_names || deriveCoupleNames(gazette.title);
 
     // Couleur d'accentuation dynamique du mariage
     const accentRgb = hexToRgb(
-      gazette.layout?.accent_color || (isVogue ? '#18181b' : '#be123c')
+      gazette.layout?.accent_color || (isVogue || isPost ? '#18181b' : '#be123c')
     );
 
     // Helper pour dessiner le style de fond et filets authentiques
     const applyPageBackground = () => {
-      if (isVogue) {
+      if (isVogue || isPost) {
         doc.setFillColor(255, 255, 255); // Blanc pur magazine
       } else if (isRomantic) {
         doc.setFillColor(255, 250, 248); // Teinte poudrée délicate
@@ -94,7 +98,7 @@ export class GazettePdfService {
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
       // Filets d'encadrement haut et bas selon le thème
-      if (isVogue) {
+      if (isVogue || isPost) {
         doc.setDrawColor(20, 20, 20);
         doc.setLineWidth(0.8);
         doc.line(margin, margin - 4, margin + contentWidth, margin - 4);
@@ -167,12 +171,22 @@ export class GazettePdfService {
     doc.setLineWidth(isVogue ? 0.8 : 0.6);
     doc.line(margin, margin + 4, margin + contentWidth, margin + 4);
 
-    // Titre principal (Masthead)
-    doc.setFont('Serif', 'bold');
-    doc.setFontSize(isVogue ? 30 : 26);
+    // Titre principal (Masthead) : gothique « Wedding Post », italique « Gazette des Mariés »
     doc.setTextColor(15, 15, 15);
-    const mastheadTitle = (gazette.title || 'LA GAZETTE DES MARIÉS').toUpperCase();
-    doc.text(mastheadTitle, pageWidth / 2, margin + 14, { align: 'center' });
+    if (isPost) {
+      doc.setFont('Blackletter', 'normal');
+      doc.setFontSize(27);
+      doc.text(gazette.title || 'The Wedding Post', pageWidth / 2, margin + 15, { align: 'center' });
+    } else if (isMaries) {
+      doc.setFont('Serif', 'italic');
+      doc.setFontSize(25);
+      doc.text(gazette.title || 'La Gazette des Mariés', pageWidth / 2, margin + 15, { align: 'center' });
+    } else {
+      doc.setFont('Serif', 'bold');
+      doc.setFontSize(isVogue ? 30 : 26);
+      const mastheadTitle = (gazette.title || 'LA GAZETTE DES MARIÉS').toUpperCase();
+      doc.text(mastheadTitle, pageWidth / 2, margin + 14, { align: 'center' });
+    }
 
     // 2. Date & Lieu & Mention de prix
     doc.setLineWidth(0.3);
@@ -191,26 +205,38 @@ export class GazettePdfService {
     doc.setLineWidth(isVogue ? 0.8 : 0.6);
     doc.line(margin, margin + 24, margin + contentWidth, margin + 24);
 
-    // 3. Gros titre (Headline avec couleur d'accent)
-    doc.setFont('Serif', 'bold');
-    doc.setFontSize(isVogue ? 20 : 18);
-    doc.setTextColor(isVogue ? 10 : accentRgb[0], isVogue ? 10 : accentRgb[1], isVogue ? 10 : accentRgb[2]);
-    const headline = (gazette.subtitle || 'ILS SE SONT DIT OUI !').toUpperCase();
-    doc.text(headline, pageWidth / 2, margin + 33, { align: 'center' });
+    // 3. Gros titre : manchette des prénoms pour « Gazette des Mariés », sous-titre sinon
+    if (isMaries) {
+      doc.setFont('Numeral', 'normal');
+      doc.setFontSize(21);
+      doc.setTextColor(15, 15, 15);
+      doc.text(coupleNames.toUpperCase(), pageWidth / 2, margin + 33, { align: 'center' });
+      const sub = gazette.subtitle || "s'unissent pour la vie !";
+      doc.setFont(sub.length <= 30 ? 'Script' : 'Serif', sub.length <= 30 ? 'normal' : 'italic');
+      doc.setFontSize(sub.length <= 30 ? 19 : 12);
+      doc.setTextColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+      doc.text(sub, pageWidth / 2, margin + 40, { align: 'center', maxWidth: contentWidth });
+    } else {
+      doc.setFont('Serif', 'bold');
+      doc.setFontSize(isVogue ? 20 : isPost ? 16 : 18);
+      doc.setTextColor(isVogue || isPost ? 10 : accentRgb[0], isVogue || isPost ? 10 : accentRgb[1], isVogue || isPost ? 10 : accentRgb[2]);
+      const headline = (gazette.subtitle || (isPost ? 'THE WEDDING OF THE YEAR' : 'ILS SE SONT DIT OUI !')).toUpperCase();
+      doc.text(headline, pageWidth / 2, margin + 33, { align: 'center' });
 
-    doc.setFont('Serif', 'italic');
-    doc.setFontSize(8.5);
-    doc.setTextColor(90, 90, 90);
-    doc.text(
-      '— La grande aventure commence aujourd’hui sous vos applaudissements —',
-      pageWidth / 2,
-      margin + 38,
-      { align: 'center' }
-    );
+      doc.setFont('Serif', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(90, 90, 90);
+      doc.text(
+        '— La grande aventure commence aujourd’hui sous vos applaudissements —',
+        pageWidth / 2,
+        margin + 38,
+        { align: 'center' }
+      );
+    }
 
-    // 4. Cadre Photo de Une : Grand format généreux (115 mm de haut)
+    // 4. Cadre Photo de Une : pleine page pour « Wedding Post », format quotidien sinon
     const photoBoxY = margin + 42;
-    const photoBoxHeight = 115;
+    const photoBoxHeight = isPost ? 145 : isMaries ? 108 : 115;
     let hasImage = false;
 
     if (gazette.cover_path) {
@@ -231,6 +257,27 @@ export class GazettePdfService {
     doc.rect(margin, photoBoxY, contentWidth, photoBoxHeight);
 
     if (hasImage) {
+      if (isPost) {
+        // Prénoms calligraphiés posés sur un fondu sombre, façon poster
+        const adv = doc as unknown as {
+          saveGraphicsState(): void;
+          restoreGraphicsState(): void;
+          GState: new (opts: { opacity: number }) => object;
+          setGState(g: object): void;
+        };
+        adv.saveGraphicsState();
+        adv.setGState(new adv.GState({ opacity: 0.42 }));
+        doc.setFillColor(10, 10, 10);
+        doc.rect(margin, photoBoxY + photoBoxHeight - 34, contentWidth, 34, 'F');
+        adv.restoreGraphicsState();
+        doc.setFont('Script', 'normal');
+        doc.setFontSize(26);
+        doc.setTextColor(255, 255, 255);
+        doc.text(coupleNames, pageWidth / 2, photoBoxY + photoBoxHeight - 21, { align: 'center' });
+        doc.setFont('Sans', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('SE DISENT OUI', pageWidth / 2, photoBoxY + photoBoxHeight - 14, { align: 'center' });
+      }
       // Bandeau légende blanc épuré sous l'image
       doc.setFillColor(255, 255, 255);
       doc.rect(margin, photoBoxY + photoBoxHeight - 8.5, contentWidth, 8.5, 'F');
@@ -279,7 +326,7 @@ export class GazettePdfService {
     // 5. Bas de Page 1 : 2 colonnes parfaitement calibrées (hauteur 100 mm)
     const colY = photoBoxY + photoBoxHeight + 7;
     const colWidth = (contentWidth - 8) / 2;
-    const bottomColHeight = 100;
+    const bottomColHeight = isPost ? 68 : 100;
 
     // Colonne 1 : Éditorial des mariés
     doc.setFont('Serif', 'bold');

@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { uploadFile } from '@/lib/storage';
 import { SplitModal, modalField, modalGhostBtn, modalLabel, modalPrimaryBtn } from '@/components/ui/SplitModal';
 import { GAZETTE_THEMES, WEDDING_COLOR_PALETTES, type Gazette, type GazetteTheme } from '../domain/types';
+import { GazetteModelThumb } from './GazettePreview';
 
 type FontId = 'bodoni' | 'playfair' | 'cinzel' | 'sans';
 type QrTarget = 'guestbook' | 'photos' | 'honeymoon';
@@ -185,14 +186,15 @@ export function GazetteMetadataModal({ gazette, onSave, onClose }: GazetteMetada
         <>
           <div>
             <span className={modalLabel}>Style du journal</span>
-            <div className="grid sm:grid-cols-3 gap-3 mt-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
               {(Object.keys(GAZETTE_THEMES) as GazetteTheme[]).map((key) => (
                 <button key={key} type="button" onClick={() => setTheme(key)} className={`${choice(theme === key)} p-3.5`}>
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="font-serif text-[1.1rem] text-charcoal-900 leading-tight">{GAZETTE_THEMES[key].label}</span>
+                  <span className="flex items-start justify-between gap-2">
+                    <GazetteModelThumb theme={key} />
                     {theme === key && <Check className="w-4 h-4 text-rose-600 flex-shrink-0" />}
                   </span>
-                  <span className="block text-[12px] text-charcoal-500 mt-1.5 leading-snug">{GAZETTE_THEMES[key].tag}</span>
+                  <span className="block font-serif text-[1.05rem] text-charcoal-900 leading-tight mt-2.5">{GAZETTE_THEMES[key].label}</span>
+                  <span className="block text-[12px] text-charcoal-500 mt-1 leading-snug">{GAZETTE_THEMES[key].tag}</span>
                 </button>
               ))}
             </div>
