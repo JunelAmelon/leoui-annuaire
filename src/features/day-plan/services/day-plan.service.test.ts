@@ -2,10 +2,12 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { DayPlanService } from './day-plan.service';
 import { DayPlanShareService } from './day-plan-share.service';
+import { DayPlanDispatchService } from './day-plan-dispatch.service';
+import type { VendorContact, VendorMessenger } from '../repositories/vendor-contact.repository.interface';
 import { InMemoryDayPlanRepository, InMemoryVendorRequestRepository } from '../repositories/in-memory-day-plan.repository';
 import {
   buildStartAt, detectAlerts, isAfterMidnight, liveState, shiftFrom, sortItems, timeOf,
-  toGazetteProgram, toPlaylistMoments, formatDuration, formatLongDate, normalizeWeddingDate,
+  directionsUrl, toGazetteProgram, toPlaylistMoments, formatDuration, formatLongDate, normalizeWeddingDate,
 } from '../domain/timeline';
 import type { DayPlan, TimelineItem, TimelineItemInput } from '../domain/types';
 
@@ -231,5 +233,50 @@ describe('partage prestataires', () => {
     const next = await service.decideRequest(plan, request, false);
     assert.deepEqual(next.days, plan.days);
     assert.equal((await service.listRequests('evt'))[0].status, 'declined');
+  });
+});
+
+describe('itinéraire et diffusion aux prestataires', () => {
+  test('le lien d’itinéraire combine nom et adresse, ou renvoie null sans lieu', () => {
+    assert.equal(directionsUrl({ name: '', address: '' }), null);
+    const url = directionsUrl({ name: 'Château de la Mariée', address: '12 Rue des Lilas 69001 Lyon' })!;
+    assert.ok(url.startsWith('https://www.google.com/maps/dir/?api=1&destination='));
+    assert.ok(url.includes(encodeURIComponent('Château de la Mariée, 12 Rue des Lilas 69001 Lyon')));
+    assert.ok(directionsUrl({ name: 'Mairie', address: '' })!.endsWith(encodeURIComponent('Mairie')));
+  });
+
+  test('ensureVendorLinks crée, réactive et ne duplique pas', async () => {
+    const { service } = setup();
+    let plan = await service.getOrCreate('evt', 'own', WEDDING);
+    const vendors = [{ ref_id: 'vA', label: 'Traiteur Dupont' }, { ref_id: 'vB', label: 'DJ Max' }];
+    plan = await service.ensureVendorLinks(plan, vendors);
+    assert.equal(plan.share.vendor_links.length, 2);
+    const first = plan.share.vendor_links[0];
+    plan = await service.ensureVendorLinks(plan, vendors);
+    assert.equal(plan.share.vendor_links.length, 2);
+    assert.equal(plan.share.vendor_links[0].token, first.token, 'un lien actif est conservé');
+    plan = await service.setVendorAccess(plan, first.vendor_id, false);
+    plan = await service.ensureVendorLinks(plan, vendors);
+    assert.equal(plan.share.vendor_links[0].token_revoked_at, null);
+    assert.notEqual(plan.share.vendor_links[0].token, first.token, 'un accès coupé reçoit un nouveau jeton');
+  });
+
+  test('sendLinks envoie un message par prestataire et signale les échecs', async () => {
+    const { service } = setup();
+    const plan = await service.getOrCreate('evt', 'own', WEDDING);
+    const messages: { to: string; text: string }[] = [];
+    const messenger: VendorMessenger = {
+      send: async (c, _s, text) => { if (c.ref_id === 'vBad') throw new Error('x'); messages.push({ to: c.ref_id, text }); },
+    };
+    const contacts: VendorContact[] = [
+      { ref_id: 'vA', name: 'Traiteur', collaborated: true, conversation_id: 'c1' },
+      { ref_id: 'vBad', name: 'Fleuriste', collaborated: false, conversation_id: null },
+    ];
+    const res = await new DayPlanDispatchService(service, messenger).sendLinks(plan, contacts, { uid: 'u', name: 'Sophie & Thomas', client_id: 'cl' }, 'Sophie & Thomas', (e, t) => `https://x/${e}/${t}`);
+    assert.deepEqual(res.sent, ['Traiteur']);
+    assert.deepEqual(res.failed, ['Fleuriste']);
+    const token = res.plan.share.vendor_links.find((l) => l.ref_id === 'vA')!.token;
+    assert.ok(messages[0].text.includes(`https://x/evt/${token}`));
+    assert.equal(res.plan.share.vendor_links.length, 2);
   });
 });

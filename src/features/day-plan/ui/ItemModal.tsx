@@ -3,13 +3,15 @@
 /** Création / modification d'un moment. Plein écran sur mobile, fenêtre centrée au-delà. */
 
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { MapPin, Trash2 } from 'lucide-react';
+import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { SplitModal, modalField, modalGhostBtn, modalLabel, modalPrimaryBtn } from '@/components/ui/SplitModal';
 import {
   CATEGORIES, CATEGORY_KEYS, DAY_KEYS, DAY_LABELS, LIMITS,
   type DayKey, type TimelineItem, type TimelineItemInput, type VendorLink,
 } from '../domain/types';
-import { NIGHT_CUTOFF_HOUR, isValidTime, timeOf } from '../domain/timeline';
+import { CATEGORY_ICONS } from './category-icons';
+import { NIGHT_CUTOFF_HOUR, directionsUrl, isValidTime, timeOf } from '../domain/timeline';
 
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180];
 
@@ -116,10 +118,11 @@ export function ItemModal({ item, dayKey, vendors, knownPlaces, saving, errors =
             <div className="flex flex-wrap gap-2 mt-3">
               {CATEGORY_KEYS.map((c) => {
                 const active = input.category === c;
+                const Icon = CATEGORY_ICONS[c];
                 return (
-                  <button key={c} type="button" onClick={() => set('category', c)}
+                  <button key={c} type="button" onClick={() => set('category', c)} aria-pressed={active}
                     className={`inline-flex items-center gap-2 h-9 px-3 border text-[13px] transition-colors rounded-sm ${active ? 'border-charcoal-900 text-charcoal-900 bg-[#FBF8F4]' : 'border-stone-200 text-charcoal-500 hover:border-stone-400'}`}>
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORIES[c].color }} />{CATEGORIES[c].label}
+                    <Icon className="w-4 h-4" strokeWidth={1.4} style={{ color: active ? CATEGORIES[c].color : '#B8AFA6' }} />{CATEGORIES[c].label}
                   </button>
                 );
               })}
@@ -139,7 +142,12 @@ export function ItemModal({ item, dayKey, vendors, knownPlaces, saving, errors =
             <p className="sm:col-span-2 -mt-4 text-[12px] text-charcoal-400">Le trajet est le temps pour arriver ici depuis le lieu du moment précédent. Il sert à vous alerter si l’enchaînement est trop serré.</p>
             <label className="block sm:col-span-2">
               <span className={label}>Adresse</span>
-              <input value={input.location_address} onChange={(e) => set('location_address', e.target.value)} placeholder="Facultatif" className={field} />
+              <AddressAutocompleteInput value={input.location_address} onChange={(v) => set('location_address', v)} onSelectAddress={(a) => set('location_address', a.label)}
+                icon={false} placeholder="Commencez à saisir : 12 rue des Lilas, Lyon…" inputClassName={field} />
+              {directionsUrl({ name: input.location_name, address: input.location_address }) && (
+                <a href={directionsUrl({ name: input.location_name, address: input.location_address })!} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-[12px] text-rose-600 hover:text-rose-700"><MapPin className="w-3.5 h-3.5" />Tester l’itinéraire</a>
+              )}
             </label>
           </div>
 
@@ -157,7 +165,7 @@ export function ItemModal({ item, dayKey, vendors, knownPlaces, saving, errors =
                   return (
                     <button key={v.vendor_id} type="button" aria-pressed={on}
                       onClick={() => set('vendor_ids', on ? input.vendor_ids.filter((id) => id !== v.vendor_id) : [...input.vendor_ids, v.vendor_id])}
-                      className={`h-9 px-3 border text-[13px] transition-colors rounded-sm ${on ? 'border-charcoal-900 bg-charcoal-900 text-white' : 'border-stone-200 text-charcoal-600 hover:border-stone-400'}`}>{v.label}</button>
+                      className={`h-9 px-3 border text-[13px] transition-colors rounded-sm ${on ? 'border-charcoal-900 bg-rose-600 text-white' : 'border-stone-200 text-charcoal-600 hover:border-stone-400'}`}>{v.label}</button>
                   );
                 })}
               </div>

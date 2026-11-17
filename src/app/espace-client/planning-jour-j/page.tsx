@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { ValidationError } from '@/lib/market/errors';
 import {
-  CATEGORIES, CATEGORY_KEYS, DAY_KEYS, DAY_LABELS,
+  CATEGORY_KEYS, DAY_KEYS, DAY_LABELS,
   type DayKey, type DayPlan, type TimelineCategory, type TimelineItem, type TimelineItemInput, type VendorRequest,
 } from '@/features/day-plan/domain/types';
 import {
@@ -24,15 +24,21 @@ import {
 import { FirestoreDayPlanRepository, FirestoreVendorRequestRepository } from '@/features/day-plan/repositories/firestore-day-plan.repository';
 import { DayPlanService, findItem } from '@/features/day-plan/services/day-plan.service';
 import { generateDayPlanPdf } from '@/features/day-plan/services/day-plan-pdf.service';
+import { DayPlanDispatchService } from '@/features/day-plan/services/day-plan-dispatch.service';
+import { FirestoreVendorContactRepository } from '@/features/day-plan/repositories/firestore-vendor-contact.repository';
+import type { VendorContact } from '@/features/day-plan/repositories/vendor-contact.repository.interface';
 import { Timeline } from '@/features/day-plan/ui/Timeline';
 import { ItemModal } from '@/features/day-plan/ui/ItemModal';
-import { SharePanel } from '@/features/day-plan/ui/SharePanel';
+import { SharePanel, shareUrl } from '@/features/day-plan/ui/SharePanel';
 import { LiveView } from '@/features/day-plan/ui/LiveView';
+import { CategoryFilter } from '@/features/day-plan/ui/CategoryFilter';
 import { FirestoreGazetteRepository } from '@/features/gazette/repositories/firestore-gazette.repository';
 import { GazetteService } from '@/features/gazette/services/gazette.service';
 
 const service = new DayPlanService(new FirestoreDayPlanRepository(), new FirestoreVendorRequestRepository());
 const gazetteService = new GazetteService(new FirestoreGazetteRepository());
+const vendorContacts = new FirestoreVendorContactRepository();
+const dispatchService = new DayPlanDispatchService(service, vendorContacts);
 
 const kicker = 'text-[10px] font-semibold tracking-[0.2em] uppercase';
 const shortDate = (date: string) => (date ? formatLongDate(date).replace(/ \d{4}$/, '') : '');
@@ -54,6 +60,8 @@ export default function PlanningJourJPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [shareOpen, setShareOpen] = useState(false);
   const [live, setLive] = useState(false);
+  const [contacts, setContacts] = useState<VendorContact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
 
   useEffect(() => {
     if (clientLoading) return;
@@ -113,6 +121,14 @@ export default function PlanningJourJPage() {
     return [...names];
   }, [plan, event?.venue, event?.reception_venue]);
   const pending = requests.filter((r) => r.status === 'pending');
+  const clientId = client?.id;
+  useEffect(() => {
+    if (!shareOpen || !clientId) return;
+    let cancelled = false;
+    setContactsLoading(true);
+    vendorContacts.list(clientId).then((c) => { if (!cancelled) setContacts(c); }).catch(() => { if (!cancelled) setContacts([]); }).finally(() => { if (!cancelled) setContactsLoading(false); });
+    return () => { cancelled = true; };
+  }, [shareOpen, clientId]);
   const closeModal = useCallback(() => { setModal(null); setErrors({}); }, []);
   const closeShare = useCallback(() => setShareOpen(false), []);
   const closeLive = useCallback(() => setLive(false), []);
@@ -175,6 +191,21 @@ export default function PlanningJourJPage() {
     }
   };
 
+  const sendToContacts = async (chosen: VendorContact[]) => {
+    if (!chosen.length || !clientId || !user) return;
+    setBusy(true);
+    try {
+      const { plan: updated, sent, failed } = await dispatchService.sendLinks(plan, chosen, { uid: user.uid, name: coupleNames, client_id: clientId }, coupleNames, shareUrl);
+      setPlan(updated);
+      if (sent.length) toast.success(sent.length === 1 ? `Lien envoyé à ${sent[0]}.` : `Lien envoyé à ${sent.length} prestataires.`);
+      if (failed.length) toast.error(`Envoi impossible pour : ${failed.join(', ')}.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Envoi impossible.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const sendToGazette = async () => {
     if (!gazetteProgram.length) { toast.error('Aucun moment du jour J à publier pour l’instant.'); return; }
     setBusy(true);
@@ -214,7 +245,7 @@ export default function PlanningJourJPage() {
 
             <div className="flex flex-wrap gap-3 mt-8">
               <button type="button" onClick={() => setModal({})}
-                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm">
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-700 transition-colors rounded-sm">
                 <Plus className="w-4 h-4" /> Ajouter un moment
               </button>
               <button type="button" onClick={() => setLive(true)} disabled={!totalItems} className={`${outline} disabled:opacity-40`}><Radio className="w-4 h-4" /> Vue en direct</button>
@@ -270,7 +301,7 @@ export default function PlanningJourJPage() {
                     {r.reason && <p className="font-serif italic text-charcoal-500 text-[15px] mt-1">« {r.reason} »</p>}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
-                    {found && <button type="button" disabled={busy} onClick={() => decide(r, true)} className="h-10 px-4 bg-charcoal-900 text-white font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">Accepter</button>}
+                    {found && <button type="button" disabled={busy} onClick={() => decide(r, true)} className="h-10 px-4 bg-rose-600 text-white font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">Accepter</button>}
                     {found && <button type="button" disabled={busy} onClick={() => decide(r, true, true)} className="text-charcoal-800 border-b border-charcoal-800 pb-px hover:text-rose-600 hover:border-rose-600 disabled:opacity-40">Accepter et décaler la suite</button>}
                     <button type="button" disabled={busy} onClick={() => decide(r, false)} className="text-charcoal-500 hover:text-rose-600 disabled:opacity-40">Refuser</button>
                   </div>
@@ -289,27 +320,20 @@ export default function PlanningJourJPage() {
               <p className="font-serif italic text-charcoal-500 text-2xl">Rien de prévu {activeKey === 'day' ? 'le jour J' : activeKey === 'eve' ? 'la veille' : 'le lendemain'}</p>
               <p className="text-sm text-charcoal-400 mt-2 leading-relaxed">Ajoutez vos moments un à un, ou partez d’un déroulé type que vous ajusterez ensuite.</p>
               <div className="flex flex-wrap justify-center gap-3 mt-7">
-                <button type="button" onClick={() => setModal({})} className="h-11 px-6 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm">Ajouter un moment</button>
+                <button type="button" onClick={() => setModal({})} className="h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-700 transition-colors rounded-sm">Ajouter un moment</button>
                 <button type="button" disabled={busy} onClick={() => run(() => service.applyTemplate(plan), 'Déroulé type ajouté. Ajustez-le à votre journée.')} className={`${outline} disabled:opacity-40`}>Partir d’un déroulé type</button>
               </div>
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 pb-6 mb-7 border-b border-charcoal-100">
+              <div className="mb-8 space-y-5">
                 <p className="text-[13px] text-charcoal-500">
                   De <span className="tabular-nums text-charcoal-900">{timeOf(sorted[0].start_at)}</span> à{' '}
                   <span className="tabular-nums text-charcoal-900">{timeOf(sorted.reduce((max, i) => (endOf(i) > max ? endOf(i) : max), sorted[0].start_at))}</span>
                   {alerts.some((a) => a.level !== 'info') && <span className="text-amber-700"> · {alerts.filter((a) => a.level !== 'info').length} enchaînement{alerts.filter((a) => a.level !== 'info').length > 1 ? 's' : ''} à revoir</span>}
                 </p>
-                <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-                  <button type="button" onClick={() => setFilter(null)} className={`pb-0.5 border-b text-[13px] ${!filter ? 'border-rose-600 text-charcoal-900 font-medium' : 'border-transparent text-charcoal-400 hover:text-charcoal-800'}`}>Tout</button>
-                  {usedCategories.map((c) => (
-                    <button key={c} type="button" onClick={() => setFilter(filter === c ? null : c)}
-                      className={`inline-flex items-center gap-1.5 pb-0.5 border-b text-[13px] ${filter === c ? 'border-rose-600 text-charcoal-900 font-medium' : 'border-transparent text-charcoal-400 hover:text-charcoal-800'}`}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORIES[c].color }} />{CATEGORIES[c].label}
-                    </button>
-                  ))}
-                </div>
+                <CategoryFilter value={filter} onChange={setFilter} total={sorted.length}
+                  counts={usedCategories.map((c) => ({ category: c, count: sorted.filter((i) => i.category === c).length }))} />
               </div>
 
               <Timeline block={shown} alerts={filter ? [] : alerts} vendorLabels={vendorLabels} busy={busy}
@@ -392,7 +416,8 @@ export default function PlanningJourJPage() {
           onEnableShare={() => run(() => service.enableShare(plan), 'Lien prêt à être partagé.')}
           onRevokeShare={() => run(() => service.revokeShare(plan), 'Lien désactivé.')}
           onAddVendor={(labelText) => run(() => service.addVendorLink(plan, labelText), 'Prestataire ajouté.')}
-          onSetVendorAccess={(id, active) => run(() => service.setVendorAccess(plan, id, active), active ? 'Nouveau lien créé.' : 'Accès coupé.')} />
+          onSetVendorAccess={(id, active) => run(() => service.setVendorAccess(plan, id, active), active ? 'Nouveau lien créé.' : 'Accès coupé.')}
+          contacts={contacts} contactsLoading={contactsLoading} onSendToContacts={sendToContacts} />
       )}
 
       {live && <LiveView days={plan.days} title={coupleNames} onClose={closeLive} />}

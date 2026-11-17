@@ -301,7 +301,8 @@ days: {
 //   people: string[], notes, vendor_ids: string[], sort_key }
 share: {
   token|null, token_revoked_at,                              // lien général, lecture seule, sans les notes
-  vendor_links: [{ vendor_id, label, token, token_revoked_at }]   // 1 lien par prestataire (≤ 30)
+  vendor_links: [{ vendor_id, label, ref_id?, token, token_revoked_at }]   // 1 lien par prestataire (≤ 30)
+  // ref_id = vendors/{id} quand le prestataire vient de la messagerie / des collaborations (absent si saisi à la main)
 },
 created_at, updated_at
 ```
@@ -404,12 +405,15 @@ created_at
 
 ```
 event_id, owner_id, title, cover_path,   // chemin Storage
+subtitle, couple_names,                  // manchette + prénoms des modèles presse
 sections: [{ id, type: 'story'|'anecdote'|'quiz'|'program'|'custom',
              title, content, order }],   // max 30 sections
 // content d'une section 'quiz' : { questions: [{ question, options: string[], answer_index }] }
 program_source: 'plan' | 'custom',   // remplace program_synced_from_plan + program_overridden
 program_synced_at,                   // détecte un planning modifié depuis la synchro
-layout: { theme, accent_color },
+layout: { theme,                       // 'chic_minimal'|'romantic_rose'|'vintage_gazette'
+                                       // |'gazette_maries'|'wedding_post'
+          accent_color, font_family },
 version: number,                     // détection de conflit d'édition
 updated_at
 ```

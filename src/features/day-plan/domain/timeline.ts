@@ -258,3 +258,13 @@ export function toPlaylistMoments(plan: DayPlan): PlaylistMoment[] {
     .filter(({ item }) => CATEGORIES[item.category].musical)
     .map(({ key, item }) => ({ id: item.id, label: item.title, start_at: item.start_at, day: key, category: item.category }));
 }
+
+/**
+ * Lien d'itinéraire (Google Maps, universel : ouvre l'appli sur mobile) vers le lieu d'un moment.
+ * Préfère l'adresse complète ; à défaut, le nom du lieu. `null` si le moment n'a aucun lieu.
+ */
+export function directionsUrl(location: { name: string; address: string }): string | null {
+  const destination = [location.name, location.address].map((s) => s.trim()).filter(Boolean).join(', ');
+  if (!destination) return null;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}

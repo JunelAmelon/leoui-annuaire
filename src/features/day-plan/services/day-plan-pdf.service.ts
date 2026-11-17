@@ -3,10 +3,10 @@
  * Responsabilité unique : la mise en page. Les données arrivent déjà triées du domaine.
  */
 
-import jsPDF from 'jspdf';
-import { drawSpaced, pdfSafe, registerPdfFonts, setDraw, setFill, setText } from '@/features/guestbook/services/pdf/pdf-helpers';
+import { jsPDF } from 'jspdf';
+import { drawSpaced, loadCoverJpeg, pdfSafe, registerPdfFonts, setDraw, setFill, setText } from '@/features/guestbook/services/pdf/pdf-helpers';
 import { CATEGORIES, DAY_KEYS, DAY_LABELS, type DayBlock, type DayKey } from '../domain/types';
-import { endOf, formatDuration, formatLongDate, isAfterMidnight, sortItems, timeOf } from '../domain/timeline';
+import { directionsUrl, endOf, formatDuration, formatLongDate, isAfterMidnight, sortItems, timeOf } from '../domain/timeline';
 
 const INK = '#1C1614';
 const MUTED = '#7A706A';
@@ -21,6 +21,8 @@ const RAIL_X = MARGIN + TIME_COL + 5;
 const TEXT_X = RAIL_X + 7;
 const TEXT_W = PAGE_W - MARGIN - TEXT_X;
 const BOTTOM = PAGE_H - 20;
+const BANNER_H = 64;
+const COVER_SRC = '/jour-j-cover.jpg';
 
 export interface DayPlanPdfOptions {
   /** Noms du couple, en titre. */
@@ -48,24 +50,35 @@ export async function generateDayPlanPdf(days: Record<DayKey, DayBlock>, options
     y = MARGIN + 4;
   };
 
-  // ── En-tête ──
-  caps(options.vendor ? 'Feuille de route' : 'Planning du jour J', MARGIN, y + 2, 7.5, ROSE);
-  y += 14;
+  // ── Bandeau photo + titre ──
+  const cover = await loadCoverJpeg(COVER_SRC, PAGE_W / BANNER_H, 1800);
+  if (cover) {
+    doc.addImage(cover, 'JPEG', 0, 0, PAGE_W, BANNER_H, undefined, 'FAST');
+    const adv = doc as unknown as { saveGraphicsState(): void; restoreGraphicsState(): void; GState: new (o: { opacity: number }) => object; setGState(g: object): void };
+    adv.saveGraphicsState();
+    adv.setGState(new adv.GState({ opacity: 0.5 }));
+    setFill(doc, '#1A1013');
+    doc.rect(0, BANNER_H * 0.35, PAGE_W, BANNER_H * 0.65, 'F');
+    adv.restoreGraphicsState();
+  } else {
+    setFill(doc, '#F3ECE4');
+    doc.rect(0, 0, PAGE_W, BANNER_H, 'F');
+  }
+  const onPhoto = cover ? '#FFFFFF' : INK;
+  y = BANNER_H - 26;
+  caps(options.vendor ? 'Feuille de route' : 'Planning du jour J', MARGIN, y, 7.5, cover ? '#FDA4AF' : ROSE);
+  y += 12;
   doc.setFont('Serif', 'normal');
   doc.setFontSize(30);
-  setText(doc, INK);
+  setText(doc, onPhoto);
   doc.text(pdfSafe(options.title) || 'Notre mariage', MARGIN, y);
-  y += 8;
+  y += 7.5;
   doc.setFont('Serif', 'italic');
   doc.setFontSize(13);
-  setText(doc, MUTED);
+  setText(doc, cover ? '#F3E9E4' : MUTED);
   const dayDateLabel = days.day.date ? formatLongDate(days.day.date) : '';
   doc.text(pdfSafe(options.vendor ? `${options.vendor.label} · ${dayDateLabel}` : dayDateLabel), MARGIN, y);
-  y += 7;
-  setDraw(doc, INK);
-  doc.setLineWidth(0.4);
-  doc.line(MARGIN, y, PAGE_W - MARGIN, y);
-  y += 12;
+  y = BANNER_H + 13;
 
   let printed = 0;
   for (const key of DAY_KEYS) {
@@ -101,10 +114,12 @@ export async function generateDayPlanPdf(days: Record<DayKey, DayBlock>, options
       doc.setFont('Sans', 'normal');
       doc.setFontSize(8.5);
       const metaLines: string[] = meta ? doc.splitTextToSize(pdfSafe(meta), TEXT_W) : [];
+      const mapUrl = directionsUrl(item.location);
+      const addressLine = item.location.address ? pdfSafe(item.location.address) : '';
       doc.setFont('Serif', 'italic');
       doc.setFontSize(10.5);
       const noteLines: string[] = item.notes ? doc.splitTextToSize(pdfSafe(item.notes.replace(/\n+/g, ' ')), TEXT_W) : [];
-      const height = 4 + titleLines.length * 5.4 + metaLines.length * 4 + noteLines.length * 4.6 + 6;
+      const height = 4 + titleLines.length * 5.4 + metaLines.length * 4 + (mapUrl ? 5 : 0) + noteLines.length * 4.6 + 6;
       ensure(height);
       const top = y;
 
@@ -145,6 +160,19 @@ export async function generateDayPlanPdf(days: Record<DayKey, DayBlock>, options
         setText(doc, MUTED);
         doc.text(metaLines, TEXT_X, ty);
         ty += metaLines.length * 4;
+      }
+      if (mapUrl) {
+        // Lien cliquable : ouvre l'itinéraire dans Maps (appli sur mobile)
+        const label = addressLine ? `${addressLine}  ·  Itinéraire` : 'Itinéraire dans Maps';
+        doc.setFont('Sans', 'bold');
+        doc.setFontSize(8);
+        setText(doc, ROSE);
+        const labelW = doc.getTextWidth(label);
+        doc.textWithLink(label, TEXT_X, ty + 1, { url: mapUrl });
+        setDraw(doc, ROSE);
+        doc.setLineWidth(0.15);
+        doc.line(TEXT_X, ty + 1.8, TEXT_X + Math.min(labelW, TEXT_W), ty + 1.8);
+        ty += 5;
       }
       if (noteLines.length) {
         doc.setFont('Serif', 'italic');

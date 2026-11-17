@@ -64,6 +64,8 @@ export interface VendorLink {
   vendor_id: string;
   /** Nom affiché de l'intervenant (ex. « Traiteur Maison Dupont »). */
   label: string;
+  /** Identifiant du prestataire LeOui lié (`vendors/{id}`), absent pour un intervenant saisi à la main. */
+  ref_id?: string;
   token: string;
   token_revoked_at: string | null;
 }

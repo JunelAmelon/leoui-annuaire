@@ -186,7 +186,7 @@ export default function SharedDayPlanPage({ params }: { params: { eventId: strin
                           className="block w-full bg-transparent border-0 border-b border-stone-300 px-0 py-2 text-[15px] resize-none placeholder:text-charcoal-300 focus:outline-none focus:ring-0 focus:border-rose-500 rounded-none" />
                       </label>
                       <div className="flex items-center gap-4">
-                        <button type="submit" disabled={sending || !time} className="h-10 px-5 bg-charcoal-900 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">{sending ? 'Envoi…' : 'Envoyer aux mariés'}</button>
+                        <button type="submit" disabled={sending || !time} className="h-10 px-5 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-40 transition-colors rounded-sm">{sending ? 'Envoi…' : 'Envoyer aux mariés'}</button>
                         <button type="button" onClick={() => setProposing(null)} className="text-[13px] text-charcoal-500 hover:text-charcoal-900">Annuler</button>
                       </div>
                     </form>

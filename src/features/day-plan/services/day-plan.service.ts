@@ -181,13 +181,33 @@ export class DayPlanService {
     return this.persistShare(plan, { ...plan.share, token_revoked_at: this.now() });
   }
 
-  async addVendorLink(plan: DayPlan, rawLabel: string): Promise<DayPlan> {
+  async addVendorLink(plan: DayPlan, rawLabel: string, refId?: string): Promise<DayPlan> {
     const label = rawLabel.trim().slice(0, 80);
     if (!label) throw new ValidationError('Indiquez le nom de l’intervenant.', { label: 'Nom requis.' });
     if (plan.share.vendor_links.length >= LIMITS.VENDOR_LINKS) throw new ConflictError(`${LIMITS.VENDOR_LINKS} intervenants maximum.`);
-    if (plan.share.vendor_links.some((l) => l.label.toLowerCase() === label.toLowerCase())) throw new ConflictError('Cet intervenant existe déjà.');
-    const link: VendorLink = { vendor_id: `v_${this.newId().slice(0, 8)}`, label, token: this.newId(), token_revoked_at: null };
+    if (plan.share.vendor_links.some((l) => l.label.toLowerCase() === label.toLowerCase() || (refId && l.ref_id === refId))) throw new ConflictError('Cet intervenant existe déjà.');
+    const link: VendorLink = { vendor_id: `v_${this.newId().slice(0, 8)}`, label, token: this.newId(), token_revoked_at: null, ...(refId ? { ref_id: refId } : {}) };
     return this.persistShare(plan, { ...plan.share, vendor_links: [...plan.share.vendor_links, link] });
+  }
+
+  /**
+   * Prépare les liens d'un lot de prestataires LeOui : crée l'accès manquant, réactive un accès coupé,
+   * et renvoie le plan à jour. Les liens déjà actifs sont conservés tels quels.
+   */
+  async ensureVendorLinks(plan: DayPlan, vendors: { ref_id: string; label: string }[]): Promise<DayPlan> {
+    const links = [...plan.share.vendor_links];
+    for (const v of vendors) {
+      const i = links.findIndex((l) => l.ref_id === v.ref_id || l.label.toLowerCase() === v.label.trim().toLowerCase());
+      if (i === -1) {
+        if (links.length >= LIMITS.VENDOR_LINKS) throw new ConflictError(`${LIMITS.VENDOR_LINKS} intervenants maximum.`);
+        links.push({ vendor_id: `v_${this.newId().slice(0, 8)}`, label: v.label.trim().slice(0, 80), ref_id: v.ref_id, token: this.newId(), token_revoked_at: null });
+      } else if (links[i].token_revoked_at) {
+        links[i] = { ...links[i], ref_id: links[i].ref_id ?? v.ref_id, token: this.newId(), token_revoked_at: null };
+      } else if (!links[i].ref_id) {
+        links[i] = { ...links[i], ref_id: v.ref_id };
+      }
+    }
+    return this.persistShare(plan, { ...plan.share, vendor_links: links });
   }
 
   /** Coupe l'accès d'un intervenant ; `active = true` lui génère un nouveau lien. */

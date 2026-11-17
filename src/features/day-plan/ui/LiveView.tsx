@@ -7,9 +7,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MapPin, X } from 'lucide-react';
+import { MapPin, Navigation, X } from 'lucide-react';
 import { CATEGORIES, DAY_KEYS, DAY_LABELS, type DayBlock, type DayKey, type TimelineItem } from '../domain/types';
-import { endOf, formatDuration, formatLongDate, liveState, localNow, minutesBetween, sortItems, timeOf } from '../domain/timeline';
+import { directionsUrl, endOf, formatDuration, formatLongDate, liveState, localNow, minutesBetween, sortItems, timeOf } from '../domain/timeline';
 
 const NUMERAL = "'Bodoni Moda', 'Didot', serif";
 
@@ -90,6 +90,11 @@ export function LiveView({ days, title, onClose, onRefresh }: LiveViewProps) {
                 <span className="tabular-nums">{timeOf(main.start_at)} — {timeOf(endOf(main))}</span>
                 <span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORIES[main.category].color }} />{CATEGORIES[main.category].label}</span>
                 {main.location.name && <span className="inline-flex items-center gap-1.5"><MapPin className="w-4 h-4 text-white/40" />{main.location.name}</span>}
+                {directionsUrl(main.location) && (
+                  <a href={directionsUrl(main.location)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-rose-300 hover:text-rose-200 border-b border-rose-300/40 pb-px">
+                    <Navigation className="w-4 h-4" />Itinéraire
+                  </a>
+                )}
               </div>
               <div className="mt-8 max-w-3xl">
                 <div className="h-[3px] bg-white/12"><div className="h-full bg-rose-400 transition-[width] duration-1000" style={{ width: `${Math.round(state.progress * 100)}%` }} /></div>
@@ -117,6 +122,11 @@ export function LiveView({ days, title, onClose, onRefresh }: LiveViewProps) {
                     {state.next.location.name ? ` · ${state.next.location.name}` : ''}
                     {state.next.location.travel_min > 0 && main && main.location.name && main.location.name !== state.next.location.name ? ` · ${state.next.location.travel_min} min de trajet` : ''}
                   </p>
+                  {directionsUrl(state.next.location) && (
+                    <a href={directionsUrl(state.next.location)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-2 text-[13px] text-rose-300 hover:text-rose-200">
+                      <Navigation className="w-3.5 h-3.5" />Itinéraire
+                    </a>
+                  )}
                 </div>
               </div>
             ) : (

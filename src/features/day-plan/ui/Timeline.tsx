@@ -6,10 +6,10 @@
  */
 
 import type { ReactNode } from 'react';
-import { AlertTriangle, Clock, MapPin, Pencil, Users } from 'lucide-react';
+import { AlertTriangle, Clock, MapPin, Navigation, Pencil, Users } from 'lucide-react';
 import { CATEGORIES, type DayBlock, type TimelineItem } from '../domain/types';
 import {
-  endOf, formatDuration, isAfterMidnight, minutesBetween, sortItems, timeOf, type TimelineAlert,
+  directionsUrl, endOf, formatDuration, isAfterMidnight, minutesBetween, sortItems, timeOf, type TimelineAlert,
 } from '../domain/timeline';
 
 const NUMERAL = "'Bodoni Moda', 'Didot', serif";
@@ -127,6 +127,12 @@ export function Timeline({ block, alerts = [], vendorLabels = {}, highlightVendo
                 </div>
 
                 {item.location.address && <p className="text-[12.5px] text-charcoal-400 mt-1">{item.location.address}</p>}
+                {directionsUrl(item.location) && (
+                  <a href={directionsUrl(item.location)!} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-1.5 text-[12.5px] font-medium text-rose-600 hover:text-rose-700 border-b border-rose-200 hover:border-rose-600 pb-px transition-colors">
+                    <Navigation className="w-3.5 h-3.5" />Itinéraire
+                  </a>
+                )}
                 {item.notes && <p className="font-serif italic text-charcoal-600 text-[15px] leading-relaxed mt-2 whitespace-pre-line">{item.notes}</p>}
                 {vendors.length > 0 && (
                   <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-charcoal-400 mt-2.5">
