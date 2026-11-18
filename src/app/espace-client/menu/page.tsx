@@ -235,10 +235,10 @@ export default function CoupleMenuPage() {
     }
   };
 
-  const handleExportMenuPdf = () => {
+  const handleExportMenuPdf = async () => {
     if (!menu) return;
     try {
-      MenuPdfService.generateMenuCard({
+      await MenuPdfService.generateMenuCard({
         menu,
         coupleNames,
         eventDate,
@@ -252,10 +252,10 @@ export default function CoupleMenuPage() {
     }
   };
 
-  const handleExportCatererPdf = () => {
+  const handleExportCatererPdf = async () => {
     if (!menu) return;
     try {
-      MenuPdfService.generateCatererBrief({
+      await MenuPdfService.generateCatererBrief({
         menu,
         dietary,
         coupleNames,
@@ -270,21 +270,24 @@ export default function CoupleMenuPage() {
     }
   };
 
+  const outline = 'inline-flex items-center justify-center gap-2 h-11 px-5 border border-stone-300 text-charcoal-800 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm';
+  const kicker = 'text-[10px] font-semibold tracking-[0.2em] uppercase';
+
   if (loading || clientLoading) {
     return (
-      <div className="space-y-6 animate-pulse max-w-4xl mx-auto">
-        <div className="h-8 w-64 bg-stone-200 rounded-xl" />
-        <div className="h-14 bg-charcoal-900/10 rounded-xl" />
-        <div className="h-96 bg-white rounded-2xl border border-stone-200" />
+      <div className="space-y-6 animate-pulse">
+        <div className="h-72 bg-stone-200" />
+        <div className="h-96 bg-white border border-stone-200" />
       </div>
     );
   }
 
   if (!menu) {
     return (
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-stone-200 p-8 text-center">
-        <p className="font-serif text-lg text-charcoal-900">Aucun événement associé</p>
-        <p className="text-xs text-charcoal-500 mt-1">
+      <div className="bg-white border border-stone-200 px-8 py-16 text-center">
+        <p className={`${kicker} text-rose-600`}>Réception</p>
+        <p className="font-serif text-2xl text-charcoal-900 mt-3">Aucun événement associé</p>
+        <p className="text-[13px] text-charcoal-500 mt-2 max-w-md mx-auto">
           Créez ou sélectionnez votre mariage pour composer votre carte de réception.
         </p>
       </div>
@@ -297,68 +300,61 @@ export default function CoupleMenuPage() {
     .reduce((acc, c) => acc + c.confirmed, 0);
 
   return (
-    <div className="space-y-10 max-w-4xl mx-auto pb-16">
-      {/* En-tête éditorial aligné sur l'espace client */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <p className="label-xs text-rose-600 mb-2 tracking-[0.1em]">Réception</p>
-          <h1
-            className="font-serif text-charcoal-900"
-            style={{
-              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
-              fontWeight: 400,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Menu &amp; Dégustation Traiteur
-          </h1>
-          <p className="text-sm text-charcoal-500 mt-2 max-w-xl leading-relaxed">
-            Composez votre carte service par service, suivez vos validations de dégustation et
-            préparez la fiche complète pour votre traiteur.
-          </p>
+    <div className="w-full pb-10 space-y-5">
+      {/* ── En-tête ── */}
+      <header className="relative bg-white border border-stone-200 overflow-hidden">
+        <div className="grid lg:grid-cols-[1fr_24rem]">
+          <div className="px-5 sm:px-9 lg:px-12 pt-8 sm:pt-11 pb-7">
+            <p className={`${kicker} text-rose-600`}>Réception</p>
+            <h1 className="font-serif text-charcoal-900 mt-3 leading-none" style={{ fontSize: 'clamp(2.1rem, 4.4vw, 3.2rem)', fontWeight: 400, letterSpacing: '-0.02em' }}>La Carte</h1>
+            <p className="text-[15px] text-charcoal-500 mt-3">
+              Dégustation &amp; réception{eventDate ? ` — ${new Date(eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}
+            </p>
+
+            <div className="flex flex-wrap gap-3 mt-8">
+              <button type="button" onClick={handleExportMenuPdf} disabled={counts.total === 0}
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-700 transition-colors rounded-sm disabled:opacity-40">
+                <FileDown className="w-4 h-4" /> Exporter la carte
+              </button>
+              <button type="button" onClick={handleExportCatererPdf} className={outline}>
+                <FileDown className="w-4 h-4" /> Fiche traiteur
+              </button>
+              <button type="button" disabled={refreshingDietary} onClick={handleRefreshDietary} className={`${outline} disabled:opacity-40`}>
+                <RefreshCw className={`w-4 h-4 ${refreshingDietary ? 'animate-spin' : ''}`} /> Régimes
+              </button>
+            </div>
+          </div>
+
+          <div className="relative order-first lg:order-none h-48 sm:h-60 lg:h-auto lg:min-h-[17rem]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/menu-cover.jpg" alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent hidden lg:block" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#1A1013]/85 to-transparent" />
+            <p className="absolute bottom-4 sm:bottom-5 right-5 sm:right-6 left-5 lg:left-10 text-right font-serif italic text-white text-base sm:text-lg leading-snug" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
+              « Une grande table, c’est le cœur d’une belle soirée. »
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={handleExportMenuPdf}
-            disabled={counts.total === 0}
-            className="inline-flex items-center gap-2 px-4 h-9 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors disabled:opacity-50"
-          >
-            <FileDown className="w-3.5 h-3.5" />
-            Exporter le Menu PDF
-          </button>
-          <button
-            type="button"
-            disabled={refreshingDietary}
-            onClick={handleRefreshDietary}
-            className="inline-flex items-center gap-1.5 px-4 h-9 rounded-lg border border-charcoal-200 text-xs font-semibold text-charcoal-700 hover:border-charcoal-400 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshingDietary ? 'animate-spin' : ''}`} />
-            Actualiser régimes
-          </button>
-        </div>
-      </div>
+        {/* Compteurs */}
+        <nav className="flex gap-x-8 px-5 sm:px-9 lg:px-12 border-t border-stone-200 overflow-x-auto scrollbar-none" aria-label="Compteurs">
+          {[
+            { n: counts.retenu, l: 'Plats retenus' },
+            { n: counts.a_valider, l: 'À valider' },
+            { n: counts.envisage, l: 'Envisagés' },
+            { n: specialCount, l: 'Régimes spéciaux' },
+          ].map((s, i) => (
+            <div key={i} className="py-4 whitespace-nowrap">
+              <span className="flex items-center gap-2 text-[14px] text-charcoal-900 font-medium">
+                {s.l}
+                <span className="text-charcoal-300 tabular-nums font-normal">{s.n}</span>
+              </span>
+            </div>
+          ))}
+        </nav>
+      </header>
 
-      {/* Bandeau stats sombre */}
-      <div className="flex items-center gap-x-5 gap-y-2 flex-wrap bg-charcoal-900 rounded-xl px-5 py-3.5 overflow-x-auto scrollbar-none">
-        {[
-          { n: counts.retenu, l: 'retenus', accent: true },
-          { n: counts.a_valider, l: 'à valider' },
-          { n: counts.envisage, l: 'envisagés' },
-          { n: specialCount, l: 'régimes spéciaux confirmés', accent: true },
-        ].map((s, i) => (
-          <span key={i} className="flex items-baseline gap-1.5 whitespace-nowrap">
-            <span className={`font-serif text-lg ${s.accent ? 'text-rose-300' : 'text-white'}`}>
-              {s.n}
-            </span>
-            <span className="text-[11px] text-white/50">{s.l}</span>
-            {i < 3 && <span className="text-white/15 ml-3">·</span>}
-          </span>
-        ))}
-      </div>
-
-      {/* Carte du menu façon restaurant gastronomique */}
+      {/* ── Carte façon menu de restaurant ── */}
       <RestaurantMenuCard
         courses={menu.courses}
         coupleNames={coupleNames}
@@ -369,7 +365,7 @@ export default function CoupleMenuPage() {
         onRemoveDish={handleRemoveDish}
       />
 
-      {/* Régimes alimentaires & consignes traiteur */}
+      {/* ── Régimes & journal ── */}
       <DietarySummaryPanel
         summary={dietary}
         dietaryNotes={menu.dietary_notes}
@@ -380,7 +376,6 @@ export default function CoupleMenuPage() {
         onExportCatererPdf={handleExportCatererPdf}
       />
 
-      {/* Journal des décisions */}
       <DecisionHistoryPanel
         decisions={decisions}
         hasMore={hasMoreDecisions}
