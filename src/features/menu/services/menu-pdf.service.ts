@@ -16,16 +16,14 @@ export interface CatererPdfOptions extends MenuCardPdfOptions {
 
 function formatFrenchDate(eventDate?: string): string | null {
   if (!eventDate) return null;
-  try {
-    return new Date(eventDate).toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  } catch {
-    return eventDate;
-  }
+  const parsed = new Date(eventDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function drawEditorialFrame(doc: jsPDF): void {
@@ -331,7 +329,11 @@ export class MenuPdfService {
       doc.setFontSize(10.5);
       doc.setTextColor(68, 64, 60);
       const wrappedNotes = doc.splitTextToSize(menu.dietary_notes.trim(), contentWidth - 4);
-      doc.text(wrappedNotes, margin + 2, y);
+      for (const line of wrappedNotes) {
+        ensureSpace(6);
+        doc.text(line, margin + 2, y);
+        y += 4.8;
+      }
     }
 
     const safeSlug = coupleNames

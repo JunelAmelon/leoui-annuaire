@@ -13,12 +13,12 @@ interface RestaurantMenuCardProps {
   onAddDish: (
     courseKey: CourseKey,
     input: { name: string; note: string; status: DishStatus }
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   onUpdateDish: (
     courseKey: CourseKey,
     dishId: string,
     patch: { name?: string; note?: string; status?: DishStatus }
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   onRemoveDish: (courseKey: CourseKey, dishId: string) => Promise<void>;
 }
 
@@ -48,14 +48,16 @@ export function RestaurantMenuCard({
   const [editNote, setEditNote] = useState('');
   const [editStatus, setEditStatus] = useState<DishStatus>('envisage');
 
-  const formattedDate = eventDate
-    ? new Date(eventDate).toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null;
+  const parsedDate = eventDate ? new Date(eventDate) : null;
+  const formattedDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : null;
 
   const openAddForm = (key: CourseKey) => {
     setAddingCourse(key);
@@ -67,10 +69,12 @@ export function RestaurantMenuCard({
 
   const submitAdd = async (key: CourseKey) => {
     if (!newName.trim()) return;
-    await onAddDish(key, { name: newName, note: newNote, status: newStatus });
-    setAddingCourse(null);
-    setNewName('');
-    setNewNote('');
+    const ok = await onAddDish(key, { name: newName, note: newNote, status: newStatus });
+    if (ok) {
+      setAddingCourse(null);
+      setNewName('');
+      setNewNote('');
+    }
   };
 
   const openEditForm = (dish: Dish) => {
@@ -83,12 +87,14 @@ export function RestaurantMenuCard({
 
   const submitEdit = async (key: CourseKey, dishId: string) => {
     if (!editName.trim()) return;
-    await onUpdateDish(key, dishId, {
+    const ok = await onUpdateDish(key, dishId, {
       name: editName,
       note: editNote,
       status: editStatus,
     });
-    setEditingDishId(null);
+    if (ok) {
+      setEditingDishId(null);
+    }
   };
 
   return (

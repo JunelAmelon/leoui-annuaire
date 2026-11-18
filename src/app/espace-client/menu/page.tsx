@@ -101,8 +101,8 @@ export default function CoupleMenuPage() {
   const handleAddDish = async (
     courseKey: CourseKey,
     input: { name: string; note: string; status: DishStatus }
-  ) => {
-    if (!eventId || !menu) return;
+  ): Promise<boolean> => {
+    if (!eventId || !menu) return false;
     try {
       setBusy(true);
       const { courses, decision } = await menuService.addDish(
@@ -114,8 +114,10 @@ export default function CoupleMenuPage() {
       setMenu((prev) => (prev ? { ...prev, courses } : prev));
       if (decision) setDecisions((prev) => [decision, ...prev]);
       toast.success('Plat ajouté à la carte.');
+      return true;
     } catch (err: any) {
       toast.error(err?.message || 'Erreur lors de l’ajout du plat.');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -125,8 +127,8 @@ export default function CoupleMenuPage() {
     courseKey: CourseKey,
     dishId: string,
     patch: { name?: string; note?: string; status?: DishStatus }
-  ) => {
-    if (!eventId || !menu) return;
+  ): Promise<boolean> => {
+    if (!eventId || !menu) return false;
     try {
       setBusy(true);
       const { courses, decision } = await menuService.updateDish(
@@ -139,8 +141,10 @@ export default function CoupleMenuPage() {
       setMenu((prev) => (prev ? { ...prev, courses } : prev));
       if (decision) setDecisions((prev) => [decision, ...prev]);
       toast.success('Plat mis à jour.');
+      return true;
     } catch (err: any) {
       toast.error(err?.message || 'Erreur lors de la mise à jour.');
+      return false;
     } finally {
       setBusy(false);
     }
