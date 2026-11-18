@@ -9,7 +9,8 @@ import { uploadFile } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Calendar, MapPin, Pencil, Users, Euro, ChevronRight, X, Camera } from 'lucide-react';
 
-const DEFAULT_PHOTO = 'https://images.pexels.com/photos/2959192/pexels-photo-2959192.jpeg?auto=compress&cs=tinysrgb&w=400';
+import { DEFAULT_COUPLE_PHOTO } from '@/lib/couple-photo';
+const DEFAULT_PHOTO = DEFAULT_COUPLE_PHOTO;
 
 /* Circular SVG progress ring */
 function RingProgress({ value, max, label, sub, color = '#E11D48' }: { value: number; max: number; label: string; sub: string; color?: string }) {

@@ -11,6 +11,7 @@ import {
   ArrowRight, ArrowUpRight, CheckSquare, Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { DEFAULT_COUPLE_PHOTO } from '@/lib/couple-photo';
 
 /* ── Semi-circle gauge (like "Steps for Today" in reference) ── */
 function GaugeChart({ value, max, color = '#E11D48' }: { value: number; max: number; color?: string }) {
@@ -133,13 +134,20 @@ export default function EspaceClientPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* FEATURED — dark action card */}
-        <div className="lg:col-span-3 rounded-2xl bg-charcoal-900 text-white shadow-sm overflow-hidden p-6 relative" style={{ minHeight: 240 }}>
+        <div className="lg:col-span-3 rounded-2xl bg-rose-600 text-white shadow-sm overflow-hidden p-6 relative" style={{ minHeight: 240 }}>
+          {/* Photo du couple (ou visuel par défaut) : fondue à droite dès sm, en fond assombri sur mobile */}
+          <div className="absolute inset-0 sm:left-auto sm:w-[46%] pointer-events-none">
+            <img src={client?.photo || DEFAULT_COUPLE_PHOTO} alt="" className="w-full h-full object-cover object-center" />
+            <div className="absolute inset-0 bg-charcoal-900/60 sm:hidden" />
+            <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-charcoal-900 via-charcoal-900/55 to-charcoal-900/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-charcoal-900/60 via-transparent to-transparent" />
+          </div>
           <div className="absolute -top-10 -right-10 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative h-full flex flex-col">
             <div className="flex items-start justify-between mb-2">
               <h2 className="text-white/70 text-sm font-medium">Votre mariage</h2>
-              <Link href="/espace-client/mariage" className="text-xs text-rose-400 hover:text-rose-300">
+              <Link href="/espace-client/mariage" className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white text-charcoal-900 text-xs font-medium shadow-sm hover:bg-rose-50 transition-colors">
                 Modifier
               </Link>
             </div>

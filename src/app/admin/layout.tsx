@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }`} />
           </Link>
           {/* Tooltip */}
-          <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg ${item.danger ? 'bg-amber-600' : 'bg-charcoal-900'}`}>
+          <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg ${item.danger ? 'bg-amber-600' : 'bg-rose-600'}`}>
             {item.label}
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${pathname === '/admin/parametres' ? 'bg-rose-600' : 'hover:bg-stone-100'}`}>
                   <Settings className={`w-4 h-4 ${pathname === '/admin/parametres' ? 'text-white' : 'text-charcoal-400 group-hover:text-charcoal-700'}`} />
                 </Link>
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 bg-charcoal-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   Paramètres
                 </div>
               </div>
@@ -181,7 +181,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-stone-100 transition-colors">
                   <LogOut className="w-4 h-4 text-charcoal-400 group-hover:text-charcoal-700" />
                 </button>
-                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 bg-charcoal-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   Déconnexion
                 </div>
               </div>

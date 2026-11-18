@@ -19,6 +19,9 @@ export interface UpcomingFeature {
   keyBenefit: string;
   formatOrDeliverable: string;
   iconName: string;
+  /** Visuel éditorial (public/) et point focal CSS pour le recadrage. */
+  image: string;
+  focus: string;
 }
 
 export const FEATURE_CATEGORIES: { key: FeatureCategory; label: string }[] = [
@@ -45,6 +48,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Calcul automatique du nombre d’exemplaires et personnalisation au prénom de chaque enfant (tranche 3-10 ans).',
     formatOrDeliverable: 'PDF haute définition prêt à imprimer',
     iconName: 'Gamepad2',
+    image: '/mariage%20(1).jpg',
+    focus: '45% 30%',
   },
   {
     id: 'ceremonie-laique',
@@ -58,6 +63,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Vos vœux restent masqués à votre partenaire tout en permettant à l’officiant ou au wedding planner d’en valider la durée et l’harmonie.',
     formatOrDeliverable: 'Livret des vœux + fiche régie son & officiant',
     iconName: 'HeartHandshake',
+    image: '/mariage%20(2).jpg',
+    focus: '50% 40%',
   },
   {
     id: 'livret-de-messe',
@@ -71,6 +78,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Mise en page A5 ordonnée prête pour votre imprimeur et fiches de lecture séparées en gros caractères pour vos proches.',
     formatOrDeliverable: 'Livret A5 ordonné + fiches pupitre',
     iconName: 'Church',
+    image: '/mariage%20(4).jpg',
+    focus: '50% 25%',
   },
   {
     id: 'lune-de-miel',
@@ -84,6 +93,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Tous vos billets, vouchers, adresses et numéros d’urgence accessibles au même endroit sur votre smartphone.',
     formatOrDeliverable: 'Carnet de route PDF & accès mobile hors-ligne',
     iconName: 'Compass',
+    image: '/mariage%20(5).jpg',
+    focus: '60% 50%',
   },
   {
     id: 'dossier-civil-mairie',
@@ -97,6 +108,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Déverrouillage des démarches au bon moment (J-85) pour éviter la péremption légale de vos actes d’état civil.',
     formatOrDeliverable: 'Dossier administratif pré-rempli & suivi des témoins',
     iconName: 'Landmark',
+    image: '/mariage%20(3).jpg',
+    focus: '65% 50%',
   },
   {
     id: 'faire-part-save-the-date',
@@ -110,6 +123,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'QR Code pré-identifié pour chaque foyer afin de pré-remplir automatiquement le formulaire des invités au scan.',
     formatOrDeliverable: 'Fichiers vectoriels SVG / PNG HD pour votre imprimeur',
     iconName: 'MailCheck',
+    image: '/seating-inspiration.jpg',
+    focus: '50% 55%',
   },
   {
     id: 'hebergement-transport',
@@ -123,6 +138,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Envoi d’une fiche logistique personnalisée par invité (chambre, digicode, horaires de navette) sans exposer les données des autres.',
     formatOrDeliverable: 'Fiche d’accueil par foyer & planning des chauffeurs',
     iconName: 'Bed',
+    image: '/couple-default.jpg',
+    focus: '35% 50%',
   },
   {
     id: 'calculateur-boissons',
@@ -136,6 +153,8 @@ export const UPCOMING_FEATURES: UpcomingFeature[] = [
     keyBenefit: 'Comparateur de rentabilité entre forfait traiteur et achat direct chez le vigneron avec calcul du droit de bouchon.',
     formatOrDeliverable: 'Bon d’approvisionnement caviste / domaine',
     iconName: 'Wine',
+    image: '/seating-inspiration.jpg',
+    focus: '80% 40%',
   },
 ];
 

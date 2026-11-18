@@ -3,6 +3,7 @@ import type {
   GuestbookEntry,
   GuestbookSettings,
 } from '../domain/types';
+import type { GuestbookPageContent, GuestbookCardDesign } from '../domain/customization';
 
 export interface ListEntriesOptions {
   limitCount?: number;
@@ -20,6 +21,10 @@ export interface IGuestbookReader {
 export interface IGuestbookWriter {
   save(guestbook: Guestbook): Promise<void>;
   updateSettings(eventId: string, settings: Partial<GuestbookSettings>): Promise<void>;
+  /** Écriture partielle (chemins `page.<champ>`) — n'écrase jamais les autres réglages. */
+  updatePage(eventId: string, patch: Partial<GuestbookPageContent>): Promise<void>;
+  /** Écriture partielle (chemins `card.<champ>`). */
+  updateCard(eventId: string, patch: Partial<GuestbookCardDesign>): Promise<void>;
   rotateToken(eventId: string): Promise<string>;
 }
 

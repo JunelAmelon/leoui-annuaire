@@ -124,7 +124,7 @@ export default function MesAnnoncesPage() {
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-full text-xs font-semibold border transition-colors ${
               tab === t.id
-                ? 'bg-charcoal-900 text-white border-charcoal-900'
+                ? 'bg-rose-600 text-white border-charcoal-900'
                 : 'bg-white text-charcoal-600 border-charcoal-200 hover:border-charcoal-400'
             }`}
           >

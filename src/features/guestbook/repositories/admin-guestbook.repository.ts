@@ -9,6 +9,9 @@ import type {
   ListEntriesOptions,
 } from './guestbook.repository.interface';
 
+import type { GuestbookPageContent, GuestbookCardDesign } from '../domain/customization';
+import { dottedPaths } from './dotted-paths';
+
 const GUESTBOOKS_COLLECTION = 'guestbooks';
 const ENTRIES_COLLECTION = 'guestbook_entries';
 
@@ -59,6 +62,20 @@ export class AdminGuestbookRepository implements IGuestbookRepository {
       updateData[`settings.${key}`] = val;
     }
     await adminDb.collection(GUESTBOOKS_COLLECTION).doc(eventId).update(updateData);
+  }
+
+  async updatePage(eventId: string, patch: Partial<GuestbookPageContent>): Promise<void> {
+    await adminDb.collection(GUESTBOOKS_COLLECTION).doc(eventId).update({
+      ...dottedPaths('page', patch),
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async updateCard(eventId: string, patch: Partial<GuestbookCardDesign>): Promise<void> {
+    await adminDb.collection(GUESTBOOKS_COLLECTION).doc(eventId).update({
+      ...dottedPaths('card', patch),
+      updated_at: new Date().toISOString(),
+    });
   }
 
   async rotateToken(eventId: string): Promise<string> {

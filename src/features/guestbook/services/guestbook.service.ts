@@ -6,6 +6,8 @@ import type {
   SubmitAudioEntryInput,
 } from '../domain/types';
 import { GUESTBOOK_DEFAULTS } from '../domain/types';
+import type { GuestbookPageContent, GuestbookCardDesign } from '../domain/customization';
+import { effectiveCover, resolvePageContent, sanitizeCardPatch, sanitizePagePatch } from '../domain/customization';
 import type { IGuestbookRepository } from '../repositories/guestbook.repository.interface';
 
 export class GuestbookService {
@@ -91,18 +93,51 @@ export class GuestbookService {
     isOpen: boolean;
     reasonClosed?: string;
     settings: GuestbookSettings;
+    page: GuestbookPageContent;
+    cover_url: string;
   } | null> {
     const guestbook = await this.repository.getByPublicToken(token);
     if (!guestbook) return null;
 
     const { isOpen, reasonClosed } = this.checkWindowStatus(guestbook);
+    const page = resolvePageContent(guestbook.page);
 
     return {
       title: guestbook.title,
       isOpen,
       reasonClosed,
       settings: guestbook.settings,
+      page,
+      cover_url: effectiveCover(page),
     };
+  }
+
+  /** Personnalise la page invité (image + textes). Chaque champ est validé/nettoyé avant écriture. */
+  async updatePageContent(eventId: string, patch: Partial<GuestbookPageContent>): Promise<Partial<GuestbookPageContent>> {
+    if (!eventId) throw new Error('eventId requis.');
+    const clean = sanitizePagePatch(patch);
+    if (Object.keys(clean).length === 0) return clean;
+    await this.repository.updatePage(eventId, clean);
+    return clean;
+  }
+
+  /** Personnalise la carte de table imprimable (textes, couleurs, nombre de cartes). */
+  async updateCardDesign(eventId: string, patch: Partial<GuestbookCardDesign>): Promise<Partial<GuestbookCardDesign>> {
+    if (!eventId) throw new Error('eventId requis.');
+    const clean = sanitizeCardPatch(patch);
+    if (Object.keys(clean).length === 0) return clean;
+    await this.repository.updateCard(eventId, clean);
+    return clean;
+  }
+
+  /** Renomme le livre d'or (titre affiché sur la page invité et dans les PDF). */
+  async updateTitle(eventId: string, title: string): Promise<void> {
+    const next = title?.replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!next) throw new Error('Le titre ne peut pas être vide.');
+    const gb = await this.repository.getByEventId(eventId);
+    if (!gb) throw new Error('Livre d’or introuvable.');
+    if (gb.title === next) return;
+    await this.repository.save({ ...gb, title: next, updated_at: new Date().toISOString() });
   }
 
   /**
@@ -215,15 +250,16 @@ export class GuestbookService {
       .slice(0, 100)
       .map((v) => Math.max(0, Math.min(1, Number(v) || 0)));
 
-    // Résolution de la source audio : data URI directement lisible si compacte (< 750 Ko), sinon chemin Storage
+    // Source audio : data URI compacte (< 750 Ko) ou URL sécurisée de NOTRE compte Cloudinary.
+    // Jamais de chemin fictif : un audio non lisible est refusé plutôt qu'enregistré.
     const isDataAudio = /^data:audio\/[a-zA-Z0-9.+-]+;?(?:codecs=[^;]+)?;base64,/.test(
       input.audio_base64
     );
-    const isHttpsUrl = /^https:\/\//.test(input.audio_base64);
-    const audioPath =
-      (isDataAudio && input.audio_base64.length <= 750_000) || isHttpsUrl
-        ? input.audio_base64
-        : `guestbooks/${guestbook.event_id}/audios/${crypto.randomUUID()}.${input.mime_type?.includes('mp4') ? 'm4a' : 'webm'}`;
+    const isCloudinaryUrl = /^https:\/\/res\.cloudinary\.com\//.test(input.audio_base64);
+    if (!(isDataAudio && input.audio_base64.length <= 750_000) && !isCloudinaryUrl) {
+      throw new Error('Le fichier audio n’a pas pu être traité. Veuillez réessayer.');
+    }
+    const audioPath = input.audio_base64;
 
     const entryId = await this.repository.addEntry({
       guestbook_id: guestbook.event_id,
