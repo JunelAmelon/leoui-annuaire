@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useClientData } from '@/contexts/ClientDataContext';
 import { getDocuments, addDocument, deleteDocument } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
@@ -126,183 +127,174 @@ export default function DocumentsPage() {
   };
 
   if (dataLoading || loading) return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-8 w-48 bg-charcoal-100 rounded-xl" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1,2,3,4].map(i=><div key={i} className="h-20 bg-charcoal-100 rounded-2xl" />)}</div>
-      <div className="h-64 bg-charcoal-100 rounded-2xl" />
+    <div className="w-full bg-white border border-stone-200 p-6 sm:p-10 space-y-5 animate-pulse">
+      <div className="h-12 w-56 bg-stone-200/70" />
+      {[1, 2, 3, 4].map((i) => <div key={i} className="h-14 bg-stone-200/50" />)}
     </div>
   );
 
+  const extOf = (d: DocumentItem) => {
+    const m = (d.file_url || d.name || '').split('?')[0].match(/\.([a-zA-Z0-9]{2,4})$/);
+    return (m ? m[1] : 'doc').toUpperCase();
+  };
+  const typeLabel = (t?: string) => typeLabels[(t || '').toLowerCase()] || (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Autre');
+
+  const fieldCls = 'w-full bg-transparent border-0 border-b border-stone-300 px-0 py-2.5 text-[15px] text-charcoal-900 placeholder:text-charcoal-300 focus:outline-none focus:ring-0 focus:border-rose-500 transition-colors rounded-none';
+  const labelCls = 'text-[10px] font-semibold tracking-[0.18em] uppercase text-charcoal-400';
+
   return (
-    <div className="space-y-5">
-      {/* Page header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="w-full pb-10">
+      <div className="bg-white border border-stone-200 shadow-[0_1px_3px_rgba(60,40,30,0.05)] px-5 sm:px-9 lg:px-12 pt-8 sm:pt-11 pb-8 min-h-[calc(100dvh-9rem)]">
+      {/* ── En-tête ── */}
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 pb-7 border-b border-charcoal-200/70">
         <div>
-          <p className="text-xs text-charcoal-400 uppercase tracking-wider mb-1">Espace client</p>
-          <h1 className="font-serif text-charcoal-900" style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '-0.01em' }}>Documents</h1>
+          <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-rose-600">Espace client</p>
+          <h1 className="font-serif text-charcoal-900 mt-3 leading-none" style={{ fontSize: 'clamp(2.1rem, 4.4vw, 3.2rem)', fontWeight: 400, letterSpacing: '-0.02em' }}>Documents</h1>
+          <p className="text-sm text-charcoal-500 mt-3">
+            {docs.length === 0 ? 'Contrats, devis et plannings — tout au même endroit.' : `${docs.length} document${docs.length > 1 ? 's' : ''} classé${docs.length > 1 ? 's' : ''}`}
+          </p>
         </div>
         <button onClick={() => setIsUploadOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white text-sm font-medium rounded-xl hover:bg-rose-700 transition-colors">
-          <Upload className="w-4 h-4" />Ajouter
+          className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 transition-colors rounded-sm self-start sm:self-auto">
+          <Upload className="w-4 h-4" /> Ajouter un document
         </button>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {categories.map((cat) => (
-          <button key={cat.id} onClick={() => setCategoryFilter(cat.id)}
-            className={`group text-left p-4 rounded-2xl border transition-all shadow-soft ${
-              categoryFilter === cat.id
-                ? 'bg-rose-600 border-rose-600 text-white'
-                : 'bg-white border-charcoal-100 hover:border-rose-200'
-            }`}>
-            <div className="flex items-start justify-between">
-              <span className={`text-2xl font-bold leading-none ${categoryFilter === cat.id ? 'text-white' : 'text-charcoal-900'}`}>{cat.count}</span>
-              {categoryFilter === cat.id && <span className="w-2 h-2 rounded-full bg-white" />}
-            </div>
-            <p className={`text-sm mt-2 ${categoryFilter === cat.id ? 'text-rose-100' : 'text-charcoal-500'}`}>{cat.label}</p>
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white border border-charcoal-100 rounded-2xl shadow-soft overflow-hidden">
-        <div className="px-5 py-4 border-b border-charcoal-100 flex items-center gap-3">
-          <Search className="w-4 h-4 text-charcoal-400 flex-shrink-0" />
-          <input
-            type="text" placeholder="Rechercher un document…"
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-0 text-sm bg-transparent focus:outline-none text-charcoal-700 placeholder:text-charcoal-400"
-          />
+      {/* ── Rubriques + recherche ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 border-b border-charcoal-100">
+        <nav className="flex gap-x-7 gap-y-1 flex-wrap" aria-label="Rubriques">
+          {categories.map((cat) => (
+            <button key={cat.id} onClick={() => setCategoryFilter(cat.id)}
+              className={`pb-1.5 text-[13px] border-b-2 transition-colors ${
+                categoryFilter === cat.id ? 'border-rose-600 text-charcoal-900 font-medium' : 'border-transparent text-charcoal-400 hover:text-charcoal-800'
+              }`}>
+              {cat.label} <span className="text-charcoal-300 tabular-nums ml-0.5">{cat.count}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="relative md:w-72">
+          <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-charcoal-400" />
+          <input type="text" placeholder="Rechercher" value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-6 py-2 bg-transparent border-b border-stone-300 text-sm placeholder:text-charcoal-300 focus:outline-none focus:border-rose-500 transition-colors" />
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="bg-ivory-50 text-charcoal-500 text-xs uppercase tracking-wider">
-                <th className="px-5 py-3 font-medium w-1/2">Nom</th>
-                <th className="px-5 py-3 font-medium w-24">Type</th>
-                <th className="px-5 py-3 font-medium w-40">Date</th>
-                <th className="px-5 py-3 font-medium w-32 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-charcoal-100">
-              {paginated.map((doc) => (
-                <tr key={doc.id} className="hover:bg-ivory-50/60 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-charcoal-100 flex items-center justify-center flex-shrink-0">
-                        {getTypeIcon(doc.type)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-charcoal-900 truncate">{doc.name}</p>
-                        <p className="text-xs text-charcoal-400">{doc.uploaded_by === 'client' ? 'Vous' : 'Prestataire'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${typeColors[(doc.type||'').toLowerCase()] || typeColors.autre}`}>
-                      {typeLabels[(doc.type||'').toLowerCase()] || (doc.type ? doc.type.charAt(0).toUpperCase() + doc.type.slice(1) : 'Autre')}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-charcoal-600">{doc.uploaded_at || '—'}</td>
-                  <td className="px-5 py-3.5 text-right">
-                  <TableActionsMenu
-                    items={[
-                      { label: 'Ouvrir', icon: Eye, hidden: !doc.file_url, onClick: () => setPreviewDoc({ url: doc.file_url || '', name: doc.name }) },
-                      { label: 'Télécharger', icon: DownloadIcon, hidden: !doc.file_url, onClick: () => {
-                        if (!doc.file_url) return;
-                        const a = document.createElement('a');
-                        a.href = doc.file_url;
-                        a.download = doc.name;
-                        a.click();
-                      } },
-                      { label: 'Supprimer', icon: Trash2, danger: true, hidden: doc.source !== 'documents', onClick: () => handleDeleteDoc(doc) },
-                    ]}
-                  />
-                </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="w-10 h-10 mx-auto mb-3 text-charcoal-200" />
-            <p className="text-charcoal-500 font-medium">Aucun document trouvé</p>
-          </div>
-        )}
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 px-5 py-4 border-t border-charcoal-100">
-            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page===1} className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-            <span className="text-sm text-charcoal-500">Page {page} / {totalPages}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page===totalPages} className="p-2 rounded-xl border border-charcoal-200 disabled:opacity-40 hover:bg-charcoal-50 transition-colors"><ChevronRight className="w-4 h-4" /></button>
-          </div>
-        )}
       </div>
 
-      {isUploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-soft-xl w-full max-w-md overflow-hidden max-h-[92dvh] flex flex-col">
-            <div className="relative h-32 flex-shrink-0">
-              <img src="/mariage (3).jpg" alt="Document" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              <button onClick={() => setIsUploadOpen(false)} className="absolute top-3 right-3 p-1.5 bg-white/90 hover:bg-white rounded-lg transition-colors"><X className="w-4 h-4 text-charcoal-500" /></button>
-              <div className="absolute bottom-3 left-6 right-6">
-                <h3 className="font-display text-heading-sm text-white">Ajouter un document</h3>
+      {/* ── Liste ── */}
+      {filtered.length === 0 ? (
+        <div className="py-20 text-center">
+          <p className="font-serif italic text-charcoal-500 text-2xl" style={{ fontWeight: 400 }}>
+            {docs.length === 0 ? 'Aucun document pour l’instant' : 'Aucun résultat'}
+          </p>
+          <p className="text-sm text-charcoal-400 mt-2">{docs.length === 0 ? 'Ajoutez votre premier contrat ou devis.' : 'Essayez une autre rubrique ou un autre mot.'}</p>
+        </div>
+      ) : (
+        <ul>
+          {paginated.map((doc) => (
+            <li key={doc.id} className="group grid grid-cols-[3rem_1fr_auto] sm:grid-cols-[4rem_1fr_9rem_auto] items-center gap-x-4 sm:gap-x-6 py-5 border-b border-charcoal-100 hover:bg-[#FBF8F4] -mx-3 px-3 transition-colors">
+              <span className="font-serif text-charcoal-300 text-xl sm:text-2xl leading-none tracking-wide group-hover:text-rose-500 transition-colors">{extOf(doc)}</span>
+              <div className="min-w-0">
+                <button type="button" disabled={!doc.file_url} onClick={() => doc.file_url && setPreviewDoc({ url: doc.file_url, name: doc.name })}
+                  className="text-left font-serif text-charcoal-900 text-[1.15rem] leading-snug truncate max-w-full hover:text-rose-700 transition-colors" style={{ fontWeight: 500 }}>
+                  {doc.name}
+                </button>
+                <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-charcoal-400 mt-1">
+                  {typeLabel(doc.type)} · {doc.uploaded_by === 'client' ? 'Ajouté par vous' : 'Prestataire'}
+                  <span className="sm:hidden normal-case tracking-normal font-normal"> · {doc.uploaded_at || ''}</span>
+                </p>
+              </div>
+              <span className="hidden sm:block text-[13px] text-charcoal-500 tabular-nums">{doc.uploaded_at || '—'}</span>
+              <TableActionsMenu
+                items={[
+                  { label: 'Ouvrir', icon: Eye, hidden: !doc.file_url, onClick: () => setPreviewDoc({ url: doc.file_url || '', name: doc.name }) },
+                  { label: 'Télécharger', icon: DownloadIcon, hidden: !doc.file_url, onClick: () => {
+                    if (!doc.file_url) return;
+                    const a = document.createElement('a');
+                    a.href = doc.file_url;
+                    a.download = doc.name;
+                    a.click();
+                  } },
+                  { label: 'Supprimer', icon: Trash2, danger: true, hidden: doc.source !== 'documents', onClick: () => handleDeleteDoc(doc) },
+                ]}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-6">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className="inline-flex items-center gap-1.5 text-[13px] text-charcoal-700 disabled:opacity-30 hover:text-rose-600 transition-colors"><ChevronLeft className="w-4 h-4" /> Précédent</button>
+          <span className="text-xs text-charcoal-400 tabular-nums">{page} / {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            className="inline-flex items-center gap-1.5 text-[13px] text-charcoal-700 disabled:opacity-30 hover:text-rose-600 transition-colors">Suivant <ChevronRight className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      </div>
+
+      {/* ── Ajout d'un document (portail : le fond couvre toute la fenêtre) ── */}
+      {isUploadOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-charcoal-950/55 backdrop-blur-sm" onClick={() => setIsUploadOpen(false)}>
+          <div className="bg-white w-full sm:max-w-lg max-h-[94dvh] flex flex-col sm:rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="relative h-28 sm:h-36 flex-shrink-0 bg-charcoal-900">
+              <img src="/mariage (3).jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <button onClick={() => setIsUploadOpen(false)} aria-label="Fermer" className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60"><X className="w-4 h-4" /></button>
+              <div className="absolute bottom-4 left-6 right-6">
+                <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-white/70">Documents</p>
+                <h3 className="font-serif text-white text-2xl leading-tight" style={{ fontWeight: 400 }}>Ajouter un document</h3>
               </div>
             </div>
-            <div className="p-6 space-y-4 overflow-y-auto flex-1 overscroll-contain">
-              <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Nom du document</label>
-                <input type="text" value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Ex: Contrat photographe"
-                  className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-ivory-50 focus:outline-none focus:border-rose-400 transition-all" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Type</label>
-                <select value={docType} onChange={(e) => setDocType(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-ivory-50 focus:outline-none focus:border-rose-400 transition-all">
+            <div className="p-6 sm:p-7 space-y-6 overflow-y-auto flex-1 overscroll-contain subtle-scroll">
+              <label className="block">
+                <span className={labelCls}>Nom du document</span>
+                <input type="text" value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="Ex : Contrat photographe" className={fieldCls} />
+              </label>
+              <label className="block">
+                <span className={labelCls}>Rubrique</span>
+                <select value={docType} onChange={(e) => setDocType(e.target.value)} className={fieldCls}>
                   <option value="contrat">Contrat</option>
                   <option value="planning">Planning</option>
                   <option value="photo">Photo</option>
                   <option value="autre">Autre</option>
                 </select>
-              </div>
+              </label>
               {docType === 'autre' && (
-                <div>
-                  <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Précisez le type</label>
-                  <input type="text" value={customType} onChange={(e) => setCustomType(e.target.value)} placeholder="Ex: Note, Croquis, Devis…"
-                    className="w-full px-4 py-2.5 border border-charcoal-200 rounded-xl text-sm bg-ivory-50 focus:outline-none focus:border-rose-400 transition-all" />
-                </div>
+                <label className="block">
+                  <span className={labelCls}>Précisez</span>
+                  <input type="text" value={customType} onChange={(e) => setCustomType(e.target.value)} placeholder="Ex : Devis, croquis, note…" className={fieldCls} />
+                </label>
               )}
-              <div>
-                <label className="block text-sm font-medium text-charcoal-700 mb-1.5">Fichier</label>
-                <input type="file" onChange={(e) => { const f = e.target.files?.[0]||null; setSelectedFile(f); if (f&&!docName) setDocName(f.name.replace(/\.[^/.]+$/, '')); }}
-                  className="w-full text-sm text-charcoal-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-charcoal-100 file:text-charcoal-700 file:text-sm file:font-medium hover:file:bg-charcoal-200 transition-all" />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setIsUploadOpen(false)}
-                  className="flex-1 py-2.5 border border-charcoal-200 text-charcoal-700 text-sm font-medium rounded-xl hover:bg-charcoal-50 transition-colors">Annuler</button>
-                <button onClick={handleUpload} disabled={uploading||!selectedFile||!docName}
-                  className="flex-1 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-all">
-                  {uploading ? 'Ajout…' : 'Ajouter'}
-                </button>
-              </div>
+              <label className="block cursor-pointer">
+                <span className={labelCls}>Fichier</span>
+                <div className={`mt-2 border border-dashed px-4 py-6 text-center transition-colors ${selectedFile ? 'border-rose-400 bg-rose-50/30' : 'border-stone-300 hover:border-rose-400'}`}>
+                  <Upload className="w-5 h-5 mx-auto text-charcoal-400" />
+                  <p className="text-sm text-charcoal-700 mt-2 break-all">{selectedFile ? selectedFile.name : 'Touchez pour choisir un fichier'}</p>
+                  {!selectedFile && <p className="text-[11px] text-charcoal-400 mt-1">PDF, image ou document</p>}
+                </div>
+                <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0] || null; setSelectedFile(f); if (f && !docName) setDocName(f.name.replace(/\.[^/.]+$/, '')); }} />
+              </label>
+            </div>
+            <div className="px-6 sm:px-7 py-4 border-t border-stone-200 flex gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <button onClick={() => setIsUploadOpen(false)} className="flex-1 h-11 border border-stone-300 text-charcoal-700 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm">Annuler</button>
+              <button onClick={handleUpload} disabled={uploading || !selectedFile || !docName}
+                className="flex-1 h-11 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-600 disabled:opacity-35 disabled:hover:bg-rose-600 transition-colors rounded-sm">
+                {uploading ? 'Ajout…' : 'Ajouter'}
+              </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Document preview modal */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-[60] bg-charcoal-900/90 flex items-center justify-center p-4" onClick={() => setPreviewDoc(null)}>
-          <button
-            className="absolute top-4 right-4 w-9 h-9 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-xl"
-            onClick={() => setPreviewDoc(null)}
-          >
+      {/* ── Aperçu ── */}
+      {previewDoc && createPortal(
+        <div className="fixed inset-0 z-[110] bg-charcoal-950/90 flex items-center justify-center p-3 sm:p-6" onClick={() => setPreviewDoc(null)}>
+          <button aria-label="Fermer" className="absolute top-4 right-4 w-10 h-10 bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors rounded-full" onClick={() => setPreviewDoc(null)}>
             <X className="w-5 h-5 text-white" />
           </button>
-          <div className="w-full max-w-4xl h-[85vh] bg-white rounded-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-4xl h-[88dvh] bg-white overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {previewDoc.url.toLowerCase().endsWith('.pdf') ? (
               <embed src={previewDoc.url} type="application/pdf" className="w-full h-full" />
             ) : /\.(jpg|jpeg|png|gif|webp)$/i.test(previewDoc.url) ? (
@@ -311,7 +303,8 @@ export default function DocumentsPage() {
               <iframe src={previewDoc.url} className="w-full h-full" title={previewDoc.name} />
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

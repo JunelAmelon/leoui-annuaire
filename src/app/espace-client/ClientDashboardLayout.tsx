@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Heart, LayoutDashboard, CalendarDays, Users, CheckSquare,
   MessageSquare, FileText, Image, Bell,
-  Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator, Sparkles, BookHeart,
+  Settings, LogOut, Menu, X, UserCheck, MapPin, ChevronLeft, ChevronRight, Calculator, Sparkles, BookHeart, Armchair, Newspaper, Clock,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientData } from '@/contexts/ClientDataContext';
@@ -22,10 +22,13 @@ const NAV = [
   { href: '/espace-client/prestataires', label: 'Prestataires',    icon: Users, tourId: 'vendors' },
   { href: '/espace-client/checklist',    label: 'Checklist',       icon: CheckSquare },
   { href: '/espace-client/invites',      label: 'Invités',         icon: UserCheck },
+  { href: '/espace-client/plan-de-table', label: 'Plan de table',  icon: Armchair },
+  { href: '/espace-client/planning-jour-j', label: 'Jour J',        icon: Clock },
   { href: '/espace-client/messages',     label: 'Messages',        icon: MessageSquare, tourId: 'messaging' },
   { href: '/espace-client/documents',    label: 'Documents',       icon: FileText },
   { href: '/espace-client/galerie',      label: 'Galerie',         icon: Image },
   { href: '/espace-client/livre-d-or',   label: 'Livre d’or',      icon: BookHeart },
+  { href: '/espace-client/gazette',      label: 'Gazette',         icon: Newspaper },
   { href: '/espace-client/calculatrice', label: 'Budget',          icon: Calculator },
   { href: '/espace-client/a-venir',      label: 'À venir',         icon: Sparkles },
 ];
@@ -45,10 +48,17 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { client, event } = useClientData();
+  const isFullCanvasRoute = pathname.startsWith('/espace-client/plan-de-table');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => isFullCanvasRoute);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+
+  // Replie automatiquement le menu latéral sur les pages plein canevas (ex. Plan de table),
+  // tout en laissant l'utilisateur le déplier librement via le bouton.
+  useEffect(() => {
+    setCollapsed(isFullCanvasRoute);
+  }, [isFullCanvasRoute]);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -96,7 +106,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
     ? Math.max(0, Math.ceil((new Date(event.event_date).getTime() - Date.now()) / 86400000))
     : null;
 
-  const SW = collapsed ? 84 : 224; // sidebar pixel width
+  const SW = collapsed ? 84 : 244; // sidebar pixel width
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: '#FAF6F8' }}>
@@ -108,23 +118,32 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
       >
         <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm overflow-hidden">
 
-          {/* Logo */}
-          <div className={`flex items-center pt-4 pb-3 flex-shrink-0 ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
-            <Link
-              href="/"
-              className="w-10 h-10 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group"
-            >
+          {/* Logo + nom complet (jamais tronqué) + bouton déplier/replier */}
+          <div className={`flex items-center flex-shrink-0 ${collapsed ? 'flex-col gap-2 pt-4 pb-3 px-2' : 'pt-4 pb-3 pl-4 pr-2.5 gap-2.5'}`}>
+            <Link href="/" aria-label="LeOui.net — accueil"
+              className="w-9 h-9 flex-shrink-0 border border-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 transition-colors group">
               <Heart className="w-4 h-4 text-rose-600 fill-rose-600 group-hover:text-white group-hover:fill-white transition-colors" />
             </Link>
             {!collapsed && (
-              <span className="font-serif text-charcoal-900 text-base leading-none truncate">LeOui.net</span>
+              <Link href="/" className="font-serif text-charcoal-900 text-[1.2rem] leading-none whitespace-nowrap flex-1 min-w-0">
+                LeOui<span className="text-rose-600">.</span>net
+              </Link>
             )}
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              title={collapsed ? 'Déplier le menu' : 'Réduire le menu'}
+              aria-label={collapsed ? 'Déplier le menu' : 'Réduire le menu'}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-charcoal-400 hover:text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0"
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
           </div>
 
           <div className="mx-3 h-px bg-stone-100 flex-shrink-0" />
 
           {/* Nav */}
-          <nav className="flex-1 flex flex-col gap-0.5 py-3 px-2 overflow-y-auto overflow-x-hidden">
+          <nav className="flex-1 flex flex-col gap-0.5 py-3 px-2 overflow-y-auto overflow-x-hidden subtle-scroll">
             {NAV.map(item => {
               const active = isActive(item);
               const badgeCount = item.href === '/espace-client/messages' ? unreadMsgCount : 0;
@@ -366,7 +385,7 @@ function ClientDashboardContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="p-5 sm:p-6 lg:p-8 relative">
+        <main className={isFullCanvasRoute ? 'p-4 sm:p-5 lg:px-6 lg:py-5 relative' : 'p-5 sm:p-6 lg:p-8 relative'}>
           {children}
 
         </main>

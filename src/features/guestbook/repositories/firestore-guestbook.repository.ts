@@ -24,6 +24,9 @@ import type {
   ListEntriesOptions,
 } from './guestbook.repository.interface';
 
+import type { GuestbookPageContent, GuestbookCardDesign } from '../domain/customization';
+import { dottedPaths } from './dotted-paths';
+
 const GUESTBOOKS_COLLECTION = 'guestbooks';
 const ENTRIES_COLLECTION = 'guestbook_entries';
 
@@ -62,6 +65,20 @@ export class FirestoreGuestbookRepository implements IGuestbookRepository {
       updateData[`settings.${key}`] = val;
     }
     await updateDoc(docRef, updateData);
+  }
+
+  async updatePage(eventId: string, patch: Partial<GuestbookPageContent>): Promise<void> {
+    await updateDoc(doc(db, GUESTBOOKS_COLLECTION, eventId), {
+      ...dottedPaths('page', patch),
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async updateCard(eventId: string, patch: Partial<GuestbookCardDesign>): Promise<void> {
+    await updateDoc(doc(db, GUESTBOOKS_COLLECTION, eventId), {
+      ...dottedPaths('card', patch),
+      updated_at: new Date().toISOString(),
+    });
   }
 
   async rotateToken(eventId: string): Promise<string> {

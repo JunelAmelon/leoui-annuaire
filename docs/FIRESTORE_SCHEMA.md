@@ -250,14 +250,30 @@ Un doc par mariage (1 canevas, ≤50 tables / ~300 chaises → tient dans 1 Mo).
 event_id, owner_id,
 tables: [{
   id, label, shape: 'round' | 'oval' | 'rect' | 'head',
-  x, y, rotation, seats, color
+  x, y, rotation, seats, color,
+  seat_types?: { [seatIndex]: 'enfant' | 'pmr' | 'vip' }  // absent = 'standard'
 }],
 room_items: [{ id, type: 'dancefloor'|'bar'|'buffet'|'stage'|'dj'|'entrance'|'photobooth',
                x, y, w, h, rotation, label }],
 assignments: { [seatKey: `${tableId}_${seatIndex}`]: guest_id }, // 1 chaise = 1 invité
+room?: { shape: 'rect'|'square'|'l'|'u'|'t'|'oval', width_m, length_m },  // absent = rect 20×14 m
+decor?: {                                  // décor de la vue 3D — absent = DEFAULT_DECOR
+  floor: 'dalles'|'parquet_chevron'|'parquet_clair'|'marbre'|'beton_cire'|'tapis_sable',
+  wall_color,                              // hex
+  table_style: 'nappe'|'bois_verni'|'bois_chene'|'marbre_or',
+  cloth_color,                             // hex (nappe par défaut ; une table peut surcharger via `color`)
+  chair_style: 'napoleon'|'chiavari_bois'|'chiavari_or'|'chiavari_noire'|'medaillon'|'ghost',
+  centerpiece: 'candelabre'|'boule_blanche'|'couronne_basse'|'eucalyptus'|'bougeoirs'|'aucun',
+  flower_color,                            // hex
+  mood: 'jour'|'soiree'
+},
 background_path,   // chemin Storage
 updated_at
 ```
+- **Repère commun 2D / 3D** : `x`, `y`, `w`, `h` sont en *unités plan* ; **1 m = 50 unités**
+  (`UNITS_PER_M`). Une salle 20 × 14 m = 1000 × 700 unités (valeur historique → anciens plans valides).
+- `room.width_m` / `length_m` : bornés à 8–60 m (pas 0,5 m) ; `square` ⇒ longueur = largeur.
+- Changer `room` ramène dans le contour tout élément resté dehors (rien n'est supprimé).
 - **Invariant « 1 invité = 1 place »** : la clé de `assignments` empêche 2 invités sur
   la même chaise, **pas** un invité sur 2 chaises. Vérifier côté serveur/transaction
   qu'un `guest_id` n'apparaît qu'une fois avant d'écrire.
@@ -268,26 +284,56 @@ updated_at
 
 ## 3. Planning du jour J (Junel) — `day_plans/{event_id}`
 
+Code : `src/features/day-plan/` (domaine, repositories, services, UI). Page couple :
+`/espace-client/planning-jour-j`. Lien partagé : `/planning-jour-j/{event_id}/{token}`.
+
 ```
 event_id, owner_id,
 days: {
-  eve:   { date, items: TimelineItem[] },
+  eve:   { date, items: TimelineItem[] },   // date = 'YYYY-MM-DD' (veille = mariage − 1 j)
   day:   { date, items: TimelineItem[] },
   after: { date, items: TimelineItem[] },
 }
 // TimelineItem (id STABLE : jamais modifié, référencé par la playlist et l'album) :
-// { id, title, start_at (ISO 8601 COMPLET avec date, gère après minuit), end_at|null,
-//   duration_min, category, location { name, address, travel_min },
+// { id, title, start_at, end_at|null, duration_min,
+//   category: 'preparation'|'ceremony'|'photo'|'cocktail'|'meal'|'party'|'transport'|'logistics'|'other',
+//   location { name, address, travel_min },   // travel_min = trajet DEPUIS le lieu du moment précédent
 //   people: string[], notes, vendor_ids: string[], sort_key }
-share: { token, token_revoked_at, vendor_links: [{ vendor_id, token, token_revoked_at }] },
-updated_at
+share: {
+  token|null, token_revoked_at,                              // lien général, lecture seule, sans les notes
+  vendor_links: [{ vendor_id, label, ref_id?, token, token_revoked_at }]   // 1 lien par prestataire (≤ 30)
+  // ref_id = vendors/{id} quand le prestataire vient de la messagerie / des collaborations (absent si saisi à la main)
+},
+created_at, updated_at
 ```
+- **`start_at` / `end_at` = heure LOCALE du lieu, sans décalage** : `YYYY-MM-DDTHH:mm:00`
+  (ISO 8601 « flottant »). L'ordre lexicographique est l'ordre chronologique, et l'affichage ne
+  dépend pas du fuseau du lecteur. **Ne pas** passer par `toISOString()` pour ces deux champs.
+- **Après minuit** : une heure saisie avant 06:00 est rangée au lendemain calendaire de sa journée
+  (01:30 « le jour J » ⇒ date du lendemain) ; le tri est donc automatique.
+- `vendor_ids` référence `share.vendor_links[].vendor_id` (`v_xxxxxxxx`). `label` **[ajout Rév. 3]** :
+  nom affiché du prestataire, qui n'a pas forcément de compte sur la plateforme.
+- Max 60 moments par journée. Écriture **par chemin** (`days.day`, `share`), jamais le doc entier.
+- Changement de la date du mariage : toutes les dates sont recalées par le service (heures conservées).
+- Alertes de trajet (calculées, non stockées) : battement < trajet ⇒ impossible ;
+  battement < trajet + 10 min ⇒ serré ; changement de lieu sans `travel_min` ⇒ rappel.
+
 Sous-collection : `day_plans/{event_id}/vendor_requests/{id}` →
-`{ vendor_id, item_id, proposed_start_at, reason, status: 'pending'|'accepted'|'declined', created_at, decided_at }`
-(remplace le tableau `vendor_requests`, écrit par les prestataires via API).
-- `start_time` `'HH:mm'` supprimé : un seul format ISO complet.
-- Suppression d'un `TimelineItem` : met à jour (via service) les `moment_id` de l'album
-  et `linked_moment_id` de la playlist à `null`.
+`{ event_id, owner_id, vendor_id, vendor_label, item_id, proposed_start_at, reason,
+   status: 'pending'|'accepted'|'declined', created_at, decided_at }`
+- Créée **uniquement via l'API** `POST /api/day-plan/share/{event_id}/{token}` (jeton prestataire
+  valide, prestataire affecté au moment, ≤ 10 en attente par prestataire, quota 6 / 10 min).
+- `owner_id` / `event_id` dupliqués pour que la règle Firestore ne relise pas le doc parent.
+- Le couple lit la liste (bornée à 50, `created_at` desc) et ne peut écrire que `status` + `decided_at`.
+- Accepter = le service déplace le moment à `proposed_start_at` (option : décaler toute la suite).
+
+**Ponts de données** (fonctions pures de `domain/timeline.ts`, aucune duplication en base) :
+- Gazette : `toGazetteProgram(plan)` → moments du jour J des catégories visibles des invités
+  (cérémonie, cocktail, repas, soirée, autre), passés à `GazetteService.syncProgramFromDayPlan`.
+- Playlist : `toPlaylistMoments(plan)` → `{ id, label, start_at, day, category }` ; `id` est la valeur
+  à stocker dans `playlists.sections[].linked_moment_id`.
+- Suppression d'un `TimelineItem` : le service appelle le port `MomentLinkCleaner.onMomentDeleted`
+  (à implémenter côté Playlist / album pour remettre `linked_moment_id` / `moment_id` à `null`).
 
 ## 4. Album photo QR (Junel) — `photo_albums/{event_id}` + `photo_album_items/{id}`
 
@@ -320,8 +366,22 @@ uploaded_at
 ```
 event_id, owner_id, title, public_token, token_revoked_at, token_expires_at,
 settings { max_duration_sec, max_audio_mb, window_open_at, window_close_at },
+page?: {                 // personnalisation page invité — champs partiels, absents = défauts (resolvePageContent)
+  cover_url: string | null,   // image de gauche : https (Cloudinary) ou chemin local ; null = image par défaut
+  eyebrow, subtitle, tab_text_label, tab_audio_label, name_label, name_placeholder,
+  text_label, text_placeholder, submit_label, thanks_title ({nom} = prénom de l'invité), thanks_text, another_label
+},
+card?: {                 // carte de table imprimable (tri-fold A4 paysage, photo + QR) — absents = défauts (resolveCardDesign)
+  image_url: string | null (https/chemin local ; null = photo par défaut), image_grayscale: bool, caption, welcome_label, names, place_line, date_line,
+  section_title, section_lines (≤ 4), cta_title, cta_text, closing_word,
+  ink: 'noir'|'anthracite'|'bordeaux'|'sauge'|'nuit', paper: 'blanc'|'ivoire'
+  // names/place_line/date_line vides = valeurs du mariage (couple, lieu, date)
+},
 created_at, updated_at
 ```
+- `page` / `card` : mises à jour **partielles par chemin** (`page.subtitle`…) via le service, qui valide
+  (longueurs, https/chemin local pour l'image, couleurs de la liste). L'API publique `GET /api/guestbook/{token}`
+  expose `page` résolu + `cover_url` effectif ; jamais `card`.
 `guestbook_entries/{id}` :
 ```
 guestbook_id (= event_id), event_id, owner_id,   // dupliqués pour les règles / requêtes
@@ -345,12 +405,15 @@ created_at
 
 ```
 event_id, owner_id, title, cover_path,   // chemin Storage
+subtitle, couple_names,                  // manchette + prénoms des modèles presse
 sections: [{ id, type: 'story'|'anecdote'|'quiz'|'program'|'custom',
              title, content, order }],   // max 30 sections
 // content d'une section 'quiz' : { questions: [{ question, options: string[], answer_index }] }
 program_source: 'plan' | 'custom',   // remplace program_synced_from_plan + program_overridden
 program_synced_at,                   // détecte un planning modifié depuis la synchro
-layout: { theme, accent_color },
+layout: { theme,                       // 'chic_minimal'|'romantic_rose'|'vintage_gazette'
+                                       // |'gazette_maries'|'wedding_post'
+          accent_color, font_family },
 version: number,                     // détection de conflit d'édition
 updated_at
 ```
@@ -432,6 +495,7 @@ Ne supprimer le fallback `client_id` de `invites/page.tsx`, `mariage/page.tsx` e
 | Écriture par chemin / transaction sur gros docs ; `version` gazette | Conventions, 2, 6 |
 | `status 'reserved'` supprimé ; `reservations` avec expiration ; compteurs bufferisés/shardés | 1 |
 | `geohash` ajouté ; recherche texte → Algolia/Typesense **[À VALIDER]** | 1 |
+| Rév. 3 — `day_plans` : heures locales sans décalage, `category` énumérée, `share.vendor_links[].label`, `owner_id`/`event_id`/`vendor_label` dans `vendor_requests`, ponts Gazette/Playlist | 3 |
 | `waveform` ≤ 100 pts ; upload audio/photo par URL signée ; règles Storage | 4, 5, Règles |
 | `start_time` → `start_at` ISO complet ; `TimelineItem.id` stable | 3 |
 | `program_source` remplace 2 booléens ; structure `quiz` ; statut menu `a_valider` | 6, 7 |

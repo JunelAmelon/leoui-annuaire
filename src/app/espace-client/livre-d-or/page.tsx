@@ -31,6 +31,9 @@ import { GuestbookService } from '@/features/guestbook/services/guestbook.servic
 import { GuestbookPdfService } from '@/features/guestbook/services/guestbook-pdf.service';
 import type { Guestbook, GuestbookEntry } from '@/features/guestbook/domain/types';
 import { QRCodeCard } from '@/features/guestbook/ui/QRCodeCard';
+import { GuestbookSettingsModal, type SettingsSaveInput } from '@/features/guestbook/ui/GuestbookSettingsModal';
+import { resolveCardDesign, type CardFallback } from '@/features/guestbook/domain/customization';
+import { uploadFile } from '@/lib/storage';
 import { WaveformPlayer } from '@/features/guestbook/ui/WaveformPlayer';
 import { toast } from 'sonner';
 
@@ -48,8 +51,6 @@ export default function CoupleGuestbookPage() {
   // Filtres
   const [filterType, setFilterType] = useState<'all' | 'audio' | 'text' | 'favorites' | 'hidden'>('all');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settingsTitle, setSettingsTitle] = useState('');
-  const [settingsMaxDuration, setSettingsMaxDuration] = useState(120);
 
   // Exports PDF
   const [exportingBookPdf, setExportingBookPdf] = useState(false);
@@ -79,8 +80,6 @@ export default function CoupleGuestbookPage() {
         `Le Livre d’Or de ${coupleNames}`
       );
       setGuestbook(gb);
-      setSettingsTitle(gb.title);
-      setSettingsMaxDuration(gb.settings.max_duration_sec);
 
       // Charger les entrées (inclus les masqués pour le couple propriétaire)
       const list = await repository.listByGuestbookId(eventId, {
@@ -142,24 +141,27 @@ export default function CoupleGuestbookPage() {
     }
   };
 
-  const handleSaveSettings = async () => {
+  /** Valeurs du mariage utilisées quand le couple laisse un champ « automatique » vide. */
+  const cardFallback: CardFallback = {
+    names: coupleNames.replace(/\s*&\s*/, ' + '),
+    place: (event as any)?.venue || '',
+    date: event?.event_date
+      ? new Date(event.event_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '',
+  };
+
+  const handleSaveSettings = async (input: SettingsSaveInput) => {
     if (!guestbook) return;
     try {
-      await repository.updateSettings(guestbook.event_id, {
-        max_duration_sec: Number(settingsMaxDuration),
-      });
-      if (settingsTitle !== guestbook.title) {
-        await repository.save({
-          ...guestbook,
-          title: settingsTitle.trim(),
-          updated_at: new Date().toISOString(),
-        });
-      }
-      toast.success('Paramètres enregistrés avec succès.');
+      await service.updateTitle(guestbook.event_id, input.title);
+      await repository.updateSettings(guestbook.event_id, { max_duration_sec: Number(input.maxDuration) });
+      await service.updatePageContent(guestbook.event_id, input.page);
+      await service.updateCardDesign(guestbook.event_id, input.card);
+      toast.success('Personnalisation enregistrée.');
       setShowSettingsModal(false);
       loadGuestbookData();
-    } catch {
-      toast.error('Erreur lors de la sauvegarde');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de la sauvegarde');
     }
   };
 
@@ -172,7 +174,8 @@ export default function CoupleGuestbookPage() {
         guestbook,
         entries,
         coupleNames,
-        event?.event_date
+        event?.event_date,
+        cardFallback.place
       );
       toast.success('Livre d’or PDF imprimable généré avec succès !');
     } catch (err: any) {
@@ -188,12 +191,8 @@ export default function CoupleGuestbookPage() {
     if (!guestbook) return;
     try {
       setExportingFlyerPdf(true);
-      await GuestbookPdfService.generateTableFlyer(
-        guestbook,
-        coupleNames,
-        event?.event_date
-      );
-      toast.success('Carton de table PDF prêt à imprimer !');
+      await GuestbookPdfService.generateTableCards(guestbook, resolveCardDesign(guestbook.card, cardFallback));
+      toast.success('Cartes de table PDF prêtes à imprimer !');
     } catch (err: any) {
       console.error('Erreur génération flyer:', err);
       toast.error('Erreur lors de la création du flyer.');
@@ -217,7 +216,18 @@ export default function CoupleGuestbookPage() {
   const totalFavorites = entries.filter((e) => e.favorite && !e.hidden).length;
   const totalHidden = entries.filter((e) => e.hidden).length;
 
-  // Gestion du lecteur Podcast
+  // Gestion du lecteur Podcast : une seule lecture à la fois
+  useEffect(() => {
+    const handleStopOther = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string }>).detail;
+      if (detail?.id !== 'podcast' && podcastAudioRef.current && !podcastAudioRef.current.paused) {
+        podcastAudioRef.current.pause();
+        setIsPodcastPlaying(false);
+      }
+    };
+    window.addEventListener('guestbook-stop-other-audios', handleStopOther);
+    return () => window.removeEventListener('guestbook-stop-other-audios', handleStopOther);
+  }, []);
   const currentPodcastTrack = podcastIndex !== null ? audioEntries[podcastIndex] : null;
 
   const startPodcast = (index = 0) => {
@@ -225,8 +235,17 @@ export default function CoupleGuestbookPage() {
       toast.info('Aucun message vocal disponible pour la lecture continue.');
       return;
     }
+    window.dispatchEvent(new CustomEvent('guestbook-stop-other-audios', { detail: { id: 'podcast' } }));
     setPodcastIndex(index);
     setIsPodcastPlaying(true);
+  };
+
+  const stopPodcast = () => {
+    if (podcastAudioRef.current) {
+      podcastAudioRef.current.pause();
+    }
+    setPodcastIndex(null);
+    setIsPodcastPlaying(false);
   };
 
   const handlePodcastNext = () => {
@@ -234,8 +253,7 @@ export default function CoupleGuestbookPage() {
       setPodcastIndex(podcastIndex + 1);
       setIsPodcastPlaying(true);
     } else {
-      setPodcastIndex(null);
-      setIsPodcastPlaying(false);
+      stopPodcast();
       toast.success('Tous les messages vocaux ont été écoutés ! 🥂');
     }
   };
@@ -305,7 +323,9 @@ export default function CoupleGuestbookPage() {
         <QRCodeCard
           publicToken={guestbook.public_token}
           weddingTitle={guestbook.title}
+          cardDesign={resolveCardDesign(guestbook.card, cardFallback)}
           onDownloadFlyer={handleDownloadFlyerPdf}
+          onCustomize={() => setShowSettingsModal(true)}
         />
       )}
 
@@ -327,8 +347,8 @@ export default function CoupleGuestbookPage() {
         {totalAudio > 0 && (
           <button
             type="button"
-            onClick={() => (podcastIndex === null ? startPodcast(0) : setPodcastIndex(null))}
-            className="ml-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white hover:bg-white/20 transition-colors flex-shrink-0"
+            onClick={() => (podcastIndex === null ? startPodcast(0) : stopPodcast())}
+            className="ml-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white hover:bg-white/20 transition-colors flex-shrink-0 cursor-pointer"
           >
             <Radio className="w-3.5 h-3.5 text-rose-300" />
             {podcastIndex !== null ? 'Arrêter' : `Écouter tout (${totalAudio})`}
@@ -336,7 +356,66 @@ export default function CoupleGuestbookPage() {
         )}
       </div>
 
-      {/* ── (Filtres supprimés) ── */}
+      {/* ── Filtres de la liste ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setFilterType('all')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'all'
+              ? 'bg-rose-600 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Tous ({entries.filter((e) => !e.hidden).length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType('audio')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'audio'
+              ? 'bg-rose-600 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Vocaux ({totalAudio})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType('text')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'text'
+              ? 'bg-rose-600 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Écrits ({totalText})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType('favorites')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+            filterType === 'favorites'
+              ? 'bg-rose-600 text-white'
+              : 'bg-stone-100 text-charcoal-600 hover:bg-stone-200'
+          }`}
+        >
+          Favoris ({totalFavorites})
+        </button>
+        {totalHidden > 0 && (
+          <button
+            type="button"
+            onClick={() => setFilterType('hidden')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+              filterType === 'hidden'
+                ? 'bg-stone-700 text-white'
+                : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300'
+            }`}
+          >
+            Masqués ({totalHidden})
+          </button>
+        )}
+      </div>
 
       {/* ── Lecteur continu — barre fine ── */}
       {podcastIndex !== null && currentPodcastTrack && (
@@ -358,10 +437,14 @@ export default function CoupleGuestbookPage() {
               src={currentPodcastTrack.audio_path || undefined}
               autoPlay
               onEnded={handlePodcastNext}
+              onError={() => {
+                toast.error('Impossible de lire ce message vocal.');
+                handlePodcastNext();
+              }}
               className="hidden"
             />
             <button type="button" onClick={handlePodcastPrev} disabled={podcastIndex === 0}
-              className="p-1.5 text-white/60 hover:text-white transition-colors disabled:opacity-30" title="Précédent">
+              className="p-1.5 text-white/60 hover:text-white transition-colors disabled:opacity-30 cursor-pointer" title="Précédent">
               <SkipBack className="w-4 h-4" />
             </button>
             <button
@@ -371,196 +454,102 @@ export default function CoupleGuestbookPage() {
                 if (isPodcastPlaying) { podcastAudioRef.current.pause(); setIsPodcastPlaying(false); }
                 else { podcastAudioRef.current.play(); setIsPodcastPlaying(true); }
               }}
-              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-500 transition-colors"
+              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:bg-rose-500 transition-colors cursor-pointer"
               title={isPodcastPlaying ? 'Pause' : 'Lecture'}
             >
               {isPodcastPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
             </button>
             <button type="button" onClick={handlePodcastNext}
-              className="p-1.5 text-white/60 hover:text-white transition-colors" title="Suivant">
+              className="p-1.5 text-white/60 hover:text-white transition-colors cursor-pointer" title="Suivant">
               <SkipForward className="w-4 h-4" />
             </button>
-            <button type="button" onClick={() => setPodcastIndex(null)}
-              className="p-1.5 text-white/30 hover:text-white/70 transition-colors" title="Fermer">
+            <button type="button" onClick={stopPodcast}
+              className="p-1.5 text-white/30 hover:text-white/70 transition-colors cursor-pointer" title="Fermer">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Liste des messages ── */}
+      {/* ── Liste des messages — journal éditorial : date à gauche, parole à droite ── */}
       {filteredEntries.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-stone-200/80 p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-            <MessageSquare className="w-6 h-6" />
-          </div>
-          <h3 className="font-serif text-charcoal-900 text-lg font-normal">
-            Aucun message dans cette section
-          </h3>
-          <p className="text-xs text-charcoal-500 max-w-sm mx-auto leading-relaxed">
-            Partagez le QR Code avec vos invités pour commencer à recueillir leurs précieux témoignages.
+        <div className="border border-dashed border-stone-300 rounded-2xl py-14 px-6 text-center">
+          <p className="font-serif text-charcoal-900 text-xl" style={{ fontWeight: 400 }}>Aucun message pour l’instant</p>
+          <p className="text-sm text-charcoal-500 max-w-sm mx-auto leading-relaxed mt-2">
+            Posez les cartes sur les tables : les premiers mots de vos proches apparaîtront ici.
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div>
           {filteredEntries.map((entry) => {
-            const formattedDate = new Date(entry.created_at).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-
+            const d = new Date(entry.created_at);
+            const day = d.getDate();
+            const month = d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
+            const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             return (
-              <div
+              <article
                 key={entry.id}
-                className={`flex gap-3.5 pb-6 border-b border-charcoal-100 last:border-b-0 ${
-                  entry.hidden ? 'opacity-50' : ''
-                }`}
+                className={`group grid grid-cols-[3.2rem_1fr] sm:grid-cols-[5rem_1fr] gap-x-4 sm:gap-x-7 py-7 border-t border-charcoal-100 first:border-t-0 first:pt-2 ${entry.hidden ? 'opacity-45' : ''}`}
               >
-                {/* Avatar neutre — icône profil */}
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-stone-100 text-charcoal-500">
-                  <User className="w-6 h-6" />
+                <div className="pt-1 text-center sm:text-left">
+                  <p className="font-serif text-charcoal-900 leading-none" style={{ fontSize: 'clamp(1.7rem, 3vw, 2.3rem)', fontWeight: 400 }}>{day}</p>
+                  <p className="text-[10px] tracking-[0.16em] uppercase text-charcoal-400 mt-1.5">{month}</p>
+                  <p className="text-[10px] text-charcoal-300 mt-0.5 tabular-nums">{time}</p>
                 </div>
 
-                {/* Contenu */}
-                <div className="flex-1 min-w-0">
-                  {/* Ligne haute : Nom, Date & Actions */}
+                <div className="min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-serif text-charcoal-900 text-lg leading-snug truncate">
-                          {entry.guest_name}
-                        </p>
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                            entry.type === 'audio'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : 'bg-champagne-50 text-charcoal-600 border-champagne-200'
-                          }`}
-                        >
-                          {entry.type === 'audio' ? 'Vocal' : 'Écrit'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-charcoal-400 mt-1">{formattedDate}</p>
+                      <h3 className="font-serif text-charcoal-900 text-xl leading-snug" style={{ fontWeight: 500 }}>{entry.guest_name}</h3>
+                      <p className="text-[10px] font-semibold tracking-[0.16em] uppercase mt-1 text-rose-600">
+                        {entry.type === 'audio' ? `Message vocal${entry.duration_sec ? ` · ${fmtDur(entry.duration_sec)}` : ''}` : 'Mot écrit'}
+                        {entry.hidden && <span className="text-charcoal-400"> · masqué</span>}
+                      </p>
                     </div>
-
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFavorite(entry)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          entry.favorite
-                            ? 'text-rose-600 bg-rose-50'
-                            : 'text-charcoal-400 hover:text-rose-600 hover:bg-stone-50'
-                        }`}
-                        title={entry.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                      >
-                        <Heart className={`w-4 h-4 ${entry.favorite ? 'fill-rose-600' : ''}`} />
+                    <div className="flex items-center gap-0.5 flex-shrink-0 -mr-2 sm:opacity-40 sm:group-hover:opacity-100 transition-opacity">
+                      <button type="button" onClick={() => handleToggleFavorite(entry)}
+                        className={`p-2 rounded-md transition-colors ${entry.favorite ? 'text-rose-600' : 'text-charcoal-400 hover:text-rose-600'}`}
+                        title={entry.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'} aria-label="Favori">
+                        <Heart className={`w-[18px] h-[18px] ${entry.favorite ? 'fill-rose-600' : ''}`} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleHidden(entry)}
-                        className="p-2 rounded-lg text-charcoal-400 hover:text-charcoal-700 hover:bg-stone-50 transition-colors"
-                        title={entry.hidden ? 'Rendre visible' : 'Masquer du livre'}
-                      >
-                        {entry.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <button type="button" onClick={() => handleToggleHidden(entry)}
+                        className="p-2 rounded-md text-charcoal-400 hover:text-charcoal-800 transition-colors"
+                        title={entry.hidden ? 'Rendre visible' : 'Masquer du livre'} aria-label="Masquer">
+                        {entry.hidden ? <Eye className="w-[18px] h-[18px]" /> : <EyeOff className="w-[18px] h-[18px]" />}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteEntry(entry)}
-                        className="p-2 rounded-lg text-charcoal-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Supprimer définitivement"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                      <button type="button" onClick={() => handleDeleteEntry(entry)}
+                        className="p-2 rounded-md text-charcoal-300 hover:text-rose-600 transition-colors" title="Supprimer définitivement" aria-label="Supprimer">
+                        <Trash2 className="w-[18px] h-[18px]" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Contenu : Vocal ou Texte */}
                   {entry.type === 'audio' ? (
-                    <div className="mt-3 rounded-xl bg-[#FAF6F2] border border-stone-100 px-4 py-3">
-                      <WaveformPlayer
-                        src={entry.audio_path}
-                        waveform={entry.waveform}
-                        durationSec={entry.duration_sec}
-                        guestName={entry.guest_name}
-                      />
+                    <div className="mt-4 max-w-xl border-y border-charcoal-100 py-3">
+                      <WaveformPlayer src={entry.audio_path} waveform={entry.waveform} durationSec={entry.duration_sec} guestName={entry.guest_name} />
                     </div>
                   ) : (
-                    <blockquote className="mt-3 rounded-lg bg-[#FAF6F2]/70 px-3.5 py-2.5">
-                      <p className="text-[13px] text-charcoal-700 leading-relaxed font-serif italic">
-                        « {entry.body} »
-                      </p>
-                    </blockquote>
+                    <p className="mt-3 font-serif italic text-charcoal-700 leading-[1.7] max-w-2xl" style={{ fontSize: 'clamp(1.05rem, 1.5vw, 1.2rem)' }}>
+                      <span className="text-rose-500 mr-0.5">«</span>&nbsp;{entry.body}&nbsp;<span className="text-rose-500">»</span>
+                    </p>
                   )}
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
       )}
 
-      {/* ── Modal Paramètres ── */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-stone-200">
-            <div>
-              <h3 className="font-serif text-charcoal-900 text-xl font-normal">
-                Paramètres du Livre d’Or
-              </h3>
-              <p className="text-xs text-charcoal-500 mt-1">
-                Ajustez le titre ou la durée maximale des enregistrements vocaux.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-wider text-charcoal-500 font-medium block">
-                  Titre du livre d’or
-                </label>
-                <input
-                  type="text"
-                  value={settingsTitle}
-                  onChange={(e) => setSettingsTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-charcoal-900 focus:outline-none focus:border-rose-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-wider text-charcoal-500 font-medium block">
-                  Durée maximale par message vocal
-                </label>
-                <select
-                  value={settingsMaxDuration}
-                  onChange={(e) => setSettingsMaxDuration(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm text-charcoal-900 focus:outline-none focus:border-rose-500 bg-white"
-                >
-                  <option value={60}>1 minute (court & spontané)</option>
-                  <option value={120}>2 minutes (recommandé)</option>
-                  <option value={180}>3 minutes (messages longs)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
-              <button
-                type="button"
-                onClick={() => setShowSettingsModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-charcoal-600 hover:bg-stone-100 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                className="px-4 py-2 rounded-xl text-xs font-medium bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-xs"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ── Modal Paramètres : aperçu à gauche, formulaire à droite ── */}
+      {showSettingsModal && guestbook && (
+        <GuestbookSettingsModal
+          guestbook={guestbook}
+          fallback={cardFallback}
+          publicUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/livre-or/${guestbook.public_token}`}
+          onClose={() => setShowSettingsModal(false)}
+          onSave={handleSaveSettings}
+          onUploadCover={(file) => uploadFile(file, `guestbooks/${guestbook.event_id}`)}
+        />
       )}
     </div>
   );

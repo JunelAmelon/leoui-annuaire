@@ -3,6 +3,7 @@ import type {
   GuestbookEntry,
   GuestbookSettings,
 } from '../domain/types';
+import type { GuestbookPageContent, GuestbookCardDesign } from '../domain/customization';
 import type {
   IGuestbookRepository,
   ListEntriesOptions,
@@ -44,6 +45,18 @@ export class InMemoryGuestbookRepository implements IGuestbookRepository {
       settings: { ...gb.settings, ...settings },
       updated_at: new Date().toISOString(),
     });
+  }
+
+  async updatePage(eventId: string, patch: Partial<GuestbookPageContent>): Promise<void> {
+    const gb = this.guestbooks.get(eventId);
+    if (!gb) return;
+    this.guestbooks.set(eventId, { ...gb, page: { ...(gb.page || {}), ...patch }, updated_at: new Date().toISOString() });
+  }
+
+  async updateCard(eventId: string, patch: Partial<GuestbookCardDesign>): Promise<void> {
+    const gb = this.guestbooks.get(eventId);
+    if (!gb) return;
+    this.guestbooks.set(eventId, { ...gb, card: { ...(gb.card || {}), ...patch }, updated_at: new Date().toISOString() });
   }
 
   async rotateToken(eventId: string): Promise<string> {
