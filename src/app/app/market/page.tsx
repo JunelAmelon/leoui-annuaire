@@ -150,7 +150,7 @@ export default function MarketOverviewPage() {
       </header>
 
       {!profile && (
-        <div className="border border-charcoal-900 bg-rose-600 text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="border border-charcoal-900 bg-charcoal-900 text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           <div>
             <p className="font-serif text-2xl leading-snug">Donnez une seconde vie à vos articles</p>
             <p className="text-sm text-white/70 mt-1.5 max-w-md">

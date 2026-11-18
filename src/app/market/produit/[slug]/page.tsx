@@ -328,7 +328,7 @@ export default function ListingDetailPage() {
                   </p>
                   <Link
                     href={`/market/modifier-annonce/${listing.id}`}
-                    className="flex items-center justify-center h-11 rounded-xl bg-rose-600 hover:bg-black text-white text-sm font-semibold transition-colors"
+                    className="flex items-center justify-center h-11 rounded-xl bg-charcoal-900 hover:bg-black text-white text-sm font-semibold transition-colors"
                   >
                     Modifier l’annonce
                   </Link>
@@ -711,7 +711,7 @@ export default function ListingDetailPage() {
             <button
               onClick={handleReport}
               disabled={reportSending}
-              className="w-full bg-rose-600 hover:bg-black text-white font-semibold py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-charcoal-900 hover:bg-black text-white font-semibold py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
             >
               {reportSending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Envoyer le signalement'}
             </button>

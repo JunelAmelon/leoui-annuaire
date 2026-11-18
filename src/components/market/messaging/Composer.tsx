@@ -78,7 +78,7 @@ export default function Composer({
                 type="button"
                 onClick={() => onFilesChange(files.filter((_, j) => j !== i))}
                 aria-label={`Retirer ${f.name}`}
-                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-charcoal-900/80 text-white flex items-center justify-center hover:bg-rose-600"
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-charcoal-900/80 text-white flex items-center justify-center hover:bg-charcoal-900"
               >
                 <X className="w-3 h-3" />
               </button>

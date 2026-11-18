@@ -48,7 +48,7 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-50 glass-effect border-b border-charcoal-100/60">
         {/* Top bar — accès entreprise */}
-        <div className="hidden sm:block bg-rose-600 text-white">
+        <div className="hidden sm:block bg-charcoal-900 text-white">
           <div className="max-w-7xl mx-auto px-6 lg:px-10 h-9 flex items-center justify-end gap-6">
             <Link
               href={user ? '/app/market' : '/market/connexion'}

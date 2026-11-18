@@ -134,7 +134,7 @@ export default function EspaceClientPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* FEATURED — dark action card */}
-        <div className="lg:col-span-3 rounded-2xl bg-rose-600 text-white shadow-sm overflow-hidden p-6 relative" style={{ minHeight: 240 }}>
+        <div className="lg:col-span-3 rounded-2xl bg-charcoal-900 text-white shadow-sm overflow-hidden p-6 relative" style={{ minHeight: 240 }}>
           {/* Photo du couple (ou visuel par défaut) : fondue à droite dès sm, en fond assombri sur mobile */}
           <div className="absolute inset-0 sm:left-auto sm:w-[46%] pointer-events-none">
             <img src={client?.photo || DEFAULT_COUPLE_PHOTO} alt="" className="w-full h-full object-cover object-center" />
