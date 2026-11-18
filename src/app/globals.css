@@ -310,3 +310,108 @@
   line-height: 0.82;
   padding: 0.06em 0.09em 0 0;
 }
+
+/* ─── Toasts LeOui (sonner) — flash messages colorés ─── */
+[data-sonner-toast] {
+  border: none !important;
+  border-radius: 16px !important;
+  padding: 15px 18px 15px 20px !important;
+  box-shadow: 0 16px 36px rgba(15, 13, 11, 0.30) !important;
+  font-family: 'DM Sans', sans-serif;
+  color: #FFFFFF !important;
+  overflow: visible !important;
+  background-color: #2A2420 !important;
+  background-image:
+    radial-gradient(circle 34px at 4% 118%, rgba(0, 0, 0, 0.14) 99%, transparent),
+    radial-gradient(circle 15px at 19% 114%, rgba(0, 0, 0, 0.12) 99%, transparent),
+    radial-gradient(circle 5px at 10% 64%, rgba(0, 0, 0, 0.13) 99%, transparent),
+    radial-gradient(circle 4px at 24% 84%, rgba(0, 0, 0, 0.12) 99%, transparent),
+    radial-gradient(circle 3px at 30% 96%, rgba(0, 0, 0, 0.12) 99%, transparent) !important;
+}
+[data-sonner-toast] {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+[data-sonner-toast] [data-content] {
+  flex: 1 1 auto !important;
+  margin-right: auto !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+[data-sonner-toast]:has([data-icon]) { padding-left: 58px !important; }
+
+[data-sonner-toast][data-type='success'] { background-color: #4FA28A !important; }
+[data-sonner-toast][data-type='error']   { background-color: #E5385F !important; }
+[data-sonner-toast][data-type='warning'] { background-color: #F5771C !important; }
+[data-sonner-toast][data-type='info']    { background-color: #1F6FF2 !important; }
+[data-sonner-toast][data-type='loading'] { background-color: #2A2420 !important; }
+
+/* Pastille-blob de l'icône, débordant en haut à gauche */
+[data-sonner-toast] [data-icon] {
+  position: absolute !important;
+  top: -16px;
+  left: -13px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 46% 54% 60% 40% / 52% 42% 58% 46%;
+  box-shadow: 0 6px 16px rgba(15, 13, 11, 0.30);
+}
+[data-sonner-toast] [data-icon] svg { color: #FFFFFF !important; width: 18px; height: 18px; }
+[data-sonner-toast][data-type='success'] [data-icon] { background: #33795F; }
+[data-sonner-toast][data-type='error']   [data-icon] { background: #B32247; }
+[data-sonner-toast][data-type='warning'] [data-icon] { background: #BC5A10; }
+[data-sonner-toast][data-type='info']    [data-icon] { background: #1453B8; }
+[data-sonner-toast][data-type='loading'] [data-icon] { background: transparent; box-shadow: none; position: static; width: auto; height: auto; }
+
+.leoui-toast-title {
+  font-family: 'Jost', 'DM Sans', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  color: #FFFFFF !important;
+}
+.leoui-toast-desc {
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+.leoui-toast-desc a { color: #FFFFFF !important; text-decoration: underline; }
+.leoui-toast-btn {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+}
+.leoui-toast-btn:hover { background: rgba(255, 255, 255, 0.32) !important; }
+.leoui-toast-cancel {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  border: none !important;
+  font-size: 12px !important;
+}
+.leoui-toast-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  left: auto !important;
+  transform: none !important;
+  width: 24px;
+  height: 24px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  opacity: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 50% !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+.leoui-toast-close svg { width: 14px; height: 14px; }
+.leoui-toast-close:hover { color: #FFFFFF !important; background: rgba(255,255,255,0.15) !important; }
