@@ -90,12 +90,32 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Menu du mariage & journal des décisions : lecture/écriture réservée au couple propriétaire.
+    match /menus/{eventId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.owner_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.event_id == eventId
+        || isAdmin();
+      allow update: if isSignedIn()
+        && resource.data.owner_id == request.auth.uid
+        && !hasAny(['owner_id', 'event_id'])
+        || isAdmin();
+      allow delete: if isAdmin();
+
+      match /decisions/{decisionId} {
+        allow read, create: if isSignedIn()
+          && (get(/databases/$(database)/documents/menus/$(eventId)).data.owner_id == request.auth.uid || isAdmin());
+        allow update, delete: if isAdmin();
+      }
+    }
+
     // Default fallback. Les collections market_*, guestbooks, guestbook_entries,
-    // clients et events sont volontairement exclues : les règles s'additionnent (OR),
+    // menus, clients et events sont volontairement exclues : les règles s'additionnent (OR),
     // il ne faut donc pas laisser le wildcard global court-circuiter leurs règles dédiées.
     match /{collection}/{doc=**} {
       allow read, write: if isSignedIn()
-        && !collection.matches('market_.*|guestbooks|guestbook_entries|clients|events');
+        && !collection.matches('market_.*|guestbooks|guestbook_entries|menus|clients|events');
     }
   }
 }
