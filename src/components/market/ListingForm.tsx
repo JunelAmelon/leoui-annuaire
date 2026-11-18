@@ -190,7 +190,7 @@ export default function ListingForm({ mode, initial, defaultCity = '', defaultPo
                 type="button"
                 onClick={() => removePhoto(p.key)}
                 aria-label="Retirer la photo"
-                className="absolute top-1.5 right-1.5 w-6 h-6 bg-charcoal-900/80 hover:bg-rose-600 text-white flex items-center justify-center"
+                className="absolute top-1.5 right-1.5 w-6 h-6 bg-charcoal-900/80 hover:bg-charcoal-900 text-white flex items-center justify-center"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
