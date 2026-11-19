@@ -168,12 +168,31 @@ service cloud.firestore {
       }
     }
 
+    // Playlist du mariage & briefing DJ (Sprint Novembre 2026 - Adnane)
+    match /playlists/{eventId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.owner_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.event_id == eventId
+        || isAdmin();
+      allow update: if isSignedIn()
+        && resource.data.owner_id == request.auth.uid
+        && !hasAny(['owner_id', 'event_id'])
+        || isAdmin();
+      allow delete: if isAdmin();
+
+      match /tracks/{trackId} {
+        allow read, write: if isSignedIn()
+          && (get(/databases/$(database)/documents/playlists/$(eventId)).data.owner_id == request.auth.uid || isAdmin());
+      }
+    }
+
     // Default fallback. Les collections market_*, guestbooks, guestbook_entries,
-    // menus, clients et events sont volontairement exclues : les règles s'additionnent (OR),
+    // menus, playlists, clients et events sont volontairement exclues : les règles s'additionnent (OR),
     // il ne faut donc pas laisser le wildcard global court-circuiter leurs règles dédiées.
     match /{collection}/{doc=**} {
       allow read, write: if isSignedIn()
-        && !collection.matches('market_.*|guestbooks|guestbook_entries|seating_plans|day_plans|gazettes|menus|clients|events');
+        && !collection.matches('market_.*|guestbooks|guestbook_entries|seating_plans|day_plans|gazettes|menus|playlists|clients|events');
     }
   }
 }
