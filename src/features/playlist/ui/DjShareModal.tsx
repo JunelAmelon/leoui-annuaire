@@ -88,28 +88,54 @@ export function DjShareModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#FFFEFC] border border-stone-300 shadow-xl w-full max-w-lg p-6 sm:p-7 space-y-6">
-        {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-stone-200 pb-4">
-          <div>
-            <span className="text-[10px] font-semibold tracking-[0.24em] uppercase text-rose-700">
-              ACCÈS PRESTATAIRE
-            </span>
+      <div className="bg-[#FFFEFC] border border-stone-300 shadow-xl w-full max-w-3xl max-h-[92vh] flex flex-col md:flex-row overflow-hidden">
+        {/* ── Visuel (bandeau mobile / colonne desktop) ── */}
+        <div className="relative md:w-[38%] flex-shrink-0 h-36 sm:h-44 md:h-auto bg-[#141211] overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/playlist-cover.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#141211] via-[#141211]/40 to-[#141211]/10" />
+          <div className="absolute bottom-0 inset-x-0 p-5 md:p-7">
+            <p className="text-[10px] font-semibold tracking-[0.24em] uppercase text-rose-300/90">
+              Accès prestataire
+            </p>
             <h3
-              className="text-stone-900 text-lg font-normal"
+              className="text-white text-xl md:text-2xl font-normal mt-1 leading-tight"
               style={{ fontFamily: "'Bodoni Moda', serif" }}
             >
-              BRIEFING & FICHE DJ
+              Briefing &amp; fiche DJ
             </h3>
+            <p
+              className="hidden md:block text-[13px] italic text-white/70 mt-3 max-w-[15rem] leading-snug"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              « Tout ce que votre DJ doit savoir, en un seul lien. »
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-900 transition-colors"
+            aria-label="Fermer"
+            className="md:hidden absolute top-3 right-3 w-9 h-9 rounded-full bg-black/45 backdrop-blur-sm text-white flex items-center justify-center"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* ── Contenu ── */}
+        <div className="flex-1 min-w-0 min-h-0 overflow-y-auto p-6 sm:p-7 space-y-6">
+          <div className="hidden md:flex items-center justify-between pb-1 border-b border-stone-200">
+            <span className="text-[10px] font-semibold tracking-[0.24em] uppercase text-stone-400">
+              Lien en direct &amp; export papier
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-charcoal-400 hover:bg-stone-100 hover:text-charcoal-800 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
         {/* Section 1 : Lien public sécurisé pour le DJ */}
         <div className="space-y-3">
@@ -213,6 +239,7 @@ export function DjShareModal({
           >
             Fermer
           </button>
+        </div>
         </div>
       </div>
     </div>

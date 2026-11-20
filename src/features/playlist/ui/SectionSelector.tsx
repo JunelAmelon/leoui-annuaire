@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Clock } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import type { DayPlanMomentRef, PlaylistSection, PlaylistTrack } from '../domain/types';
 import { formatMomentTime } from '../domain/playlist-rules';
 
@@ -112,8 +112,8 @@ export function SectionSelector({
         </form>
       )}
 
-      {/* Liste des sections façon sommaire éditorial */}
-      <div className="flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+      {/* Sommaire des moments — ordinaux Bodoni, liseré rose actif */}
+      <div className="flex md:flex-col overflow-x-auto scrollbar-none pb-1 md:pb-0 -mx-1 px-1 md:mx-0 md:px-0">
         {sections.map((section, idx) => {
           const isActive = section.id === activeSectionId;
           const sectionTracks = tracks.filter((t) => t.section_id === section.id);
@@ -125,83 +125,69 @@ export function SectionSelector({
           return (
             <div
               key={section.id}
-              className={`group flex items-center justify-between text-left px-3 py-2.5 border transition-all cursor-pointer min-w-[200px] md:min-w-0 ${
-                isActive
-                  ? 'bg-white border-rose-600 shadow-sm'
-                  : 'bg-[#FFFEFC] border-stone-200/80 hover:border-stone-300'
-              }`}
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectSection(section.id)}
+              onKeyDown={(e) => e.key === 'Enter' && onSelectSection(section.id)}
+              className={`group flex items-baseline gap-3 text-left whitespace-nowrap md:whitespace-normal px-3 py-2.5 md:px-0 md:py-3 border-b-2 md:border-b-0 md:border-l-2 cursor-pointer transition-colors min-w-[190px] md:min-w-0 ${
+                isActive
+                  ? 'border-rose-600 md:pl-4'
+                  : 'border-transparent md:pl-4 hover:border-stone-300'
+              }`}
             >
-              <div className="flex-1 min-w-0 pr-2">
-                <div className="flex items-center gap-1.5">
+              {/* Ordinal Bodoni */}
+              <span
+                className={`text-lg leading-none tabular-nums select-none ${
+                  isActive ? 'text-rose-500' : 'text-[#E5D5C8]'
+                }`}
+                style={{ fontFamily: "'Bodoni Moda', 'Didot', serif" }}
+              >
+                {String(idx + 1).padStart(2, '0')}
+              </span>
+
+              <span className="flex-1 min-w-0">
+                <span className="flex items-center gap-1.5">
                   <span
-                    className={`text-xs font-serif ${
-                      isActive ? 'text-rose-600 font-bold' : 'text-stone-400'
-                    }`}
-                  >
-                    0{idx + 1}.
-                  </span>
-                  <span
-                    className={`text-xs font-semibold uppercase tracking-wider truncate ${
-                      isActive ? 'text-stone-900' : 'text-stone-600'
+                    className={`block text-[13px] leading-tight truncate ${
+                      isActive ? 'text-charcoal-900 font-medium' : 'text-charcoal-500'
                     }`}
                   >
                     {section.label}
                   </span>
-                </div>
-
-                {/* Heure liée du jour J */}
-                {linkedMoment ? (
-                  <p className="text-[10px] text-rose-700 flex items-center gap-1 mt-0.5 font-medium">
-                    <Clock className="w-2.5 h-2.5" />
-                    {formatMomentTime(linkedMoment.start_at)}
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-stone-400 italic mt-0.5">
-                    Sans horaire fixé
-                  </p>
-                )}
-              </div>
-
-              {/* Compteurs */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {mustPlayCount > 0 && (
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-rose-600"
-                    title={`${mustPlayCount} morceau(x) incontournable(s)`}
-                  />
-                )}
-                <span
-                  className={`text-[11px] font-mono px-1.5 py-0.5 ${
-                    isActive
-                      ? 'bg-rose-50 text-rose-700 font-semibold'
-                      : 'bg-stone-100 text-stone-600'
-                  }`}
-                >
-                  {sectionTracks.length}
+                  {mustPlayCount > 0 && (
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0"
+                      title={`${mustPlayCount} morceau(x) incontournable(s)`}
+                    />
+                  )}
                 </span>
+                <span className="block text-[11px] italic text-charcoal-400 mt-0.5">
+                  {linkedMoment ? formatMomentTime(linkedMoment.start_at) : 'Horaire libre'}
+                  {' · '}
+                  {sectionTracks.length ? `${sectionTracks.length} titre${sectionTracks.length > 1 ? 's' : ''}` : 'aucun titre'}
+                </span>
+              </span>
 
-                {/* Bouton supprimer section (si plus de 1 section) */}
-                {sections.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (
-                        confirm(
-                          `Supprimer le moment « ${section.label} » et ses morceaux ?`
-                        )
-                      ) {
-                        onRemoveSection(section.id);
-                      }
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-stone-400 hover:text-red-600 transition-opacity"
-                    title="Supprimer ce moment"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              {/* Bouton supprimer section (si plus de 1 section) */}
+              {sections.length > 1 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (
+                      confirm(
+                        `Supprimer le moment « ${section.label} » et ses morceaux ?`
+                      )
+                    ) {
+                      onRemoveSection(section.id);
+                    }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 text-stone-300 hover:text-red-600 transition-opacity shrink-0 self-center"
+                  title="Supprimer ce moment"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
             </div>
           );
         })}

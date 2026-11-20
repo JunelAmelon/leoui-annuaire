@@ -151,28 +151,54 @@ export function AddTrackModal({
         onEnded={() => setTestingPreview(null)}
       />
 
-      <div className="bg-[#FFFEFC] border border-stone-300 shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* En-tête de la modale */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
-          <div>
-            <span className="text-[10px] font-semibold tracking-[0.24em] uppercase text-rose-700">
-              AJOUTER UN TITRE
-            </span>
+      <div className="bg-[#FFFEFC] border border-stone-300 shadow-xl w-full max-w-4xl max-h-[92vh] flex flex-col md:flex-row overflow-hidden">
+        {/* ── Visuel (bandeau mobile / colonne desktop) ── */}
+        <div className="relative md:w-[38%] flex-shrink-0 h-36 sm:h-44 md:h-auto bg-[#141211] overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/playlist-cover.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#141211] via-[#141211]/40 to-[#141211]/10" />
+          <div className="absolute bottom-0 inset-x-0 p-5 md:p-7">
+            <p className="text-[10px] font-semibold tracking-[0.24em] uppercase text-rose-300/90">
+              Ajouter un titre
+            </p>
             <h3
-              className="text-stone-900 text-lg font-normal"
+              className="text-white text-xl md:text-2xl font-normal mt-1 leading-tight"
               style={{ fontFamily: "'Bodoni Moda', serif" }}
             >
               {sectionLabel}
             </h3>
+            <p
+              className="hidden md:block text-[13px] italic text-white/70 mt-3 max-w-[15rem] leading-snug"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              « Chaque moment mérite sa bande-son. »
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-900 transition-colors"
+            aria-label="Fermer"
+            className="md:hidden absolute top-3 right-3 w-9 h-9 rounded-full bg-black/45 backdrop-blur-sm text-white flex items-center justify-center"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* ── Formulaire ── */}
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+          <div className="hidden md:flex items-center justify-between px-6 pt-4">
+            <span className="text-[10px] font-semibold tracking-[0.24em] uppercase text-stone-400">
+              Recherche catalogue ou saisie manuelle
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-charcoal-400 hover:bg-stone-100 hover:text-charcoal-800 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
         {/* Onglets Spotify / Manuel */}
         <div className="flex border-b border-stone-200 bg-stone-50/50">
@@ -398,6 +424,7 @@ export function AddTrackModal({
               </button>
             </div>
           </form>
+        </div>
         </div>
       </div>
     </div>
