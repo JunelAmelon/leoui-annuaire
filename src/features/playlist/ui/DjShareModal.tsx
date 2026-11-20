@@ -87,7 +87,7 @@ export function DjShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-[#FFFEFC] border border-stone-300 shadow-xl w-full max-w-lg p-6 sm:p-7 space-y-6">
         {/* En-tête */}
         <div className="flex items-center justify-between border-b border-stone-200 pb-4">
@@ -132,7 +132,7 @@ export function DjShareModal({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-stone-900 text-white hover:bg-rose-700 transition-colors uppercase shrink-0"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 transition-colors uppercase shrink-0"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'Copié' : 'Copier'}</span>
@@ -173,7 +173,7 @@ export function DjShareModal({
                 type="button"
                 onClick={onGenerateToken}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wider bg-stone-900 text-white hover:bg-rose-700 uppercase transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wider bg-rose-600 text-white hover:bg-rose-700 uppercase transition-colors"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 Générer le lien d'accès DJ

@@ -102,7 +102,7 @@ export function TrackListTable({
           type="button"
           onClick={onOpenAddModal}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold tracking-wider uppercase bg-stone-900 text-white hover:bg-rose-700 transition-colors shadow-xs"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold tracking-wider uppercase bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-soft"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>AJOUTER UN MORCEAU</span>
@@ -195,7 +195,7 @@ export function TrackListTable({
                     <button
                       type="button"
                       onClick={() => handleSaveEdit(track.id)}
-                      className="px-4 py-1 text-xs font-semibold bg-stone-900 text-white hover:bg-rose-700 uppercase"
+                      className="px-4 py-1 text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 uppercase"
                     >
                       Enregistrer
                     </button>
@@ -235,6 +235,16 @@ export function TrackListTable({
                     </button>
                   </div>
 
+                  {/* Ordinal Bodoni (signature éditoriale) */}
+                  <span
+                    className={`hidden sm:block text-xl leading-none tabular-nums select-none w-8 text-right shrink-0 ${
+                      isCurrentPlaying ? 'text-rose-500' : 'text-[#E9B9C8]'
+                    }`}
+                    style={{ fontFamily: "'Bodoni Moda', 'Didot', serif" }}
+                  >
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+
                   {/* Numéro & Play trigger */}
                   <button
                     type="button"
@@ -266,7 +276,9 @@ export function TrackListTable({
                   {/* Titre & Artiste */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs sm:text-sm font-medium text-stone-900 truncate">
+                      <span
+                        className="font-serif text-[15px] sm:text-base font-semibold text-charcoal-900 truncate leading-snug"
+                      >
                         {track.title}
                       </span>
 

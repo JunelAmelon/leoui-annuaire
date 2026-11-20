@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import {
   drawSpaced,
+  loadCoverJpeg,
   pdfSafe,
   registerPdfFonts,
   setDraw,
@@ -85,19 +86,44 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
     y = MARGIN + 4;
   };
 
-  // ── En-tête éditorial ──
-  caps('LE OUI PARFAIT — DIRECTION ARTISTIQUE & BRIEFING DJ', MARGIN, y, 7.5, ROSE);
-  y += 6;
+  // ── En-tête éditorial : bandeau photo façon « fiche de studio » ──
+  const BANNER_H = 62;
+  const img = await loadCoverJpeg('/playlist-cover.jpg', (PAGE_W - 20) / BANNER_H, 1800);
+  if (img) {
+    doc.addImage(img, 'JPEG', 10, 10, PAGE_W - 20, BANNER_H, undefined, 'FAST');
+    const adv = doc as unknown as {
+      saveGraphicsState(): void; restoreGraphicsState(): void;
+      GState: new (o: { opacity: number }) => object; setGState(g: object): void;
+    };
+    adv.saveGraphicsState();
+    adv.setGState(new adv.GState({ opacity: 0.5 }));
+    setFill(doc, '#141211');
+    doc.rect(10, BANNER_H * 0.42 + 10, PAGE_W - 20, BANNER_H * 0.58, 'F');
+    adv.restoreGraphicsState();
 
-  try {
+    doc.setFont('Sans', 'normal');
+    doc.setFontSize(8);
+    setText(doc, '#F6D2DC');
+    drawSpaced(doc, 'LE OUI PARFAIT — DIRECTION ARTISTIQUE & BRIEFING DJ', PAGE_W / 2, BANNER_H * 0.6 + 10, { spacing: 1.1, align: 'center' });
+
     doc.setFont('Numeral', 'normal');
-  } catch {
-    doc.setFont('times', 'bold');
+    doc.setFontSize(24);
+    setText(doc, '#FFFFFF');
+    doc.text(pdfSafe(options.coupleNames || 'Mariage'), PAGE_W / 2, BANNER_H * 0.84 + 10, { align: 'center' });
+  } else {
+    setFill(doc, '#141211');
+    doc.rect(10, 10, PAGE_W - 20, BANNER_H, 'F');
+    doc.setFont('Sans', 'normal');
+    doc.setFontSize(8);
+    setText(doc, '#F6D2DC');
+    drawSpaced(doc, 'LE OUI PARFAIT — DIRECTION ARTISTIQUE & BRIEFING DJ', PAGE_W / 2, BANNER_H * 0.52 + 10, { spacing: 1.1, align: 'center' });
+    doc.setFont('Numeral', 'normal');
+    doc.setFontSize(24);
+    setText(doc, '#FFFFFF');
+    doc.text(pdfSafe(options.coupleNames || 'Mariage'), PAGE_W / 2, BANNER_H * 0.8 + 10, { align: 'center' });
   }
-  doc.setFontSize(22);
-  setText(doc, INK);
-  doc.text(pdfSafe(options.coupleNames || 'Mariage'), MARGIN, y);
-  y += 7;
+
+  y = 10 + BANNER_H + 10;
 
   try {
     doc.setFont('Serif', 'italic');
@@ -112,7 +138,7 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
   if (options.venueName) sublineParts.push(options.venueName);
   const subline = sublineParts.join('  •  ');
   if (subline) {
-    doc.text(pdfSafe(subline), MARGIN, y);
+    doc.text(pdfSafe(subline), PAGE_W / 2, y, { align: 'center' });
     y += 7;
   }
 

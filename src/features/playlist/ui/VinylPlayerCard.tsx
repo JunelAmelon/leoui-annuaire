@@ -381,7 +381,7 @@ export function VinylPlayerCard({
                 disabled={!track.preview_url}
                 className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-semibold tracking-wider uppercase transition-colors ${
                   track.preview_url
-                    ? 'bg-stone-900 text-white hover:bg-rose-700'
+                    ? 'bg-rose-600 text-white hover:bg-rose-700'
                     : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                 }`}
               >

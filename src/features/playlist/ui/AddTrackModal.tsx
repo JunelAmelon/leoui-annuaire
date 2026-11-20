@@ -145,7 +145,7 @@ export function AddTrackModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fade-in">
       <audio
         ref={audioTestRef}
         onEnded={() => setTestingPreview(null)}
@@ -392,7 +392,7 @@ export function AddTrackModal({
               <button
                 type="submit"
                 disabled={!title.trim() || !artist.trim() || busy}
-                className="px-6 py-2 text-xs font-semibold tracking-wider bg-stone-900 text-white hover:bg-rose-700 transition-colors uppercase disabled:opacity-50"
+                className="px-6 py-2 text-xs font-semibold tracking-wider bg-rose-600 text-white hover:bg-rose-700 transition-colors uppercase disabled:opacity-50"
               >
                 Ajouter à la playlist
               </button>

@@ -5,9 +5,6 @@ import {
   Disc3,
   Share2,
   FileDown,
-  Flame,
-  Ban,
-  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +18,7 @@ import type {
   WeddingPlaylist,
 } from '@/features/playlist/domain/types';
 import { computePlaylistStats, formatMomentTime } from '@/features/playlist/domain/playlist-rules';
+import { formatLongDate } from '@/features/day-plan/domain/timeline';
 import { VinylPlayerCard } from '@/features/playlist/ui/VinylPlayerCard';
 import { SectionSelector } from '@/features/playlist/ui/SectionSelector';
 import { TrackListTable } from '@/features/playlist/ui/TrackListTable';
@@ -365,106 +363,103 @@ export default function CouplePlaylistPage() {
     );
   }
 
+  const heroStats: Array<{ label: string; value: number; tone?: 'rose' | 'red' }> = [
+    { label: 'Titres', value: stats.total },
+    { label: 'Must-play', value: stats.must_play, tone: 'rose' },
+    { label: 'Blacklist', value: stats.banned, tone: 'red' },
+    { label: 'Moments', value: playlist?.sections.length ?? 0 },
+  ];
+
+  const outline = 'inline-flex items-center justify-center gap-2 h-11 px-5 border border-stone-300 text-charcoal-800 text-[13px] font-medium hover:border-charcoal-900 transition-colors rounded-sm';
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-20">
-      {/* ── En-tête de page éditorial ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200/80 pb-6">
-        <div>
-          <div className="flex items-center gap-2 text-rose-600 mb-1">
-            <span className="text-[10px] font-semibold tracking-[0.24em] uppercase">
-              LE OUI PARFAIT • DIRECTION ARTISTIQUE
-            </span>
+    <div className="space-y-6 pb-20">
+      {/* ── En-tête hero (pattern Jour J / Menu) ── */}
+      <header className="relative bg-white border border-stone-200 overflow-hidden">
+        <div className="grid lg:grid-cols-[1fr_24rem]">
+          <div className="px-5 sm:px-9 lg:px-12 pt-8 sm:pt-11 pb-7">
+            <p className="text-[10px] font-semibold tracking-[0.24em] uppercase text-rose-600">
+              La playlist
+            </p>
+            <h1
+              className="font-serif text-charcoal-900 mt-3 leading-none"
+              style={{ fontSize: 'clamp(2.1rem, 4.4vw, 3.2rem)', fontWeight: 400, letterSpacing: '-0.02em' }}
+            >
+              Playlist &amp; briefing DJ
+            </h1>
+            <p
+              className="text-rose-600 mt-2 leading-tight"
+              style={{ fontFamily: "'Mrs Saint Delafield', cursive", fontSize: '1.45rem' }}
+            >
+              {coupleNames}
+            </p>
+            {eventDate && (
+              <p className="text-[15px] text-charcoal-500 mt-1 first-letter:uppercase">
+                {formatLongDate(eventDate)}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-3 mt-8">
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 h-11 px-6 bg-rose-600 text-white text-[13px] font-medium hover:bg-rose-700 transition-colors rounded-sm"
+              >
+                <Share2 className="w-4 h-4" /> Partager au DJ
+              </button>
+              <button
+                type="button"
+                onClick={handleDirectDownloadPdf}
+                disabled={downloadingPdf || busy}
+                className={`${outline} disabled:opacity-40`}
+              >
+                <FileDown className="w-4 h-4" />
+                {downloadingPdf ? 'Export…' : 'Briefing PDF'}
+              </button>
+            </div>
           </div>
-          <h1
-            className="text-2xl sm:text-3xl lg:text-4xl font-normal text-stone-900 tracking-tight"
-            style={{ fontFamily: "'Bodoni Moda', serif" }}
-          >
-            PLAYLIST & BRIEFING DJ
-          </h1>
-          <p
-            className="text-rose-600 text-lg sm:text-xl mt-1"
-            style={{ fontFamily: "'Mrs Saint Delafield', cursive" }}
-          >
-            {coupleNames}
-          </p>
+
+          <div className="relative order-first lg:order-none h-44 sm:h-56 lg:h-auto lg:min-h-[17rem]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/playlist-cover.jpg"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-[50%_40%]"
+            />
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent hidden lg:block" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#1A1013]/85 to-transparent" />
+            <p
+              className="absolute bottom-4 sm:bottom-5 right-5 sm:right-6 left-5 lg:left-10 text-right font-serif italic text-white text-base sm:text-lg leading-snug"
+              style={{ textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}
+            >
+              « La musique est la mémoire la plus fidèle d’une soirée. »
+            </p>
+          </div>
         </div>
 
-        {/* Boutons d'action rapides */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            type="button"
-            onClick={handleDirectDownloadPdf}
-            disabled={downloadingPdf || busy}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold tracking-wider uppercase bg-white text-stone-800 border border-stone-300 hover:border-stone-500 hover:text-stone-950 transition-colors shadow-xs"
-          >
-            <FileDown className="w-3.5 h-3.5 text-rose-600" />
-            <span>{downloadingPdf ? 'Export PDF…' : 'Briefing PDF'}</span>
-          </button>
+        {/* Synthèse en onglets (pattern Jour J) */}
+        <nav
+          className="flex gap-x-8 px-5 sm:px-9 lg:px-12 border-t border-stone-200 overflow-x-auto subtle-scroll"
+          aria-label="Synthèse de la playlist"
+        >
+          {heroStats.map((s) => (
+            <div key={s.label} className="py-4 whitespace-nowrap">
+              <span className="flex items-baseline gap-2 text-[14px]">
+                <span className="text-charcoal-500">{s.label}</span>
+                <span
+                  className={`tabular-nums font-medium ${
+                    s.tone === 'rose' ? 'text-rose-600' : s.tone === 'red' ? 'text-red-700' : 'text-charcoal-900'
+                  }`}
+                >
+                  {s.value}
+                </span>
+              </span>
+            </div>
+          ))}
+        </nav>
+      </header>
 
-          <button
-            type="button"
-            onClick={() => setIsShareModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wider uppercase bg-stone-900 text-white hover:bg-rose-700 transition-colors shadow-xs"
-          >
-            <Share2 className="w-3.5 h-3.5 text-rose-300" />
-            <span>Partager au DJ</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Bandeau métriques & synthèse ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-[#FFFEFC] border border-stone-200/80 p-3 sm:p-4">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-stone-400 block">
-            TOTAL TITRES
-          </span>
-          <p
-            className="text-2xl sm:text-3xl font-normal text-stone-900 mt-1"
-            style={{ fontFamily: "'Bodoni Moda', serif" }}
-          >
-            {stats.total}
-          </p>
-        </div>
-
-        <div className="bg-[#FFFEFC] border border-stone-200/80 p-3 sm:p-4">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-rose-700 block flex items-center gap-1">
-            <Flame className="w-3 h-3 text-rose-600" />
-            MUST-PLAY
-          </span>
-          <p
-            className="text-2xl sm:text-3xl font-normal text-rose-700 mt-1"
-            style={{ fontFamily: "'Bodoni Moda', serif" }}
-          >
-            {stats.must_play}
-          </p>
-        </div>
-
-        <div className="bg-[#FFFEFC] border border-stone-200/80 p-3 sm:p-4">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-red-700 block flex items-center gap-1">
-            <Ban className="w-3 h-3 text-red-600" />
-            BLACKLIST
-          </span>
-          <p
-            className="text-2xl sm:text-3xl font-normal text-stone-900 mt-1"
-            style={{ fontFamily: "'Bodoni Moda', serif" }}
-          >
-            {stats.banned}
-          </p>
-        </div>
-
-        <div className="bg-[#FFFEFC] border border-stone-200/80 p-3 sm:p-4">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-stone-400 block flex items-center gap-1">
-            <Clock className="w-3 h-3 text-stone-400" />
-            MOMENTS
-          </span>
-          <p
-            className="text-2xl sm:text-3xl font-normal text-stone-900 mt-1"
-            style={{ fontFamily: "'Bodoni Moda', serif" }}
-          >
-            {playlist?.sections.length ?? 0}
-          </p>
-        </div>
-      </div>
+      <div className="space-y-6 px-4 sm:px-6 max-w-7xl mx-auto w-full">
 
       {/* ── Studio d'écoute vinyle & Canvas ── */}
       <VinylPlayerCard
@@ -510,6 +505,7 @@ export default function CouplePlaylistPage() {
             onUnbanTrack={handleUnbanTrack}
           />
         </div>
+      </div>
       </div>
 
       {/* ── Modales ── */}

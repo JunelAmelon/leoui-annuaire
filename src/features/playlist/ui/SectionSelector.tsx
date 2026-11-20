@@ -66,7 +66,7 @@ export function SectionSelector({
       {isAdding && (
         <form
           onSubmit={handleAddSubmit}
-          className="p-3 bg-white border border-stone-200 space-y-3 animate-fadeIn"
+          className="p-3 bg-white border border-stone-200 space-y-3 animate-fade-in"
         >
           <div className="space-y-2">
             <input
@@ -104,7 +104,7 @@ export function SectionSelector({
             <button
               type="submit"
               disabled={!newLabel.trim() || busy}
-              className="text-[11px] font-semibold bg-stone-900 text-white hover:bg-rose-700 px-3 py-1 uppercase disabled:opacity-50"
+              className="text-[11px] font-semibold bg-rose-600 text-white hover:bg-rose-700 px-3 py-1 uppercase disabled:opacity-50"
             >
               Enregistrer
             </button>

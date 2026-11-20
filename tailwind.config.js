@@ -166,6 +166,7 @@ export default {
         'fade-in':  'fadeIn 0.8s ease-out',
         'slide-up': 'slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
         'scale-in': 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        'spin-slow': 'spin 10s linear infinite',
       },
       keyframes: {
         fadeIn: {
