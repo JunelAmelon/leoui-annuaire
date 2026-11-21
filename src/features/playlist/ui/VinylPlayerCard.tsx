@@ -13,6 +13,7 @@ import {
   Ban,
   Maximize2,
   Minimize2,
+  ExternalLink,
 } from 'lucide-react';
 import type { PlaylistTrack } from '../domain/types';
 
@@ -45,14 +46,39 @@ export function VinylPlayerCard({
   const [isMuted, setIsMuted] = useState(false);
   const [isCanvasMode, setIsCanvasMode] = useState(false);
   const [audioError, setAudioError] = useState(false);
+  const [resolvedPreviewUrl, setResolvedPreviewUrl] = useState<string | null>(null);
+  const [resolvingPreview, setResolvingPreview] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fallbackTriedRef = useRef(false);
 
-  // Synchronise audio track change
+  const effectivePreviewUrl = resolvedPreviewUrl || track?.preview_url || null;
+
+  const fetchFallbackPreview = async (title: string, artist: string) => {
+    try {
+      setResolvingPreview(true);
+      const res = await fetch(
+        `/api/playlist/preview?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.preview_url ? String(data.preview_url) : null;
+    } catch {
+      return null;
+    } finally {
+      setResolvingPreview(false);
+    }
+  };
+
+  // Synchronise audio track change & résout un extrait si absent
   useEffect(() => {
+    let active = true;
     setIsPlaying(false);
     setCurrentTime(0);
+    setDuration(0);
     setAudioError(false);
+    setResolvedPreviewUrl(null);
+    fallbackTriedRef.current = false;
 
     if (audioRef.current) {
       audioRef.current.pause();
@@ -63,16 +89,48 @@ export function VinylPlayerCard({
         audioRef.current.removeAttribute('src');
       }
     }
-  }, [track?.id, track?.preview_url]);
+
+    if (track && !track.preview_url) {
+      fallbackTriedRef.current = true;
+      fetchFallbackPreview(track.title, track.artist).then((url) => {
+        if (!active || !url) return;
+        setResolvedPreviewUrl(url);
+        if (audioRef.current) {
+          audioRef.current.src = url;
+          audioRef.current.load();
+        }
+      });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [track?.id, track?.preview_url, track?.title, track?.artist]);
+
+  const handleAudioError = async () => {
+    if (track && !fallbackTriedRef.current) {
+      fallbackTriedRef.current = true;
+      const freshUrl = await fetchFallbackPreview(track.title, track.artist);
+      if (freshUrl && audioRef.current) {
+        setAudioError(false);
+        setResolvedPreviewUrl(freshUrl);
+        audioRef.current.src = freshUrl;
+        audioRef.current.load();
+        return;
+      }
+    }
+    setAudioError(true);
+    setIsPlaying(false);
+  };
 
   const togglePlay = () => {
-    if (!track?.preview_url || !audioRef.current) return;
+    if (!effectivePreviewUrl || !audioRef.current) return;
 
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      const cueSec = parseCueToSeconds(track.cue_time);
+      const cueSec = parseCueToSeconds(track?.cue_time);
       if (currentTime === 0 && cueSec > 0) {
         audioRef.current.currentTime = cueSec;
       }
@@ -81,8 +139,7 @@ export function VinylPlayerCard({
         .then(() => setIsPlaying(true))
         .catch((err) => {
           console.warn('Playback blocked or failed:', err);
-          setAudioError(true);
-          setIsPlaying(false);
+          handleAudioError();
         });
     }
   };
@@ -135,7 +192,7 @@ export function VinylPlayerCard({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
         onEnded={() => setIsPlaying(false)}
-        onError={() => setAudioError(true)}
+        onError={handleAudioError}
       />
 
       {/* Header bar */}
@@ -180,7 +237,7 @@ export function VinylPlayerCard({
 
       {!track ? (
         <div className="py-12 text-center">
-          <Disc3 className="w-12 h-12 text-stone-300 mx-auto animate-spin-slow opacity-60 mb-3" />
+          <Disc3 className="w-12 h-12 text-stone-300 mx-auto animate-spin opacity-60 mb-3" style={{ animationDuration: '6s' }} />
           <p
             className="text-stone-500 italic text-sm"
             style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.1rem' }}
@@ -189,23 +246,48 @@ export function VinylPlayerCard({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 lg:gap-10 items-center">
           {/* Mode 1: Vinyle 3D avec pochette carrée */}
           {!isCanvasMode ? (
-            <div className="relative mx-auto flex items-center justify-center w-48 h-48 sm:w-56 sm:h-56 group">
-              {/* Disque vinyle sortant */}
+            <div className="relative mx-auto flex items-center justify-start w-60 h-48 sm:w-72 sm:h-52 group">
+              {/* Wrapper de translation (sortie du disque) */}
               <div
-                className={`absolute w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-stone-950 via-stone-900 to-stone-950 shadow-2xl border-4 border-stone-800 flex items-center justify-center transition-transform duration-700 ${
-                  isPlaying ? 'translate-x-12 sm:translate-x-16 rotate-180 animate-spin-slow' : 'translate-x-2'
+                className={`absolute left-0 top-1/2 -translate-y-1/2 w-44 h-44 sm:w-52 sm:h-52 transition-transform duration-700 ease-out ${
+                  isPlaying ? 'translate-x-16 sm:translate-x-20' : 'translate-x-4 sm:translate-x-5'
                 }`}
                 style={{ zIndex: 1 }}
               >
-                {/* Sillons vinyle */}
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-stone-800/80 flex items-center justify-center">
-                  <div className="w-28 h-28 sm:w-34 sm:h-34 rounded-full border border-stone-700/60 flex items-center justify-center">
-                    {/* Macaron central */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-rose-700 flex items-center justify-center border-2 border-stone-900 shadow-inner">
-                      <div className="w-3 h-3 rounded-full bg-stone-100 border border-stone-400" />
+                {/* Disque vinyle rotatif (rotation continue fluide) */}
+                <div
+                  className="w-full h-full rounded-full bg-stone-950 shadow-2xl border-2 border-stone-800 flex items-center justify-center relative overflow-hidden animate-spin"
+                  style={{
+                    animationDuration: '3.5s',
+                    animationPlayState: isPlaying ? 'running' : 'paused',
+                  }}
+                >
+                  {/* Reflet brillant conique pour rendre la rotation bien visible */}
+                  <div
+                    className="absolute inset-0 rounded-full opacity-35 pointer-events-none"
+                    style={{
+                      background:
+                        'conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.45) 35deg, transparent 80deg, transparent 180deg, rgba(255,255,255,0.35) 215deg, transparent 260deg)',
+                    }}
+                  />
+                  {/* Sillons vinyle */}
+                  <div className="w-[84%] h-[84%] rounded-full border border-stone-700/60 flex items-center justify-center">
+                    <div className="w-[78%] h-[78%] rounded-full border border-stone-800/90 flex items-center justify-center">
+                      <div className="w-[72%] h-[72%] rounded-full border border-stone-700/50 flex items-center justify-center">
+                        {/* Macaron central avec miniature de la pochette qui tourne avec le disque */}
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-rose-700 flex items-center justify-center border-2 border-stone-900 shadow-inner relative overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={coverUrl}
+                            alt=""
+                            className="w-full h-full object-cover opacity-85"
+                          />
+                          <div className="absolute w-3.5 h-3.5 rounded-full bg-stone-100 border-2 border-stone-900 shadow" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -213,7 +295,7 @@ export function VinylPlayerCard({
 
               {/* Pochette carton */}
               <div
-                className="relative w-44 h-44 sm:w-52 sm:h-52 bg-stone-900 shadow-lg border border-stone-200 overflow-hidden"
+                className="relative w-44 h-44 sm:w-52 sm:h-52 bg-stone-900 shadow-lg border border-stone-200 overflow-hidden shrink-0"
                 style={{ zIndex: 2 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -240,16 +322,27 @@ export function VinylPlayerCard({
               </div>
             </div>
           ) : (
-            /* Mode 2: Canvas vertical 9:16 stylisé */
+            /* Mode 2: Canvas vertical 9:16 stylisé (supporte vidéo MP4/WebM ou image animée) */
             <div className="relative mx-auto w-48 sm:w-52 h-72 sm:h-80 bg-stone-950 rounded-sm shadow-xl border border-stone-800 overflow-hidden flex flex-col justify-end p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={track.canvas_url || coverUrl}
-                alt={track.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ${
-                  isPlaying ? 'scale-110' : 'scale-100'
-                }`}
-              />
+              {track.canvas_url && /\.(mp4|webm|mov)(\?|$)/i.test(track.canvas_url) ? (
+                <video
+                  src={track.canvas_url}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={track.canvas_url || coverUrl}
+                  alt={track.title}
+                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[4000ms] ease-in-out ${
+                    isPlaying ? 'scale-110' : 'scale-100'
+                  }`}
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/30" />
 
               {/* Barres d'ondes audio animées en Canvas */}
@@ -346,9 +439,24 @@ export function VinylPlayerCard({
             )}
 
             {/* Erreur audio ou absence de preview */}
-            {audioError || !track.preview_url ? (
+            {resolvingPreview ? (
               <div className="text-xs text-stone-500 italic bg-stone-50 p-2.5 border border-stone-200">
-                Extrait 30s non disponible directement pour ce titre (consultable dans Spotify).
+                Recherche de l’extrait audio 30s…
+              </div>
+            ) : audioError || !effectivePreviewUrl ? (
+              <div className="text-xs text-stone-500 italic bg-stone-50 p-2.5 border border-stone-200 flex items-center justify-between gap-2 flex-wrap">
+                <span>Extrait 30s non disponible directement pour ce titre.</span>
+                {track.spotify_id && (
+                  <a
+                    href={`https://open.spotify.com/track/${track.spotify_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 not-italic text-[11px] font-semibold uppercase tracking-wider text-rose-700 hover:text-rose-900"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Ouvrir sur Spotify
+                  </a>
+                )}
               </div>
             ) : (
               /* Barre de scrub audio */
@@ -378,9 +486,9 @@ export function VinylPlayerCard({
               <button
                 type="button"
                 onClick={togglePlay}
-                disabled={!track.preview_url}
+                disabled={!effectivePreviewUrl || resolvingPreview}
                 className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-semibold tracking-wider uppercase transition-colors ${
-                  track.preview_url
+                  effectivePreviewUrl && !resolvingPreview
                     ? 'bg-rose-600 text-white hover:bg-rose-700'
                     : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                 }`}
@@ -393,12 +501,12 @@ export function VinylPlayerCard({
                 ) : (
                   <>
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    ÉCOUTER L'EXTRAIT
+                    {resolvingPreview ? 'CHARGEMENT…' : "ÉCOUTER L'EXTRAIT"}
                   </>
                 )}
               </button>
 
-              {track.preview_url && (
+              {effectivePreviewUrl && (
                 <button
                   type="button"
                   onClick={toggleMute}

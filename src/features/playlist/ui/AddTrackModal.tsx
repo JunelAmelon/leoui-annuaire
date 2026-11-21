@@ -47,7 +47,6 @@ export function AddTrackModal({
   const [artist, setArtist] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
-  const [canvasUrl, setCanvasUrl] = useState('');
   const [cueTime, setCueTime] = useState('');
   const [notes, setNotes] = useState('');
   const [flag, setFlag] = useState<TrackFlag>('normal');
@@ -65,7 +64,6 @@ export function AddTrackModal({
       setArtist('');
       setPreviewUrl('');
       setCoverUrl('');
-      setCanvasUrl('');
       setCueTime('');
       setNotes('');
       setFlag('normal');
@@ -131,7 +129,7 @@ export function AddTrackModal({
       spotify_id: selectedResult?.spotify_id || null,
       preview_url: previewUrl.trim() || null,
       cover_url: coverUrl.trim() || null,
-      canvas_url: canvasUrl.trim() || null,
+      canvas_url: null,
       cue_time: cueTime.trim() || null,
       notes: notes.trim() || null,
       flag,
@@ -389,20 +387,6 @@ export function AddTrackModal({
                 placeholder="Ex : Attendre que les témoins soient au centre pour monter le volume…"
                 maxLength={250}
                 className="w-full border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-rose-600 italic"
-              />
-            </div>
-
-            {/* URL Canvas visuel personnalisé (optionnel) */}
-            <div>
-              <label className="block text-[10px] font-semibold tracking-wider uppercase text-stone-500 mb-1">
-                Lien Canvas ou visuel vertical (optionnel)
-              </label>
-              <input
-                type="url"
-                value={canvasUrl}
-                onChange={(e) => setCanvasUrl(e.target.value)}
-                placeholder="https://... (visuel 9:16 pour le studio Canvas)"
-                className="w-full border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-rose-600"
               />
             </div>
 

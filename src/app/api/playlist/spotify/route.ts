@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveTrackPreviewUrl } from '@/features/playlist/services/preview-resolver';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,14 +146,25 @@ export async function GET(request: NextRequest) {
         const data = await res.json();
         const items = data.tracks?.items || [];
 
-        const tracks = items.map((item: any) => ({
-          title: item.name,
-          artist: item.artists?.map((a: any) => a.name).join(', ') ?? 'Artiste inconnu',
-          spotify_id: item.id,
-          preview_url: item.preview_url ?? null,
-          cover_url: item.album?.images?.[0]?.url || item.album?.images?.[1]?.url || null,
-          duration_ms: item.duration_ms ?? 0,
-        }));
+        const tracks = await Promise.all(
+          items.map(async (item: any) => {
+            const title = String(item.name ?? '');
+            const artist =
+              item.artists?.map((a: any) => a.name).join(', ') ?? 'Artiste inconnu';
+            const previewUrl =
+              item.preview_url ?? (await resolveTrackPreviewUrl(title, artist));
+
+            return {
+              title,
+              artist,
+              spotify_id: item.id,
+              preview_url: previewUrl,
+              cover_url:
+                item.album?.images?.[0]?.url || item.album?.images?.[1]?.url || null,
+              duration_ms: item.duration_ms ?? 0,
+            };
+          })
+        );
 
         return NextResponse.json({ tracks });
       }
