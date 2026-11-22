@@ -322,8 +322,25 @@ export function VinylPlayerCard({
               </div>
             </div>
           ) : (
-            /* Mode 2: Canvas vertical 9:16 stylisé (supporte vidéo MP4/WebM ou image animée) */
-            <div className="relative mx-auto w-48 sm:w-52 h-72 sm:h-80 bg-stone-950 rounded-sm shadow-xl border border-stone-800 overflow-hidden flex flex-col justify-end p-4">
+            /* Mode 2: Motion Canvas 9:16 cinématique automatique */
+            <div className="relative mx-auto w-52 sm:w-56 h-80 sm:h-[22rem] bg-stone-950 rounded-sm shadow-2xl border border-stone-800/90 overflow-hidden flex flex-col justify-between p-4 select-none">
+              <style>{`
+                @keyframes motionCanvasPan {
+                  0% { transform: scale(1.2) translate(0%, 0%); }
+                  50% { transform: scale(1.34) translate(-3%, -2%); }
+                  100% { transform: scale(1.2) translate(0%, 0%); }
+                }
+                @keyframes motionCanvasFloat {
+                  0%, 100% { transform: translateY(0px); }
+                  50% { transform: translateY(-4px); }
+                }
+                @keyframes motionCanvasEq {
+                  0%, 100% { transform: scaleY(0.28); opacity: 0.65; }
+                  50% { transform: scaleY(1); opacity: 1; }
+                }
+              `}</style>
+
+              {/* Arrière-plan vidéo si canvas_url vidéo, sinon Motion Canvas flouté animé */}
               {track.canvas_url && /\.(mp4|webm|mov)(\?|$)/i.test(track.canvas_url) ? (
                 <video
                   src={track.canvas_url}
@@ -334,44 +351,99 @@ export function VinylPlayerCard({
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={track.canvas_url || coverUrl}
-                  alt={track.title}
-                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[4000ms] ease-in-out ${
-                    isPlaying ? 'scale-110' : 'scale-100'
-                  }`}
-                />
+                <>
+                  {/* Fond immersif flouté avec mouvement Ken Burns */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={track.canvas_url || coverUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-xl brightness-50 saturate-150"
+                    style={{
+                      animation: 'motionCanvasPan 14s ease-in-out infinite',
+                      animationPlayState: isPlaying ? 'running' : 'paused',
+                    }}
+                  />
+                  {/* Halo chaud rosé ambiant */}
+                  <div
+                    className={`absolute inset-0 transition-opacity duration-1000 pointer-events-none ${
+                      isPlaying ? 'opacity-60' : 'opacity-20'
+                    }`}
+                    style={{
+                      background:
+                        'radial-gradient(circle at 50% 42%, rgba(225,29,72,0.38), transparent 65%)',
+                    }}
+                  />
+                </>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/30" />
 
-              {/* Barres d'ondes audio animées en Canvas */}
-              {isPlaying && (
-                <div className="relative z-10 flex items-end justify-center gap-1 h-12 mb-3">
-                  {[40, 75, 55, 90, 60, 85, 45, 95, 70, 50].map((h, i) => (
+              {/* Vignette éditoriale */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/60 pointer-events-none" />
+
+              {/* En-tête : badge moment */}
+              <div className="relative z-10 flex items-center justify-between gap-2">
+                <span className="text-[8.5px] font-semibold tracking-[0.22em] text-rose-300 uppercase truncate">
+                  {sectionLabel || 'MOTION CANVAS'}
+                </span>
+                {track.flag === 'must_play' && (
+                  <span className="inline-flex items-center gap-0.5 bg-rose-600/90 text-white text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.5">
+                    <Flame className="w-2 h-2" />
+                    MUST
+                  </span>
+                )}
+              </div>
+
+              {/* Pochette centrale flottante (quand pas de vidéo dédiée) */}
+              {!(track.canvas_url && /\.(mp4|webm|mov)(\?|$)/i.test(track.canvas_url)) && (
+                <div
+                  className="relative z-10 mx-auto w-32 h-32 sm:w-36 sm:h-36 shadow-2xl border border-white/20 overflow-hidden my-auto"
+                  style={{
+                    animation: 'motionCanvasFloat 5s ease-in-out infinite',
+                    animationPlayState: isPlaying ? 'running' : 'paused',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={coverUrl}
+                    alt={track.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Pied : spectre audio animé + typographie éditoriale */}
+              <div className="relative z-10 space-y-2.5 text-center">
+                <div className="flex items-end justify-center gap-1 h-7">
+                  {[0.55, 0.9, 0.7, 1, 0.65, 0.95, 0.6, 0.85, 0.5, 0.8, 0.65].map((scale, i) => (
                     <span
                       key={i}
-                      className="w-1 bg-rose-400 rounded-full animate-pulse"
+                      className="w-1 h-full bg-rose-400/90 rounded-full origin-bottom"
                       style={{
-                        height: `${h}%`,
-                        animationDelay: `${i * 120}ms`,
-                        animationDuration: '700ms',
+                        transform: isPlaying ? undefined : `scaleY(${scale * 0.35})`,
+                        opacity: isPlaying ? 1 : 0.45,
+                        animation: isPlaying
+                          ? `motionCanvasEq ${0.55 + (i % 4) * 0.14}s ease-in-out infinite`
+                          : 'none',
+                        animationDelay: `${i * 75}ms`,
                       }}
                     />
                   ))}
                 </div>
-              )}
 
-              <div className="relative z-10 text-center">
-                <span className="text-[9px] font-semibold tracking-[0.2em] text-rose-300 uppercase">
-                  CANVAS
-                </span>
-                <p className="text-white text-xs font-semibold truncate mt-0.5">
-                  {track.title}
-                </p>
-                <p className="text-stone-300 text-[11px] truncate">
-                  {track.artist}
-                </p>
+                <div>
+                  <p
+                    className="text-white text-sm font-normal truncate leading-tight"
+                    style={{ fontFamily: "'Bodoni Moda', serif" }}
+                  >
+                    {track.title}
+                  </p>
+                  <p
+                    className="text-rose-200/90 text-xs italic truncate mt-0.5"
+                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  >
+                    {track.artist}
+                  </p>
+                </div>
               </div>
             </div>
           )}

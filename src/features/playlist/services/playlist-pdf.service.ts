@@ -178,27 +178,17 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
 
   // ── Box Blacklist / Interdictions ──
   if (bannedTracks.length > 0) {
-    ensure(18 + bannedTracks.length * 6);
-    setFill(doc, '#FEF2F2');
-    setDraw(doc, '#FCA5A5');
-    doc.setLineWidth(0.4);
-
-    const boxH = 10 + bannedTracks.length * 7;
-    doc.rect(MARGIN, y, CONTENT_W, boxH, 'FD');
-
-    caps('ATTENTION DJ — TITRES STRICTEMENT INTERDITS (NE PAS DIFFUSER)', MARGIN + 5, y + 5.5, 6.5, BANNED_RED);
-
-    let by = y + 10;
-    bannedTracks.forEach((bt) => {
+    const bannedItems = bannedTracks.map((bt) => {
       try {
         doc.setFont('Sans', 'bold');
       } catch {
         doc.setFont('helvetica', 'bold');
       }
       doc.setFontSize(8.5);
-      setText(doc, BANNED_RED);
-      doc.text(`✕  ${pdfSafe(bt.title)} — ${pdfSafe(bt.artist)}`, MARGIN + 5, by);
+      const mainText = `✕  ${pdfSafe(bt.title)} — ${pdfSafe(bt.artist)}`;
+      const mainLines = doc.splitTextToSize(mainText, CONTENT_W - 10) as string[];
 
+      let noteLines: string[] = [];
       if (bt.notes) {
         try {
           doc.setFont('Serif', 'italic');
@@ -206,10 +196,53 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
           doc.setFont('times', 'italic');
         }
         doc.setFontSize(7.5);
-        setText(doc, MUTED);
-        doc.text(`(${pdfSafe(bt.notes)})`, MARGIN + 70, by);
+        noteLines = doc.splitTextToSize(`Raison : ${pdfSafe(bt.notes)}`, CONTENT_W - 14) as string[];
       }
-      by += 6;
+      return { mainLines, noteLines };
+    });
+
+    const totalBannedLinesHeight = bannedItems.reduce(
+      (sum, item) => sum + item.mainLines.length * 4.2 + item.noteLines.length * 3.6 + 2,
+      0
+    );
+    const boxH = 11 + totalBannedLinesHeight;
+
+    ensure(boxH + 6);
+    setFill(doc, '#FEF2F2');
+    setDraw(doc, '#FCA5A5');
+    doc.setLineWidth(0.4);
+    doc.rect(MARGIN, y, CONTENT_W, boxH, 'FD');
+
+    caps('ATTENTION DJ — TITRES STRICTEMENT INTERDITS (NE PAS DIFFUSER)', MARGIN + 5, y + 5.5, 6.5, BANNED_RED);
+
+    let by = y + 10.5;
+    bannedItems.forEach((item) => {
+      try {
+        doc.setFont('Sans', 'bold');
+      } catch {
+        doc.setFont('helvetica', 'bold');
+      }
+      doc.setFontSize(8.5);
+      setText(doc, BANNED_RED);
+      item.mainLines.forEach((line) => {
+        doc.text(line, MARGIN + 5, by);
+        by += 4.2;
+      });
+
+      if (item.noteLines.length > 0) {
+        try {
+          doc.setFont('Serif', 'italic');
+        } catch {
+          doc.setFont('times', 'italic');
+        }
+        doc.setFontSize(7.5);
+        setText(doc, MUTED);
+        item.noteLines.forEach((line) => {
+          doc.text(line, MARGIN + 9, by);
+          by += 3.6;
+        });
+      }
+      by += 2;
     });
 
     y += boxH + 6;
@@ -227,7 +260,7 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
     const linkedMoment = section.linked_moment_id ? momentsMap.get(section.linked_moment_id) : undefined;
     const momentTiming = linkedMoment ? formatMomentTime(linkedMoment.start_at) : null;
 
-    ensure(16 + Math.max(1, sectionTracks.length) * 9);
+    ensure(18);
 
     // Titre de section
     setFill(doc, '#F5EFEB');
@@ -251,8 +284,53 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
       doc.text('Aucun morceau spécifique renseigné pour ce moment (carte blanche DJ).', MARGIN + 4, y);
       y += 6;
     } else {
+      const LEFT_COL_W = 112;
+      const FULL_TEXT_W = CONTENT_W - 10;
+
       sectionTracks.forEach((track, tIdx) => {
-        ensure(9);
+        const titleSafe = pdfSafe(track.title);
+        const artistSafe = pdfSafe(`— ${track.artist}`);
+
+        try {
+          doc.setFont('Sans', track.flag === 'must_play' ? 'bold' : 'normal');
+        } catch {
+          doc.setFont('helvetica', track.flag === 'must_play' ? 'bold' : 'normal');
+        }
+        doc.setFontSize(8.5);
+        const titleWidth = doc.getTextWidth(titleSafe);
+        const titleLines = doc.splitTextToSize(titleSafe, LEFT_COL_W) as string[];
+
+        try {
+          doc.setFont('Serif', 'italic');
+        } catch {
+          doc.setFont('times', 'italic');
+        }
+        doc.setFontSize(8);
+        const artistWidth = doc.getTextWidth(artistSafe);
+
+        // Si titre + artiste tiennent confortablement sur une ligne dans la colonne gauche
+        const fitsInline =
+          titleLines.length === 1 && titleWidth + 4 + artistWidth <= LEFT_COL_W;
+
+        const artistLines = fitsInline
+          ? []
+          : (doc.splitTextToSize(artistSafe, FULL_TEXT_W) as string[]);
+
+        let noteLines: string[] = [];
+        if (track.notes) {
+          doc.setFontSize(7.5);
+          noteLines = doc.splitTextToSize(`Note : ${pdfSafe(track.notes)}`, FULL_TEXT_W) as string[];
+        }
+
+        const rowHeight =
+          titleLines.length * 4 +
+          artistLines.length * 3.8 +
+          noteLines.length * 3.6 +
+          3.5;
+
+        ensure(rowHeight + 2);
+
+        const rowTop = y;
 
         // Numéro
         try {
@@ -262,9 +340,21 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
         }
         doc.setFontSize(8);
         setText(doc, MUTED);
-        doc.text(`${tIdx + 1}.`, MARGIN + 2, y + 1);
+        doc.text(`${tIdx + 1}.`, MARGIN + 2, rowTop + 1);
 
-        // Titre & Artiste
+        // Badge Must Play & Cue time (à droite de la première ligne)
+        if (track.flag === 'must_play') {
+          setFill(doc, '#FFE4E6');
+          setDraw(doc, '#FDA4AF');
+          doc.roundedRect(MARGIN + 124, rowTop - 2.4, 22, 4.4, 1, 1, 'FD');
+          caps('MUST PLAY', MARGIN + 135, rowTop + 0.8, 5.2, MUST_ROSE, 'center');
+        }
+
+        if (track.cue_time) {
+          caps(`À ${track.cue_time}`, PAGE_W - MARGIN - 2, rowTop + 0.8, 6, INK, 'right');
+        }
+
+        // Titre
         try {
           doc.setFont('Sans', track.flag === 'must_play' ? 'bold' : 'normal');
         } catch {
@@ -272,8 +362,14 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
         }
         doc.setFontSize(8.5);
         setText(doc, INK);
-        doc.text(pdfSafe(track.title), MARGIN + 8, y + 1);
 
+        let curY = rowTop + 1;
+        titleLines.forEach((line) => {
+          doc.text(line, MARGIN + 8, curY);
+          curY += 4;
+        });
+
+        // Artiste (inline si court, sinon proprement en dessous)
         try {
           doc.setFont('Serif', 'italic');
         } catch {
@@ -281,40 +377,32 @@ export async function generateDjBriefingPdf(options: DjBriefingPdfOptions): Prom
         }
         doc.setFontSize(8);
         setText(doc, MUTED);
-        doc.text(pdfSafe(`— ${track.artist}`), MARGIN + 60, y + 1);
 
-        // Badge Must Play
-        if (track.flag === 'must_play') {
-          setFill(doc, '#FFE4E6');
-          setDraw(doc, '#FDA4AF');
-          doc.roundedRect(MARGIN + 115, y - 2.5, 23, 4.5, 1, 1, 'FD');
-          caps('MUST PLAY', MARGIN + 126.5, y + 0.8, 5.5, MUST_ROSE, 'center');
-        }
-
-        // Cue time
-        if (track.cue_time) {
-          caps(`Lancer à ${track.cue_time}`, MARGIN + 142, y + 0.8, 6, INK);
+        if (fitsInline) {
+          doc.text(artistSafe, MARGIN + 8 + titleWidth + 3.5, rowTop + 1);
+        } else {
+          artistLines.forEach((line) => {
+            doc.text(line, MARGIN + 8, curY);
+            curY += 3.8;
+          });
         }
 
         // Note éventuelle
-        if (track.notes) {
-          try {
-            doc.setFont('Serif', 'italic');
-          } catch {
-            doc.setFont('times', 'italic');
-          }
+        if (noteLines.length > 0) {
           doc.setFontSize(7.5);
           setText(doc, '#475569');
-          doc.text(`Note: ${pdfSafe(track.notes)}`, MARGIN + 8, y + 5);
-          y += 4;
+          noteLines.forEach((line) => {
+            doc.text(line, MARGIN + 8, curY);
+            curY += 3.6;
+          });
         }
 
         // Filet fin entre pistes
         setDraw(doc, '#F1ECE8');
         doc.setLineWidth(0.15);
-        doc.line(MARGIN + 2, y + 2.5, PAGE_W - MARGIN - 2, y + 2.5);
+        doc.line(MARGIN + 2, curY - 1, PAGE_W - MARGIN - 2, curY - 1);
 
-        y += 6;
+        y = curY + 2.5;
       });
     }
 
