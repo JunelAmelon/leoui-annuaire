@@ -6,7 +6,6 @@ import LatestListings from '@/components/market/LatestListings';
 import MarketStats from '@/components/market/MarketStats';
 import CategoryBentoGrid from '@/components/market/CategoryBentoGrid';
 import HowItWorksRow from '@/components/market/HowItWorksRow';
-import HeroListingsColumn from '@/components/market/HeroListingsColumn';
 import TitleDecoration from '@/components/market/TitleDecoration';
 import { Plus, ArrowRight } from 'lucide-react';
 
@@ -46,10 +45,9 @@ export default function MarketHomePage() {
 
       <main className="px-2 sm:px-3 pb-3 space-y-3">
 
-        {/* ── HERO BENTO — pleine largeur sans bordure sur mobile ─── */}
-        <section className="grid grid-cols-12 gap-0 sm:gap-3 -mx-2 sm:mx-0">
-          {/* Grande carte hero */}
-          <div className="col-span-12 lg:col-span-8 relative rounded-none sm:rounded-[28px] overflow-hidden bg-charcoal-900 min-h-[75dvh] sm:min-h-[560px] flex flex-col justify-end">
+        {/* ── HERO — vraie pleine largeur, bord à bord ─── */}
+        <section className="-mx-2 sm:-mx-3">
+          <div className="relative overflow-hidden bg-charcoal-900">
             <img
               src="/mariage%20(4).jpg"
               alt="Mariage"
@@ -59,11 +57,11 @@ export default function MarketHomePage() {
             <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-            <div className="relative z-10 px-7 sm:px-10 pb-10 pt-12">
-              <div className="relative mb-4 max-w-xl">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
+              <div className="relative mb-3 max-w-2xl">
                 <h1
                   className="font-serif text-white"
-                  style={{ fontSize: 'clamp(2.1rem, 4.3vw, 3.6rem)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em' }}
+                  style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.02em' }}
                 >
                   La seconde vie de vos<br />
                   objets de{' '}
@@ -74,18 +72,12 @@ export default function MarketHomePage() {
                 </h1>
               </div>
 
-              <p className="text-white/85 mb-8 max-w-md text-sm sm:text-base leading-relaxed font-light">
+              <p className="text-white/85 mb-7 max-w-xl text-sm sm:text-base leading-relaxed font-light">
                 Achetez et revendez décoration, mobilier et accessoires entre particuliers en toute confiance.
               </p>
 
               <MarketSearchBar />
             </div>
-
-          </div>
-
-          {/* Colonne droite — 3 dernières annonces réelles */}
-          <div className="col-span-12 lg:col-span-4">
-            <HeroListingsColumn />
           </div>
         </section>
 

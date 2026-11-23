@@ -72,6 +72,14 @@ function VendorsPageContent() {
   const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
   const [areaCities, setAreaCities] = useState<Set<string>>(new Set());
   const [areaLoading, setAreaLoading] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const toggleSection = (key: string) =>
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
 
   const parsePrice = (priceStr: string): number => {
     const num = (priceStr || '').replace(/[^\d]/g, '');
@@ -327,10 +335,16 @@ function VendorsPageContent() {
           <aside className="w-56 flex-shrink-0 hidden lg:block">
             {/* Filtres spéciaux */}
             <div className="mb-6">
-              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+              <button
+                type="button"
+                onClick={() => toggleSection('speciaux')}
+                aria-expanded={!collapsed.has('speciaux')}
+                className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3"
+              >
                 <span>Filtres spéciaux</span>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${collapsed.has('speciaux') ? '-rotate-90' : ''}`} />
               </button>
+              {!collapsed.has('speciaux') && (
               <div className="space-y-3">
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="text-sm text-charcoal-700 flex items-center gap-2">
@@ -355,13 +369,20 @@ function VendorsPageContent() {
                   </div>
                 </label>
               </div>
+              )}
             </div>
 
             <div className="border-t border-charcoal-100 pt-5 mb-5">
-              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+              <button
+                type="button"
+                onClick={() => toggleSection('prix')}
+                aria-expanded={!collapsed.has('prix')}
+                className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3"
+              >
                 <span>Prix</span>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${collapsed.has('prix') ? '-rotate-90' : ''}`} />
               </button>
+              {!collapsed.has('prix') && (
               <div className="space-y-2">
                 {priceOptions.map(opt => (
                   <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
@@ -375,13 +396,20 @@ function VendorsPageContent() {
                   </label>
                 ))}
               </div>
+              )}
             </div>
 
             <div className="border-t border-charcoal-100 pt-5 mb-5">
-              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+              <button
+                type="button"
+                onClick={() => toggleSection('services')}
+                aria-expanded={!collapsed.has('services')}
+                className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3"
+              >
                 <span>Services</span>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${collapsed.has('services') ? '-rotate-90' : ''}`} />
               </button>
+              {!collapsed.has('services') && (
               <div className="space-y-2">
                 {serviceOptions.map(opt => (
                   <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
@@ -395,13 +423,20 @@ function VendorsPageContent() {
                   </label>
                 ))}
               </div>
+              )}
             </div>
 
             <div className="border-t border-charcoal-100 pt-5">
-              <button className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3">
+              <button
+                type="button"
+                onClick={() => toggleSection('note')}
+                aria-expanded={!collapsed.has('note')}
+                className="flex items-center justify-between w-full text-sm font-semibold text-charcoal-900 mb-3"
+              >
                 <span>Note minimum</span>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${collapsed.has('note') ? '-rotate-90' : ''}`} />
               </button>
+              {!collapsed.has('note') && (
               <div className="space-y-2">
                 {([{label: '4.5+ étoiles', val: 4.5}, {label: '4.0+ étoiles', val: 4.0}, {label: '3.5+ étoiles', val: 3.5}] as const).map(opt => (
                   <label key={opt.label} className="flex items-center gap-2.5 cursor-pointer">
@@ -415,6 +450,7 @@ function VendorsPageContent() {
                   </label>
                 ))}
               </div>
+              )}
             </div>
           </aside>
 

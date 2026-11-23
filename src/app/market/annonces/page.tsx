@@ -171,45 +171,44 @@ function CatalogueContent() {
     <div className="min-h-screen bg-white">
       <Header />
 
-      {/* Hero compact — photo de fond & dégradé bordeaux / rose élégant */}
+      {/* Hero — vraie pleine largeur, format compact identique à la page market */}
       <section className="relative overflow-hidden bg-charcoal-900">
-        <img
-          src="/mariage%20(4).jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <img
+            src="/mariage%20(4).jpg"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#5B1A2E]/95 via-[#5B1A2E]/75 sm:via-[#5B1A2E]/60 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="flex items-center gap-2 text-body-sm text-white/60 mb-3">
-            <Link href="/market" className="hover:text-white transition-colors">LeOui Market</Link>
-            <span>/</span>
-            <span className="text-white/90">Annonces</span>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12">
+            <div className="flex items-center gap-2 text-sm text-white/60 mb-3">
+              <Link href="/market" className="hover:text-white transition-colors">LeOui Market</Link>
+              <span>/</span>
+              <span className="text-white/90">Annonces</span>
+            </div>
+
+            <div className="relative mb-3 max-w-2xl">
+              <h1
+                className="font-serif text-white"
+                style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.02em' }}
+              >
+                Achetez et revendez<br />
+                votre décoration de{' '}
+                <span className="relative inline-block">
+                  mariage
+                  <TitleDecoration />
+                </span>
+              </h1>
+            </div>
+
+            <p className="text-white/85 mb-7 max-w-xl text-sm sm:text-base leading-relaxed font-light">
+              Le marketplace spécialisé pour donner une seconde vie aux plus belles décorations de mariage.
+            </p>
+
+            <MarketSearchBar />
           </div>
-
-          <div className="relative mb-3 max-w-2xl">
-            <h1
-              className="font-serif text-white"
-              style={{ fontSize: 'clamp(2rem, 3.8vw, 3.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.02em' }}
-            >
-              Achetez et revendez<br />
-              votre décoration de{' '}
-              <span className="relative inline-block">
-                mariage
-                <TitleDecoration />
-              </span>
-            </h1>
-          </div>
-
-          <p className="text-white/85 mb-7 max-w-xl text-sm sm:text-base leading-relaxed font-light">
-            Le marketplace spécialisé pour donner une seconde vie aux plus belles décorations de mariage.
-          </p>
-
-          {/* Search bar identique à la page market */}
-          <MarketSearchBar />
-        </div>
-      </section>
+        </section>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
